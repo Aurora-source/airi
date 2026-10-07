@@ -30,7 +30,7 @@ export interface ModelSummary {
   personaScore: number
   firstByteMs: number | undefined
   totalMs: number | undefined
-  /** How many AIRI turns per day the free-tier limits allow, at the measured prompt size. */
+  /** How many AIRI turns per day the free-tier limits allow, at a real AIRI prompt size of about 5k tokens. */
   turnsPerDay: number | undefined
   meanPromptTokens: number | undefined
   facts: ModelFacts
@@ -50,20 +50,23 @@ const mean = (values: number[]): number | undefined => values.length === 0 ? und
  * The persona score is a decision aid and not a verdict: 60% judge overall, scaled to 100, and 40% automatic pass rate.
  * Without judgments, the automatic pass rate stands alone. The blind ranking of the user outranks it.
  */
-export function summarize(rows: ResultRow[], judgments: Judgment[], facts: ModelFacts[], sceneCount: number): ModelSummary[] {
+export function summarize(rows: ResultRow[], judgments: Judgment[], facts: ModelFacts[], sceneCount: number, airiPromptTokens = 5000): ModelSummary[] {
   return facts.map((model) => {
     const mine = rows.filter(row => row.modelId === model.id)
     const answered = mine.filter(row => row.record.status === 200 && row.record.text.trim() !== '')
-    const allChecks = mine.flatMap(row => row.checks)
+    // A refused request has no reply to check. It counts in the failure rate and in capacity, and not as a broken format.
+    const allChecks = answered.flatMap(row => row.checks)
     const rate = (id: CheckId) => {
-      const relevant = mine.flatMap(row => row.checks.filter(check => check.id === id))
+      const relevant = answered.flatMap(row => row.checks.filter(check => check.id === id))
       return relevant.length === 0 ? undefined : relevant.filter(check => check.pass).length / relevant.length
     }
     const perCheck: Partial<Record<CheckId, number>> = {}
     for (const id of new Set(allChecks.map(check => check.id)))
       perCheck[id] = rate(id)
 
-    const scores = judgments.filter(judgment => judgment.modelId === model.id)
+    // The judge scores taste. A refused scene has no reply to taste, so it does not pull the average down. The failure rate shows it.
+    const answeredScenes = new Set(answered.map(row => row.scenarioId))
+    const scores = judgments.filter(judgment => judgment.modelId === model.id && answeredScenes.has(judgment.scenarioId))
     const judge = scores.length === 0
       ? undefined
       : {
@@ -78,8 +81,8 @@ export function summarize(rows: ResultRow[], judgments: Judgment[], facts: Model
 
     const promptTokens = mine.map(row => row.usage?.promptTokens).filter((value): value is number => typeof value === 'number')
     const meanPromptTokens = mean(promptTokens)
-    // A request is about as big as the mean prompt that the scenes used, plus a tool round for a tenth of the turns.
-    const dailyByTokens = model.tpd !== undefined && meanPromptTokens ? Math.floor(model.tpd / (meanPromptTokens * 1.1)) : undefined
+    // The scenes use small prompts. A real AIRI request is about 5k tokens with its tools, plus a tool round in a tenth of the turns.
+    const dailyByTokens = model.tpd === undefined ? undefined : Math.floor(model.tpd / (airiPromptTokens * 1.1))
     const turnsPerDay = [model.rpd, dailyByTokens].filter((value): value is number => value !== undefined)
 
     return {

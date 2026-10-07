@@ -38,8 +38,11 @@ Commands:
               --reminder <t>   A last instruction added to the system prompt, to test a style reminder.
   judge       Score each answer with a judge from another provider. Resumes.
               --judges a,b     Judge models in order of preference. Default: groq-oss-120b,gemini-flash-lite.
+              --only <model>   One judge scores every answer, so that all models share one scale.
+              --file <name>    Judgments file. report reads the same file. Default: judgments.jsonl.
   report      Write report.md, summary.json, blind-ranking.html, and key.json.
               --seed <n>       Seed of the blind shuffle.
+              --blind-models   Models in the blind package. Default: every model.
   score-blind Score the ranking that the page exported. --ranks <file>
 
 The gateway must run. The inference token comes from the protected store and is never printed.`
@@ -68,16 +71,19 @@ async function main(argv: string[]): Promise<void> {
     args: argv,
     allowPositionals: true,
     options: {
-      out: { type: 'string' },
-      models: { type: 'string' },
-      alias: { type: 'string' },
-      parallel: { type: 'string' },
-      limit: { type: 'string' },
-      card: { type: 'string' },
-      reminder: { type: 'string' },
-      judges: { type: 'string' },
-      seed: { type: 'string' },
-      ranks: { type: 'string' },
+      'out': { type: 'string' },
+      'models': { type: 'string' },
+      'alias': { type: 'string' },
+      'parallel': { type: 'string' },
+      'limit': { type: 'string' },
+      'card': { type: 'string' },
+      'reminder': { type: 'string' },
+      'judges': { type: 'string' },
+      'only': { type: 'string' },
+      'blind-models': { type: 'string' },
+      'file': { type: 'string' },
+      'seed': { type: 'string' },
+      'ranks': { type: 'string' },
     },
   })
   const [command] = positionals
@@ -89,7 +95,8 @@ async function main(argv: string[]): Promise<void> {
   const out = values.out
   mkdirSync(out, { recursive: true })
   const resultsPath = join(out, 'results.jsonl')
-  const judgmentsPath = join(out, 'judgments.jsonl')
+  const judgmentsName = values.file ?? 'judgments.jsonl'
+  const judgmentsPath = join(out, judgmentsName)
 
   const config = await loadConfig()
   const alias = values.alias ?? 'companion-eval'
@@ -139,7 +146,7 @@ async function main(argv: string[]): Promise<void> {
       // One queue per judge model, because each judge has its own rate limits.
       const byJudge = new Map<string, ResultRow[]>()
       for (const row of todo) {
-        const judge = chooseJudge(row.modelId, providerOf, judges)
+        const judge = values.only ?? chooseJudge(row.modelId, providerOf, judges)
         byJudge.set(judge, [...(byJudge.get(judge) ?? []), row])
       }
       await pool([...byJudge.entries()], byJudge.size, async ([judge, queue]) => {
@@ -175,10 +182,20 @@ async function main(argv: string[]): Promise<void> {
       })
       db.close()
       const summaries = summarize(rows, judgments, facts, scenarios.length)
+      // A report of another judgment set gets its own files and leaves the blind package alone, so that the sealed key stays in step with the page.
+      if (values.file) {
+        const name = judgmentsName.replace(/\.jsonl$/, '')
+        writeFileSync(join(out, `summary-${name}.json`), JSON.stringify(summaries, null, 2))
+        writeFileSync(join(out, `report-${name}.md`), renderReport(summaries, rows.length))
+        console.info(renderReport(summaries, rows.length))
+        return
+      }
       writeFileSync(join(out, 'summary.json'), JSON.stringify(summaries, null, 2))
       writeFileSync(join(out, 'report.md'), renderReport(summaries, rows.length))
 
-      const { html, key } = buildBlindPackage(scenarios, rows, Number(values.seed ?? Date.now() % 100_000))
+      // The user ranks the finalists. A model that failed a gate would only add work.
+      const finalists = values['blind-models'] ? new Set(values['blind-models'].split(',')) : undefined
+      const { html, key } = buildBlindPackage(scenarios, finalists ? rows.filter(row => finalists.has(row.modelId)) : rows, Number(values.seed ?? Date.now() % 100_000))
       writeFileSync(join(out, 'blind-ranking.html'), html)
       writeFileSync(join(out, 'key.json'), JSON.stringify(key, null, 2))
       console.info(renderReport(summaries, rows.length))

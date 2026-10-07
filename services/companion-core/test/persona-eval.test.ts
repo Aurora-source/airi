@@ -81,10 +81,23 @@ describe('summarize and rank', () => {
     expect(good.firstByteMs).toBe(300)
   })
 
-  it('computes the daily capacity from the request limit and the token limit, at the measured prompt size', () => {
+  it('computes the daily capacity from the request limit and the token limit, at a real AIRI prompt size', () => {
     const [model] = summarize(rows, judgments, [facts('good', { rpd: 1000, tpd: 200_000 })], 2)
 
-    expect(model.turnsPerDay).toBe(Math.floor(200_000 / (1200 * 1.1)))
+    expect(model.turnsPerDay).toBe(Math.floor(200_000 / (5000 * 1.1)))
+  })
+
+  it('leaves a refused scene out of the judge average and keeps it in the failure rate', () => {
+    const refused = row('casual-2', 'quota', '', { status: 429 })
+    const scored = [
+      { scenarioId: 'casual-1', modelId: 'quota', judgeModel: 'j', voice: 5, emotion: 5, naturalness: 5, engagement: 5, overall: 5, comment: '' },
+      { scenarioId: 'casual-2', modelId: 'quota', judgeModel: 'j', voice: 1, emotion: 1, naturalness: 1, engagement: 1, overall: 1, comment: 'no usable reply' },
+    ]
+
+    const [quota] = summarize([row('casual-1', 'quota', 'a'), refused], scored, [facts('quota')], 2)
+
+    expect(quota.judge?.overall).toBe(5)
+    expect(quota.failureRate).toBe(0.5)
   })
 
   it('keeps a model with broken ACT tokens out of the head of the chain, however well it scores', () => {
@@ -92,6 +105,18 @@ describe('summarize and rank', () => {
 
     expect(passesConversationGates(summaries[0])).toBe(false)
     expect(rankConversation(summaries).map(summary => summary.modelId)).toEqual(['good', 'fast', 'broken-act'])
+  })
+
+  it('judges format and tool checks on the answers only, because a quota failure is not a format failure', () => {
+    const answered = row('casual-1', 'quota', 'a', {}, [pass('act-valid'), pass('tool-behavior')])
+    const refused = row('casual-2', 'quota', '', { status: 429 }, [pass('act-valid', false), pass('tool-behavior', false)])
+
+    const [quota] = summarize([answered, refused], [], [facts('quota')], 2)
+
+    expect(quota.actCorrectness).toBe(1)
+    expect(quota.toolCorrectness).toBe(1)
+    expect(quota.failureRate).toBe(0.5)
+    expect(quota.autoPassRate).toBe(1)
   })
 
   it('counts a scene without an answer as a failure', () => {
