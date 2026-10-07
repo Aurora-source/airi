@@ -6,7 +6,7 @@ import type { ModelHealth } from './health'
 import type { RequestTraits } from './request-analysis'
 import type { StickyStore } from './sticky'
 
-import { resolveAlias } from '../config/config'
+import { resolveAlias, servesChatCompletions } from '../config/config'
 import { evaluateModel } from './eligibility'
 import { analyzeRequest } from './request-analysis'
 
@@ -67,10 +67,12 @@ export class Router {
       return failure(404, 'model_not_found', `Model "${body.model}" is not a configured alias or a model of one.`, [])
 
     const { alias, pinned } = target
+    const aliasConfig = this.deps.config.aliases[alias]
+    if (!servesChatCompletions(aliasConfig))
+      return failure(400, 'model_not_supported', `Model "${body.model}" is a ${aliasConfig.role} alias. It does not serve chat completions.`, [])
     const chain = resolveAlias(this.deps.config, alias)!
     const models = pinned ? chain.filter(model => model.id === pinned) : chain
     const traits = analyzeRequest(body)
-    const aliasConfig = this.deps.config.aliases[alias]
     const context = {
       profile: this.deps.config.profile,
       routing: this.deps.config.routing,

@@ -98,6 +98,28 @@ describe('runProbes', () => {
     expect(local.requests.length).toBeGreaterThan(0)
   })
 
+  it('skips the models of a speech-recognition alias, because a chat probe cannot test them', async () => {
+    noTools(remote)
+    const store = new ProbeStore(openDatabase(':memory:'), Date.now)
+    const withSpeech = parseConfig({
+      profile: 'cloud',
+      store: { path: ':memory:' },
+      providers: { remote: { baseURL: remote.baseURL, keyRef: 'key-remote' } },
+      models: {
+        'remote-model': { provider: 'remote', model: 'remote-1', capabilities: { contextWindow: 32_000 } },
+        'remote-whisper': { provider: 'remote', model: 'whisper-large-v3-turbo', capabilities: { contextWindow: 448, streaming: false, tools: false } },
+      },
+      aliases: {
+        'companion-chat': { chain: ['remote-model'] },
+        'companion-stt': { role: 'speech-recognition', chain: ['remote-whisper'] },
+      },
+    })
+
+    const results = await runProbes(withSpeech, new Map([['key-remote', 'k'.repeat(12)]]), store, { gapMs: 0 })
+
+    expect(results.map(result => result.modelId)).toEqual(['remote-model'])
+  })
+
   it('reports a model whose key is missing without sending a request', async () => {
     const store = new ProbeStore(openDatabase(':memory:'), Date.now)
 

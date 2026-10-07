@@ -93,8 +93,11 @@ const promptSchema = v.object({
 
 const ROLES = ['conversation', 'reasoning', 'vision', 'speech-recognition', 'speech-synthesis', 'embedding'] as const
 
+/** Roles whose aliases serve `POST /v1/chat/completions`. A `speech-recognition` alias serves `POST /v1/audio/transcriptions`. */
+const CHAT_COMPLETION_ROLES: ReadonlySet<string> = new Set(['conversation', 'reasoning', 'vision'])
+
 const aliasSchema = v.object({
-  /** The architecture capability that this alias serves. Only `conversation` and `reasoning` route chat completions in R2B. */
+  /** The architecture capability that this alias serves. It decides which endpoint routes the alias. */
   role: v.optional(v.picklist(ROLES), 'conversation'),
   /** Keys of `models`, best first. The router walks this order, after stickiness and eligibility. */
   chain: v.pipe(v.array(v.string()), v.minLength(1)),
@@ -121,6 +124,15 @@ const routingSchema = v.object({
   allowFirstRoundOnly: v.optional(v.boolean(), true),
 })
 
+const audioSchema = v.object({
+  /** Largest accepted upload, multipart headers included. Groq accepts 25 MiB. */
+  maxRequestBytes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1024), v.maxValue(25 * 1024 * 1024)), 25 * 1024 * 1024),
+  /** The provider response stays in memory until it is complete. */
+  maxResponseBytes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1024), v.maxValue(4 * 1024 * 1024)), 1024 * 1024),
+  /** One deadline covers the upload, every fallback request, and the provider response. */
+  timeoutMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(20), v.maxValue(120_000)), 15_000),
+})
+
 const PROFILES = ['local', 'cloud', 'cloud-mura-voice', 'hybrid'] as const
 
 const configSchema = v.pipe(
@@ -145,6 +157,8 @@ const configSchema = v.pipe(
      */
     profile: v.optional(v.picklist(PROFILES), 'cloud-mura-voice'),
     routing: v.optional(routingSchema, {}),
+    /** Bounds of `POST /v1/audio/transcriptions`. The `speech-recognition` aliases choose its models. */
+    audio: v.optional(audioSchema, {}),
     /** SQLite file for the quota ledger, sticky choices, and probe results. `:memory:` keeps them in memory. */
     store: v.optional(v.object({ path: v.optional(v.string()) }), {}),
     providers: v.record(v.string(), providerSchema),
@@ -202,6 +216,12 @@ export type ModelLimits = ModelEntry['limits']
 export type AliasConfig = CompanionConfig['aliases'][string]
 export type Profile = CompanionConfig['profile']
 export type RoutingOptions = CompanionConfig['routing']
+export type AudioLimits = CompanionConfig['audio']
+
+/** Whether `POST /v1/chat/completions` can route this alias. */
+export function servesChatCompletions(alias: AliasConfig): boolean {
+  return CHAT_COMPLETION_ROLES.has(alias.role)
+}
 
 /** A chain entry with its provider joined in. The router and the executor work with this shape. */
 export interface ResolvedModel {

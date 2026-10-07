@@ -1,71 +1,72 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { resolveAudioRoutes } from '../src/audio/audio-config'
+import { parseConfig } from '../src/config/config'
 
-import { audioConfigPath, loadAudioConfig, loadGroqKey, parseAudioConfig } from '../src/audio/audio-config'
-import { MemorySecretStore } from '../src/auth/secret-store'
+/** Groq reports a 448-token context for its Whisper models. Speech recognition ignores the value. */
+const WHISPER = { contextWindow: 448, streaming: false, tools: false }
 
-const directories: string[] = []
+function config(input: { profile?: string, local?: string, chain?: string[], audio?: { timeoutMs?: number, maxRequestBytes?: number, maxResponseBytes?: number } } = {}) {
+  return parseConfig({
+    profile: input.profile ?? 'cloud-mura-voice',
+    audio: input.audio,
+    providers: {
+      groq: { baseURL: 'https://api.groq.com/openai/v1/', keyRef: 'provider-groq' },
+      ...(input.local ? { 'local-stt': { baseURL: input.local, locality: 'local' } } : {}),
+    },
+    models: {
+      'groq-whisper-turbo': { provider: 'groq', model: 'whisper-large-v3-turbo', capabilities: WHISPER },
+      'groq-whisper': { provider: 'groq', model: 'whisper-large-v3', capabilities: WHISPER },
+      ...(input.local ? { 'local-whisper': { provider: 'local-stt', model: 'explicit-local-model', capabilities: WHISPER } } : {}),
+      'chat-model': { provider: 'groq', model: 'openai/gpt-oss-120b', capabilities: { contextWindow: 131_072 } },
+    },
+    aliases: {
+      'companion-chat': { chain: ['chat-model'] },
+      'companion-stt': { role: 'speech-recognition', chain: input.chain ?? ['groq-whisper-turbo', 'groq-whisper'] },
+    },
+  })
+}
 
-afterEach(async () => {
-  vi.unstubAllEnvs()
-  for (const directory of directories.splice(0))
-    await rm(directory, { recursive: true, force: true })
-})
+describe('audio routes', () => {
+  it('reads each speech-recognition alias chain from the R2B configuration', () => {
+    const routes = resolveAudioRoutes(config())!
 
-describe('audio configuration', () => {
-  it('sets the Groq model order without changing chat configuration', () => {
-    const config = parseAudioConfig({ profile: 'CLOUD' })
-
-    expect(config.cloud.models).toEqual(['whisper-large-v3-turbo', 'whisper-large-v3'])
-    expect(config.cloud.keyRef).toBe('provider-groq')
-    expect(config.local).toBeUndefined()
+    expect([...routes.aliases.keys()]).toEqual(['companion-stt'])
+    expect(routes.aliases.get('companion-stt')!.map(model => ({ id: model.id, url: model.url.href, model: model.model, keyRef: model.keyRef, locality: model.locality }))).toEqual([
+      { id: 'groq-whisper-turbo', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3-turbo', keyRef: 'provider-groq', locality: 'cloud' },
+      { id: 'groq-whisper', url: 'https://api.groq.com/openai/v1/audio/transcriptions', model: 'whisper-large-v3', keyRef: 'provider-groq', locality: 'cloud' },
+    ])
+    expect(routes.limits).toEqual({ maxRequestBytes: 25 * 1024 * 1024, maxResponseBytes: 1024 * 1024, timeoutMs: 15_000 })
   })
 
-  it.each([
-    { profile: 'LOCAL' },
-    { profile: 'unknown' },
-    { profile: 'CLOUD', local: { baseURL: 'http://127.0.0.1:11996/v1/', model: 'local' } },
-    { profile: 'cloud-mura', local: { baseURL: 'http://127.0.0.1:11996/v1/', model: 'local' } },
-    { profile: 'CLOUD', cloud: { baseURL: 'https://attacker.example/' } },
-    { profile: 'CLOUD', cloud: { models: ['client-chosen-model'] } },
-    { profile: 'CLOUD', cloud: { models: [] } },
-    { profile: 'CLOUD', timeoutMs: 0 },
-    { profile: 'CLOUD', maxRequestBytes: 100 * 1024 * 1024 },
-    { profile: 'CLOUD', apiKey: 'plaintext-key' },
-  ])('rejects invalid configuration %j', (config) => {
-    expect(() => parseAudioConfig(config)).toThrow('Invalid companion audio configuration.')
+  it('disables audio when no alias has the speech-recognition role', () => {
+    const plain = parseConfig({
+      providers: { groq: { baseURL: 'https://api.groq.com/openai/v1/', keyRef: 'provider-groq' } },
+      models: { 'chat-model': { provider: 'groq', model: 'openai/gpt-oss-120b', capabilities: { contextWindow: 131_072 } } },
+      aliases: { 'companion-chat': { chain: ['chat-model'] } },
+    })
+
+    expect(resolveAudioRoutes(plain)).toBeUndefined()
   })
 
-  it.each(['http://192.168.1.1/v1/', 'http://169.254.169.254/v1/', 'http://localhost/v1/', 'https://attacker.example/v1/', 'file:///tmp/', 'http://127.0.0.1/v1/?url=http://evil', 'http://user:password@127.0.0.1/v1/', 'http://127.0.0.1/v1/#fragment'])('rejects an untrusted local target %s', (baseURL) => {
-    expect(() => parseAudioConfig({ profile: 'LOCAL', local: { baseURL, model: 'local' } })).toThrow('Invalid companion audio configuration.')
+  it.each(['cloud', 'cloud-mura-voice'])('rejects a local speech model in the %s profile', (profile) => {
+    expect(() => config({ profile, local: 'http://127.0.0.1:11437/v1/', chain: ['groq-whisper-turbo', 'local-whisper'] })).toThrow('does not allow the local model "local-whisper"')
   })
 
-  it('loads only the separate audio file and treats an absent file as disabled', async () => {
-    const home = await mkdtemp(join(tmpdir(), 'companion-audio-config-'))
-    directories.push(home)
-    const path = audioConfigPath(home)
+  it('keeps a hybrid local speech model behind every cloud model', () => {
+    expect(() => config({ profile: 'hybrid', local: 'http://127.0.0.1:11437/v1/', chain: ['local-whisper', 'groq-whisper-turbo'] })).toThrow('must come after every cloud model')
 
-    expect(await loadAudioConfig(path)).toBeUndefined()
-    await writeFile(path, JSON.stringify({ profile: 'LOCAL', local: { baseURL: 'http://127.0.0.1:11996/v1/', model: 'local' } }))
-    expect((await loadAudioConfig(path))?.profile).toBe('LOCAL')
-    await writeFile(path, '{ invalid json secret-data')
-    await expect(loadAudioConfig(path)).rejects.toThrow('Invalid companion audio configuration.')
+    const routes = resolveAudioRoutes(config({ profile: 'hybrid', local: 'http://127.0.0.1:11437/v1/', chain: ['groq-whisper-turbo', 'local-whisper'] }))!
+
+    expect(routes.aliases.get('companion-stt')!.map(model => model.locality)).toEqual(['cloud', 'local'])
   })
 
-  it('loads the protected Groq key before the inherited user environment', async () => {
-    vi.stubEnv('GROQ_API_KEY', 'environment-key')
-    const store = new MemorySecretStore()
-    await store.write('provider-groq', 'protected-key')
-
-    expect(await loadGroqKey(store, 'provider-groq')).toBe('protected-key')
+  it.each(['http://192.168.1.1/v1/', 'http://169.254.169.254/v1/', 'http://localhost/v1/', 'https://attacker.example/v1/', 'http://127.0.0.1/v1/?url=http://evil', 'http://user:password@127.0.0.1/v1/', 'http://127.0.0.1/v1/#fragment'])('rejects a local speech target that is not a literal loopback address: %s', (baseURL) => {
+    // A query or fragment already fails the provider schema, which requires a URL that ends with a slash.
+    expect(() => resolveAudioRoutes(config({ profile: 'local', local: baseURL, chain: ['local-whisper'] }))).toThrow(/literal loopback address|Invalid companion-core configuration/)
   })
 
-  it('loads GROQ_API_KEY when the protected Groq key is absent', async () => {
-    vi.stubEnv('GROQ_API_KEY', ' environment-key ')
-
-    expect(await loadGroqKey(new MemorySecretStore(), 'provider-groq')).toBe('environment-key')
+  it.each([{ timeoutMs: 0 }, { maxRequestBytes: 100 * 1024 * 1024 }, { maxResponseBytes: 8 * 1024 * 1024 }])('rejects audio limits outside their bounds %j', (audio) => {
+    expect(() => config({ audio })).toThrow('Invalid companion-core configuration')
   })
 })

@@ -27,16 +27,54 @@ function upload(fields: Record<string, string | undefined> = {}): FormData {
   return body
 }
 
-async function setup(options: { audioConfig?: Parameters<typeof startGateway>[0]['audioConfig'], keys?: ReadonlyMap<string, string> } = {}) {
+/** Groq reports a 448-token context for its Whisper models. Speech recognition ignores the value. */
+const WHISPER = { contextWindow: 448, streaming: false, tools: false }
+
+interface SttOptions {
+  profile?: 'local' | 'cloud' | 'cloud-mura-voice' | 'hybrid'
+  /** An explicit loopback speech model. The local and hybrid profiles use it. */
+  local?: { baseURL: string, model: string, keyRef?: string }
+  audio?: { maxRequestBytes?: number, maxResponseBytes?: number, timeoutMs?: number }
+}
+
+/** One `speech-recognition` alias: the two Groq Whisper models, then the local model when one is given. */
+function sttConfig(options: SttOptions = {}) {
+  const profile = options.profile ?? 'cloud-mura-voice'
+  const cloud = profile !== 'local'
+  return parseConfig({
+    port: 0,
+    allowedOrigins: [ALLOWED_ORIGIN],
+    store: { path: ':memory:' },
+    profile,
+    audio: options.audio,
+    providers: {
+      ...(cloud ? { groq: { baseURL: 'https://api.groq.com/openai/v1/', keyRef: 'provider-groq' } } : {}),
+      ...(options.local ? { 'local-stt': { baseURL: options.local.baseURL, keyRef: options.local.keyRef, locality: 'local' } } : {}),
+    },
+    models: {
+      ...(cloud
+        ? {
+            'groq-whisper-turbo': { provider: 'groq', model: 'whisper-large-v3-turbo', capabilities: WHISPER },
+            'groq-whisper': { provider: 'groq', model: 'whisper-large-v3', capabilities: WHISPER },
+          }
+        : {}),
+      ...(options.local ? { 'local-whisper': { provider: 'local-stt', model: options.local.model, capabilities: WHISPER } } : {}),
+    },
+    aliases: {
+      'companion-stt': { role: 'speech-recognition', chain: [...(cloud ? ['groq-whisper-turbo', 'groq-whisper'] : []), ...(options.local ? ['local-whisper'] : [])] },
+    },
+  })
+}
+
+async function setup(options: { stt?: SttOptions, keys?: ReadonlyMap<string, string> } = {}) {
   const provider = await startFakeProvider()
   cleanup.push(provider.close)
   const logs: string[] = []
-  // The configuration pins Groq. The network boundary maps it to a real fake HTTP server for these tests.
+  // The configuration names the real Groq host. The network boundary maps it to a fake HTTP server for these tests.
   const gateway = await startGateway({
-    config: parseConfig({ port: 0, allowedOrigins: [ALLOWED_ORIGIN], providers: {}, aliases: {} }),
+    config: sttConfig(options.stt),
     credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN },
     providerKeys: options.keys ?? new Map([['provider-groq', TEST_PROVIDER_KEY]]),
-    audioConfig: options.audioConfig ?? { profile: 'CLOUD' },
     audioFetch: (input, init) => fetch(new URL(String(input)).hostname === 'api.groq.com' ? new URL('audio/transcriptions', provider.baseURL) : input, init),
     writeLog: line => logs.push(line),
   })
@@ -176,7 +214,7 @@ describe('audio transcriptions', () => {
   })
 
   it('rejects oversized uploads before provider forwarding', async () => {
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'CLOUD', maxRequestBytes: 1024 } })
+    const { gateway, provider } = await setup({ stt: { audio: { maxRequestBytes: 1024 } } })
     const body = upload()
     body.set('file', new Blob([new Uint8Array(2048)], { type: 'audio/wav' }), 'audio.wav')
     const response = await transcribe(gateway, body)
@@ -186,7 +224,7 @@ describe('audio transcriptions', () => {
   })
 
   it('times out while the provider response body is pending', async () => {
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'CLOUD', timeoutMs: 80 } })
+    const { gateway, provider } = await setup({ stt: { audio: { timeoutMs: 80 } } })
     provider.setHandler((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.write('{"text":')
@@ -201,7 +239,7 @@ describe('audio transcriptions', () => {
   })
 
   it('stops during a slow upload when the request deadline expires', async () => {
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'CLOUD', timeoutMs: 80 } })
+    const { gateway, provider } = await setup({ stt: { audio: { timeoutMs: 80 } } })
     const result = await new Promise<{ status: number, body: string }>((resolve, reject) => {
       const req = request(new URL('audio/transcriptions', gateway.baseURL), {
         method: 'POST',
@@ -266,7 +304,7 @@ describe('audio transcriptions', () => {
   })
 
   it('bounds the provider response without returning partial data', async () => {
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'CLOUD', maxResponseBytes: 1024 } })
+    const { gateway, provider } = await setup({ stt: { audio: { maxResponseBytes: 1024 } } })
     provider.setHandler((_req, res) => {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({ text: 'x'.repeat(2048) }))
@@ -284,7 +322,7 @@ describe('audio transcriptions', () => {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end('{"text":"local"}')
     })
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'LOCAL', local: { baseURL: local.baseURL, model: 'explicit-local-model' } }, keys: new Map() })
+    const { gateway, provider } = await setup({ stt: { profile: 'local', local: { baseURL: local.baseURL, model: 'explicit-local-model' } }, keys: new Map() })
     const response = await transcribe(gateway)
 
     expect(response.status).toBe(200)
@@ -295,8 +333,8 @@ describe('audio transcriptions', () => {
     expect(local.requests[0].headers.authorization).toBeUndefined()
   })
 
-  it.each(['CLOUD', 'cloud-mura', 'HYBRID'] as const)('keeps %s cloud-only without an explicit local fallback', async (profile) => {
-    const { gateway, provider } = await setup({ audioConfig: { profile } })
+  it.each(['cloud', 'cloud-mura-voice', 'hybrid'] as const)('keeps %s cloud-only without an explicit local fallback', async (profile) => {
+    const { gateway, provider } = await setup({ stt: { profile } })
     provider.setHandler((_req, res) => {
       res.writeHead(503, { 'content-type': 'application/json' })
       res.end('{"error":{"message":"temporarily unavailable","code":"unavailable"}}')
@@ -314,7 +352,7 @@ describe('audio transcriptions', () => {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end('{"text":"hybrid-local"}')
     })
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'HYBRID', local: { baseURL: local.baseURL, model: 'hybrid-model' } } })
+    const { gateway, provider } = await setup({ stt: { profile: 'hybrid', local: { baseURL: local.baseURL, model: 'hybrid-model' } } })
     provider.setHandler((_req, res) => {
       res.writeHead(429, { 'content-type': 'application/json' })
       res.end('{"error":{"message":"rate limit","code":"rate_limit_exceeded"}}')
@@ -335,7 +373,7 @@ describe('audio transcriptions', () => {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end('{"text":"local"}')
     })
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'HYBRID', local: { baseURL: local.baseURL, model: 'local' } }, keys: new Map() })
+    const { gateway, provider } = await setup({ stt: { profile: 'hybrid', local: { baseURL: local.baseURL, model: 'local' } }, keys: new Map() })
     const response = await transcribe(gateway)
 
     expect(response.status).toBe(200)
@@ -434,7 +472,7 @@ describe('audio transcriptions', () => {
   })
 
   it('keeps a successful cloud request usable when an optional local key is absent', async () => {
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'HYBRID', local: { baseURL: 'http://127.0.0.1:11996/v1/', model: 'local', keyRef: 'local-key' } } })
+    const { gateway, provider } = await setup({ stt: { profile: 'hybrid', local: { baseURL: 'http://127.0.0.1:11996/v1/', model: 'local', keyRef: 'local-key' } } })
     const response = await transcribe(gateway)
 
     expect(response.status).toBe(200)
@@ -455,9 +493,9 @@ describe('audio transcriptions', () => {
     expect(body).not.toContain(TEST_PROVIDER_KEY)
   })
 
-  it('keeps audio disabled when the separate configuration is absent', async () => {
+  it('keeps audio disabled when no alias has the speech-recognition role', async () => {
     const gateway = await startGateway({
-      config: parseConfig({ port: 0, providers: {}, aliases: {} }),
+      config: parseConfig({ port: 0, store: { path: ':memory:' }, providers: {}, aliases: {} }),
       credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN },
       providerKeys: new Map(),
       writeLog: () => {},
@@ -510,7 +548,7 @@ describe('audio transcriptions', () => {
   it('keeps the same deadline across Groq model fallback and skips local after expiry', async () => {
     const local = await startFakeProvider()
     cleanup.push(local.close)
-    const { gateway, provider } = await setup({ audioConfig: { profile: 'HYBRID', timeoutMs: 200, local: { baseURL: local.baseURL, model: 'local' } } })
+    const { gateway, provider } = await setup({ stt: { profile: 'hybrid', audio: { timeoutMs: 200 }, local: { baseURL: local.baseURL, model: 'local' } } })
     provider.setHandler((_req, res, received) => {
       if (received.body.includes('whisper-large-v3-turbo')) {
         res.writeHead(404, { 'content-type': 'application/json' })
@@ -527,5 +565,18 @@ describe('audio transcriptions', () => {
     expect(provider.requests).toHaveLength(2)
     expect(local.requests).toHaveLength(0)
     await provider.requests[1].closed
+  })
+
+  it('refuses chat completions on a speech-recognition alias without contacting a provider', async () => {
+    const { gateway, provider } = await setup()
+    const response = await fetch(new URL('chat/completions', gateway.baseURL), {
+      method: 'POST',
+      headers: { 'authorization': `Bearer ${TEST_INFERENCE_TOKEN}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'companion-stt', messages: [{ role: 'user', content: 'hello' }] }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.text()).toContain('model_not_supported')
+    expect(provider.requests).toHaveLength(0)
   })
 })

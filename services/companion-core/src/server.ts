@@ -1,7 +1,6 @@
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
-import type { AudioConfigInput } from './audio/audio-config'
 import type { GatewayCredentials } from './auth/credentials'
 import type { CompanionConfig } from './config/config'
 import type { GatewayLogEvent } from './gateway/http'
@@ -11,10 +10,10 @@ import process from 'node:process'
 
 import { createServer } from 'node:http'
 
-import { parseAudioConfig } from './audio/audio-config'
+import { resolveAudioRoutes } from './audio/audio-config'
 import { proxyTranscription } from './audio/transcriptions'
 import { createBearerCheck } from './auth/credentials'
-import { LOOPBACK_HOST } from './config/config'
+import { LOOPBACK_HOST, servesChatCompletions } from './config/config'
 import { proxyChatCompletion } from './gateway/chat-completions'
 import { sendError } from './gateway/http'
 import { opsStatus } from './gateway/ops-status'
@@ -29,8 +28,6 @@ export interface GatewayOptions {
   credentials: GatewayCredentials
   /** Provider API keys by `keyRef`. */
   providerKeys: ReadonlyMap<string, string>
-  /** Separate audio configuration. An absent value disables STT. */
-  audioConfig?: AudioConfigInput
   /** Network boundary for audio providers. @default globalThis.fetch */
   audioFetch?: typeof fetch
   /** Receives one redacted line per request. Defaults to stderr. */
@@ -64,7 +61,7 @@ export interface RunningGateway {
  */
 export async function startGateway(options: GatewayOptions): Promise<RunningGateway> {
   const { config } = options
-  const audioConfig = options.audioConfig === undefined ? undefined : parseAudioConfig(options.audioConfig)
+  const audioRoutes = resolveAudioRoutes(config)
   const redact = createRedactor([options.credentials.inference, options.credentials.ops, ...options.providerKeys.values()])
   const writeLog = options.writeLog ?? (line => process.stderr.write(`${line}\n`))
   const log = (event: GatewayLogEvent) => writeLog(redact(JSON.stringify({ time: new Date().toISOString(), ...event })))
@@ -149,11 +146,10 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
 
     if (method === 'GET' && path === '/v1/models') {
       // AIRI lists models when it validates the provider and when the user picks a model.
-      // `alias:model` names pin one model of the chain, which is how a user overrides the routing from AIRI's model list.
-      const ids = Object.entries(config.aliases).flatMap(([name, alias]) => [name, ...alias.chain.map(model => `${name}:${model}`)])
+      // `alias:model` names pin one model of a chat chain, which is how a user overrides the routing from AIRI's model list.
+      // A speech-recognition alias has no pins, because its fallback rules are fixed.
+      const ids = Object.entries(config.aliases).flatMap(([name, alias]) => [name, ...(servesChatCompletions(alias) ? alias.chain.map(model => `${name}:${model}`) : [])])
       const data = ids.map(id => ({ id, object: 'model', created: 0, owned_by: 'companion-core' }))
-      if (audioConfig && !data.some(model => model.id === 'companion-stt'))
-        data.push({ id: 'companion-stt', object: 'model', created: 0, owned_by: 'companion-core' })
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({ object: 'list', data }))
       log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
@@ -161,9 +157,9 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
     }
 
     if (method === 'POST' && path === '/v1/audio/transcriptions') {
-      if (!audioConfig)
+      if (!audioRoutes)
         return reject(503, 'audio_not_configured', 'Audio transcription is not configured.')
-      await proxyTranscription(req, res, { config: audioConfig, providerKeys: options.providerKeys, redact, log, transport: options.audioFetch })
+      await proxyTranscription(req, res, { routes: audioRoutes, providerKeys: options.providerKeys, redact, log, transport: options.audioFetch })
       return
     }
 

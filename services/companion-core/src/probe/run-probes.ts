@@ -2,7 +2,7 @@ import type { CompanionConfig } from '../config/config'
 import type { ProbeResult } from './probe'
 import type { ProbeStore } from './store'
 
-import { resolveModel } from '../config/config'
+import { resolveModel, servesChatCompletions } from '../config/config'
 import { probeModel } from './probe'
 
 export interface RunProbesOptions {
@@ -30,7 +30,8 @@ export interface RunProbesOptions {
  *   -> ProbeStore.set (./store)
  */
 export async function runProbes(config: CompanionConfig, providerKeys: ReadonlyMap<string, string>, store: ProbeStore, options: RunProbesOptions = {}): Promise<ProbeResult[]> {
-  const chainIds = [...new Set(Object.values(config.aliases).flatMap(alias => alias.chain))]
+  // The probe sends chat completions, so it skips the chains of speech-recognition and other non-chat aliases.
+  const chainIds = [...new Set(Object.values(config.aliases).filter(servesChatCompletions).flatMap(alias => alias.chain))]
   const wanted = options.modelIds ?? chainIds
   const results: ProbeResult[] = []
 

@@ -33,6 +33,7 @@ The file is `%LOCALAPPDATA%\AIRI-Companion\companion-core.json`. Provider and mo
 | `models` | One entry per model: `provider`, the provider's `model` name, `capabilities`, and published `limits`. |
 | `aliases` | A `role`, an ordered `chain` of model ids, and the prompt targets. |
 | `routing` | Sticky time, first-byte timeout, cool-downs, and the token safety margin. |
+| `audio` | Upload, response, and deadline bounds for transcription. |
 | `store` | The SQLite file. It defaults to `companion-core.sqlite` next to the configuration. |
 
 ```json
@@ -176,55 +177,53 @@ To pin one model from AIRI's model list, choose `companion-chat:<model id>`.
 
 ## Audio transcription
 
-Create `companion-audio.json` beside `companion-core.json`. `COMPANION_CORE_HOME` also applies to this file.
-An absent audio file disables transcription and omits `companion-stt` from `/v1/models`.
-
-For Groq transcription, use:
-
-```json
-{
-  "profile": "CLOUD"
-}
-```
-
-The CLI loads the `provider-groq` DPAPI secret first. Then it checks inherited `GROQ_API_KEY` and the Windows user environment.
-The key stays inside Companion Core. To store a key from the environment, run:
-
-```powershell
-rtk proxy pnpm -F @proj-airi/companion-core cli secret-import provider-groq --from-env GROQ_API_KEY
-```
-
-| Profile | Audio target |
-| --- | --- |
-| `CLOUD`, `cloud-mura` | Groq only. A local target is rejected. |
-| `LOCAL` | One explicit loopback target. Companion Core does not start its inference server. |
-| `HYBRID` | Groq first. A local fallback requires an explicit `local` entry. |
-
-For an explicit local target or HYBRID fallback, use:
+Speech recognition uses the same configuration file, providers, keys, and profile as chat.
+An alias with `"role": "speech-recognition"` serves `POST /v1/audio/transcriptions`. Its `chain` lists the speech models, best first.
+Without such an alias, transcription is off and the endpoint returns `503 audio_not_configured`.
 
 ```json
 {
-  "profile": "HYBRID",
-  "local": {
-    "baseURL": "http://127.0.0.1:11437/v1/",
-    "model": "your-local-stt-model"
+  "profile": "cloud-mura-voice",
+  "providers": {
+    "groq": { "baseURL": "https://api.groq.com/openai/v1/", "keyRef": "provider-groq" }
+  },
+  "models": {
+    "groq-whisper-turbo": { "provider": "groq", "model": "whisper-large-v3-turbo", "capabilities": { "contextWindow": 448, "streaming": false, "tools": false } },
+    "groq-whisper": { "provider": "groq", "model": "whisper-large-v3", "capabilities": { "contextWindow": 448, "streaming": false, "tools": false } }
+  },
+  "aliases": {
+    "companion-stt": { "role": "speech-recognition", "chain": ["groq-whisper-turbo", "groq-whisper"] }
   }
 }
 ```
 
-Set `model` to the model your local server accepts. For local-only transcription, change `profile` to `LOCAL`.
-Local targets accept only literal `127.0.0.1` or `::1` addresses. The Groq endpoint is fixed, and redirects fail.
+Groq reports a 448-token context for Whisper. Speech recognition ignores `capabilities`, but the model schema requires them.
 
-Groq uses `whisper-large-v3-turbo`, then `whisper-large-v3` when the first model is unavailable.
-Cloud rate limits return their status and `Retry-After`. An explicit HYBRID local target can handle cloud rate limits or availability failures.
-The client model alias cannot change the profile or the provider model.
+The compute profile limits the speech chain like any other chain:
+
+| Profile | Speech models |
+| --- | --- |
+| `cloud`, `cloud-mura-voice` | Cloud models only. Configuration loading rejects a local speech model. |
+| `local` | Local models only. Companion Core does not start their inference server. |
+| `hybrid` | Cloud models first. A local model after every cloud model is the explicit fallback. |
+
+A local speech provider needs a literal `127.0.0.1` or `[::1]` base URL. Redirects fail.
+
+Fallback rules:
+
+- A cloud model moves on to the next cloud model only when the provider reports that model as unavailable.
+- A cloud rate limit returns its status and `Retry-After`. It never spends the quota of another cloud model.
+- A local model in the chain handles cloud rate limits, outages, and network failures.
+- A cloud model without its key is skipped. A chain with no usable model returns `503 audio_provider_key_missing`.
+
+The speech alias appears in `GET /v1/models` without `alias:model` pins. A chat request to it returns `400 model_not_supported`, and probes skip its models.
 
 In AIRI's OpenAI-compatible transcription provider, set the gateway base URL, inference token, and model `companion-stt`.
-`POST /v1/audio/transcriptions` accepts multipart `file` and `model` fields. URL input is rejected.
+`POST /v1/audio/transcriptions` accepts multipart `file` and `model` fields. The `model` field names the alias. URL input is rejected.
 Optional fields are `language` (ISO 639-1), `prompt`, `temperature` (0–1), and `response_format` (`json`, `text`, or `verbose_json`).
 Each request keeps audio in memory. Filenames change to `audio.<format>`, while the audio bytes and format stay intact.
 
-The defaults are `timeoutMs: 15000`, `maxRequestBytes: 26214400`, and `maxResponseBytes: 1048576`.
+The `audio` section sets the bounds. The defaults are `timeoutMs: 15000`, `maxRequestBytes: 26214400`, and `maxResponseBytes: 1048576`.
 The upload limit includes multipart headers. One deadline covers upload, fallback attempts, and the complete provider response.
 Client cancellation stops upload or the provider request. Logs contain metadata, with no audio, transcript, prompt, or key.
 
@@ -249,4 +248,4 @@ pnpm -F @proj-airi/companion-core typecheck
 The tests use a fake provider for streaming, chunk boundaries, tool calls, images, provider errors, cancellation, authentication, Host and Origin checks, log redaction, and a DPAPI round trip.
 They also cover token budgeting at every target size, whole-turn eligibility, the quota ledger, failover before and after the first byte, stickiness, compute profiles, probes, and the persona checks.
 The state database uses the built-in `node:sqlite` module. Node 22 prints an experimental warning once at start.
-Audio tests also cover upload bounds, model fallback, profile isolation, three response formats, and request deadlines.
+Audio tests also cover upload bounds, speech chain fallback, profile isolation, three response formats, and request deadlines.

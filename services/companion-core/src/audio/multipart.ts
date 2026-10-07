@@ -4,6 +4,8 @@ import { Buffer, File } from 'node:buffer'
 
 /** The accepted upload contains one audio file and only supported transcription options. */
 export interface TranscriptionUpload {
+  /** The `speech-recognition` alias that the client named. */
+  alias: string
   file: Blob
   filename: string
   sourceFilename: string
@@ -20,8 +22,11 @@ export class AudioRequestError extends Error {
   }
 }
 
-/** Reads a bounded multipart upload in memory. Abort releases the retained chunks and stops the request reader. */
-export async function readUpload(req: IncomingMessage, limit: number, signal: AbortSignal): Promise<TranscriptionUpload> {
+/**
+ * Reads a bounded multipart upload in memory. Abort releases the retained chunks and stops the request reader.
+ * The `model` field must name one of `aliases`. It selects a configured chain and never a provider model.
+ */
+export async function readUpload(req: IncomingMessage, limit: number, signal: AbortSignal, aliases: ReadonlySet<string>): Promise<TranscriptionUpload> {
   const contentType = req.headers['content-type'] ?? ''
   const boundary = /^multipart\/form-data\s*;\s*boundary=(?:"([\w'()+,./:=?-]{1,70})"|([\w'()+,./:=?-]{1,70}))\s*$/i.exec(contentType)
   if (!boundary)
@@ -79,8 +84,9 @@ export async function readUpload(req: IncomingMessage, limit: number, signal: Ab
     offset = next + delimiter.length
   }
   signal.throwIfAborted()
-  if (form.get('model') !== 'companion-stt')
-    throw new AudioRequestError(404, 'model_not_found', 'Use the companion-stt model alias.')
+  const alias = form.get('model')
+  if (typeof alias !== 'string' || !aliases.has(alias))
+    throw new AudioRequestError(404, 'model_not_found', 'Use a configured speech-recognition alias, for example companion-stt.')
   const file = form.get('file')
   if (!file || typeof file === 'string' || file.size === 0)
     throw new AudioRequestError(400, 'audio_file_required', 'An audio file is required. URL input is not supported.')
@@ -99,6 +105,7 @@ export async function readUpload(req: IncomingMessage, limit: number, signal: Ab
   const filename = safeFilename(file.name, file.type)
   const mimeTypes: Record<string, string> = { flac: 'audio/flac', mp3: 'audio/mpeg', mp4: 'video/mp4', mpeg: 'audio/mpeg', mpga: 'audio/mpeg', m4a: 'audio/mp4', ogg: 'audio/ogg', wav: 'audio/wav', webm: 'audio/webm' }
   return {
+    alias,
     file: new Blob([file], { type: mimeTypes[filename.slice(6)] }),
     filename,
     sourceFilename: file.name,

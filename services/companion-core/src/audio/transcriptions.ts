@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 
 import type { GatewayLogEvent } from '../gateway/http'
 import type { TranscriptionTarget } from '../providers/groq-transcription'
-import type { AudioConfig } from './audio-config'
+import type { AudioRoutes, TranscriptionModel } from './audio-config'
 
 import { Buffer } from 'node:buffer'
 
@@ -12,26 +12,31 @@ import { sendTranscription } from '../providers/groq-transcription'
 import { AudioRequestError, readUpload } from './multipart'
 
 interface TranscriptionContext {
-  config: AudioConfig
+  routes: AudioRoutes
   providerKeys: ReadonlyMap<string, string>
   redact: (text: string) => string
   log: (event: GatewayLogEvent) => void
   transport?: typeof fetch
 }
 
+type RoutedTarget = TranscriptionTarget & Pick<TranscriptionModel, 'keyRef' | 'locality'>
+
 /**
  * Owns one deadline and cancellation signal from upload through the complete provider response.
- * Each request keeps audio only in memory. LOCAL sends only to its configured loopback target.
- * Cloud profiles use Groq only. HYBRID permits a final local attempt only when its configuration contains a local target.
+ * Each request keeps audio only in memory. The alias chain and the compute profile fix every target.
+ * A cloud model moves on to the next cloud model only when its model is unavailable. A rate limit is returned.
+ * A local model, which only a hybrid or local profile allows, handles rate limits, outages, and network failures.
  */
 export async function proxyTranscription(req: IncomingMessage, res: ServerResponse, context: TranscriptionContext): Promise<void> {
   const startedAt = performance.now()
+  const { limits } = context.routes
   const controller = new AbortController()
   let timedOut = false
+  let alias: string | undefined
   const timeout = setTimeout(() => {
     timedOut = true
     controller.abort()
-  }, context.config.timeoutMs)
+  }, limits.timeoutMs)
   const clientClosed = () => {
     if (!res.writableFinished)
       controller.abort()
@@ -39,27 +44,28 @@ export async function proxyTranscription(req: IncomingMessage, res: ServerRespon
   req.on('aborted', clientClosed)
   req.on('error', clientClosed)
   res.on('close', clientClosed)
-  const log = (status: number, outcome: GatewayLogEvent['outcome'], reason?: string) => context.log({ method: 'POST', path: '/v1/audio/transcriptions', alias: 'companion-stt', status, outcome, reason, durationMs: Math.round(performance.now() - startedAt) })
+  const log = (status: number, outcome: GatewayLogEvent['outcome'], reason?: string) => context.log({ method: 'POST', path: '/v1/audio/transcriptions', alias, status, outcome, reason, durationMs: Math.round(performance.now() - startedAt) })
   try {
-    const upload = await readUpload(req, context.config.maxRequestBytes, controller.signal)
+    const upload = await readUpload(req, limits.maxRequestBytes, controller.signal, new Set(context.routes.aliases.keys()))
+    alias = upload.alias
     const redactInput = createRedactor([upload.sourceFilename, ...(upload.prompt ? [upload.prompt] : [])])
-    const targets = routingTargets(context)
+    const targets = routingTargets(context.routes.aliases.get(upload.alias) ?? [], context.providerKeys)
     let response: Response | undefined
     let bytes: Buffer | undefined
     for (let index = 0; index < targets.length; index++) {
       const target = targets[index]
       controller.signal.throwIfAborted()
       try {
-        if (target.url.hostname !== 'api.groq.com' && context.config.local?.keyRef && !target.apiKey)
+        if (target.locality === 'local' && target.keyRef && !target.apiKey)
           throw new AudioRequestError(503, 'audio_provider_key_missing', 'The local audio API key is not configured.')
         response = await sendTranscription(target, upload, controller.signal, context.transport)
-        bytes = await readResponse(response, context.config.maxResponseBytes, controller.signal)
+        bytes = await readResponse(response, limits.maxResponseBytes, controller.signal)
       }
       catch (error) {
         if (controller.signal.aborted || error instanceof AudioRequestError)
           throw error
-        // Network failures can use only an explicitly configured HYBRID local target. They do not retry the same cloud service.
-        const localIndex = targets.findIndex((next, position) => position > index && next.url.hostname !== 'api.groq.com')
+        // A network failure moves only to a local model. It does not retry the same cloud service.
+        const localIndex = targets.findIndex((next, position) => position > index && next.locality === 'local')
         if (localIndex >= 0) {
           index = localIndex - 1
           continue
@@ -73,17 +79,17 @@ export async function proxyTranscription(req: IncomingMessage, res: ServerRespon
         break
       const providerCode = errorFields(bytes).code
       const modelUnavailable = response.status === 503 || ([400, 404].includes(response.status) && ['model_not_found', 'model_not_available', 'unsupported_model'].includes(providerCode))
-      const localFallback = next.url.hostname !== 'api.groq.com' && (response.status === 429 || response.status >= 500 || modelUnavailable)
-      if (next.url.hostname === 'api.groq.com' && !modelUnavailable) {
-        // A rate limit is returned directly unless HYBRID explicitly grants a local fallback. No cloud quota is bypassed.
-        const localIndex = targets.findIndex((target, position) => position > index && target.url.hostname !== 'api.groq.com')
+      const localFallback = next.locality === 'local' && (response.status === 429 || response.status >= 500 || modelUnavailable)
+      if (next.locality === 'cloud' && !modelUnavailable) {
+        // A rate limit is returned unless the chain holds a local model. No cloud quota is bypassed.
+        const localIndex = targets.findIndex((candidate, position) => position > index && candidate.locality === 'local')
         if (localIndex >= 0 && (response.status === 429 || response.status >= 500)) {
           index = localIndex - 1
           continue
         }
         break
       }
-      if (next.url.hostname !== 'api.groq.com' && !localFallback)
+      if (next.locality === 'local' && !localFallback)
         break
     }
     controller.signal.throwIfAborted()
@@ -146,23 +152,17 @@ export async function proxyTranscription(req: IncomingMessage, res: ServerRespon
   }
 }
 
-function routingTargets(context: TranscriptionContext): TranscriptionTarget[] {
-  const { config, providerKeys } = context
-  const targets: TranscriptionTarget[] = []
-  if (config.profile !== 'LOCAL') {
-    const key = providerKeys.get(config.cloud.keyRef)
-    if (key) {
-      for (const model of new Set(config.cloud.models))
-        targets.push({ url: new URL('https://api.groq.com/openai/v1/audio/transcriptions'), model, apiKey: key })
-    }
-    else if (config.profile !== 'HYBRID' || !config.local) {
-      throw new AudioRequestError(503, 'audio_provider_key_missing', 'The Groq API key is not configured.')
-    }
+/** A cloud model without its key is skipped. A chain with nothing left is a visible configuration error. */
+function routingTargets(chain: readonly TranscriptionModel[], providerKeys: ReadonlyMap<string, string>): RoutedTarget[] {
+  const targets: RoutedTarget[] = []
+  for (const model of chain) {
+    const apiKey = model.keyRef ? providerKeys.get(model.keyRef) : undefined
+    if (model.locality === 'cloud' && !apiKey)
+      continue
+    targets.push({ url: model.url, model: model.model, apiKey, keyRef: model.keyRef, locality: model.locality })
   }
-  if (config.local && ['LOCAL', 'HYBRID'].includes(config.profile)) {
-    const key = config.local.keyRef ? providerKeys.get(config.local.keyRef) : undefined
-    targets.push({ url: new URL('audio/transcriptions', config.local.baseURL), model: config.local.model, apiKey: key })
-  }
+  if (targets.length === 0)
+    throw new AudioRequestError(503, 'audio_provider_key_missing', 'The cloud audio API key is not configured.')
   return targets
 }
 
