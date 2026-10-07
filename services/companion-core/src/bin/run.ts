@@ -9,7 +9,10 @@ import { errorMessageFrom } from '@moeru/std'
 import { INFERENCE_TOKEN_SECRET, loadOrCreateCredentials } from '../auth/credentials'
 import { DpapiSecretStore } from '../auth/secret-store'
 import { configPath, loadConfig, resolveHome, writeStarterConfig } from '../config/config'
+import { runProbes } from '../probe/run-probes'
+import { ProbeStore } from '../probe/store'
 import { startGateway } from '../server'
+import { openDatabase } from '../store/database'
 
 const USAGE = `Usage: companion-core <command>
 
@@ -17,6 +20,8 @@ Commands:
   init                                    Create the starter configuration and the gateway tokens.
   serve                                   Start the gateway on 127.0.0.1.
   secret-import <name> --from-env <VAR>   Store the value of environment variable VAR as protected secret <name>.
+  probe [model ...] [--deep]              Test each model of the alias chains and store what it supports.
+                                          --deep also finds the largest prompt that each model accepts. It costs quota.
   token                                   Print the inference token. Paste it into the AIRI provider API key field.`
 
 /**
@@ -32,9 +37,9 @@ async function main(argv: string[]): Promise<void> {
   const { positionals, values } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { 'from-env': { type: 'string' } },
+    options: { 'from-env': { type: 'string' }, 'deep': { type: 'boolean' } },
   })
-  const [command, name] = positionals
+  const [command, name, ...more] = positionals
   const home = resolveHome()
   const store = new DpapiSecretStore(join(home, 'secrets'))
 
@@ -67,6 +72,36 @@ async function main(argv: string[]): Promise<void> {
       }
       process.once('SIGINT', stop)
       process.once('SIGTERM', stop)
+      return
+    }
+    case 'probe': {
+      const config = await loadConfig()
+      const providerKeys = new Map<string, string>()
+      for (const provider of Object.values(config.providers)) {
+        const key = provider.keyRef ? await store.read(provider.keyRef) : undefined
+        if (provider.keyRef && key)
+          providerKeys.set(provider.keyRef, key)
+      }
+      const db = openDatabase(config.store.path ?? join(home, 'companion-core.sqlite'))
+      const modelIds = [name, ...more].filter((id): id is string => Boolean(id))
+      let failed = 0
+      const results = await runProbes(config, providerKeys, new ProbeStore(db, Date.now), {
+        modelIds: modelIds.length > 0 ? modelIds : undefined,
+        gapMs: 2000,
+        deepStepsTokens: values.deep ? [2000, 8000, 16_000, 32_000, 64_000, 128_000] : undefined,
+        onResult: (result) => {
+          failed += result.working ? 0 : 1
+          // One line per model. It holds capabilities and numbers, and no message text or key.
+          console.info(`${result.modelId.padEnd(24)} ${result.working ? 'working' : 'NOT WORKING'}  exists=${result.exists ?? '?'} stream=${result.streaming} tools=${result.tools}${result.toolCallIndexMissing ? '(no index)' : ''} images=${result.images} structured=${result.structuredOutput} firstByte=${result.firstByteMs ?? '?'}ms${result.maxAcceptedPromptTokens ? ` maxPrompt=${result.maxAcceptedPromptTokens}` : ''}`)
+          for (const [test, reason] of Object.entries(result.failures))
+            console.info(`    ${test}: ${reason}`)
+        },
+      })
+      db.close()
+      if (results.length === 0)
+        console.info('No model to probe. The profile can exclude local models.')
+      if (failed > 0)
+        process.exitCode = 1
       return
     }
     case 'secret-import': {

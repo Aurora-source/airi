@@ -4,6 +4,7 @@ import type { CompanionConfig, ModelCapabilities, ResolvedModel } from '../confi
 import { join } from 'node:path'
 
 import { resolveHome } from '../config/config'
+import { ProbeStore, withProbedCapabilities } from '../probe/store'
 import { QuotaLedger } from '../quota/ledger'
 import { ModelHealth } from '../routing/health'
 import { Router } from '../routing/router'
@@ -33,7 +34,11 @@ export interface GatewayRuntimeOptions {
   config: CompanionConfig
   /** Provider API keys by `keyRef`. */
   providerKeys: ReadonlyMap<string, string>
-  /** Capabilities that a probe measured. They replace the configured ones. */
+  /**
+   * Overrides where the router reads capabilities from.
+   *
+   * @default the stored probe result of the model over its configured capabilities
+   */
   capabilitiesOf?: (model: ResolvedModel) => ModelCapabilities
   now?: () => number
 }
@@ -48,6 +53,7 @@ export class GatewayRuntime {
   readonly ledger: QuotaLedger
   readonly health: ModelHealth
   readonly sticky: StickyStore
+  readonly probes: ProbeStore
   readonly router: Router
   readonly now: () => number
   private readonly db: ReturnType<typeof openDatabase>
@@ -64,13 +70,14 @@ export class GatewayRuntime {
       idleMs: options.config.routing.stickyIdleMinutes * 60_000,
       resetHour: options.config.routing.stickyResetHour,
     })
+    this.probes = new ProbeStore(this.db, this.now)
     this.router = new Router({
       config: options.config,
       ledger: this.ledger,
       health: this.health,
       sticky: this.sticky,
       hasKey: model => !model.provider.keyRef || this.providerKeys.has(model.provider.keyRef),
-      capabilitiesOf: options.capabilitiesOf,
+      capabilitiesOf: options.capabilitiesOf ?? (model => withProbedCapabilities(model.capabilities, this.probes.get(model.id))),
       now: this.now,
     })
   }

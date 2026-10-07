@@ -2,11 +2,17 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
 import type { RunningGateway } from '../../src'
+import type { ProbeResult } from '../../src/probe/probe'
 
 import { Buffer } from 'node:buffer'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { parseConfig, startGateway } from '../../src'
+import { ProbeStore } from '../../src/probe/store'
+import { openDatabase } from '../../src/store/database'
 
 /** A request that the fake provider received. */
 export interface ReceivedRequest {
@@ -95,9 +101,21 @@ export async function startTestGateway(providerBaseURL: string, options: { compa
  * Starts a gateway from a raw configuration object, with an in-memory state database, on a free port.
  * The configuration holds providers, models, and aliases of the test. Every provider key that it names gets a test key.
  */
-export async function startRoutedGateway(raw: Record<string, unknown>): Promise<{ gateway: RunningGateway, logs: string[] }> {
+export async function startRoutedGateway(raw: Record<string, unknown>, options: { probes?: ProbeResult[] } = {}): Promise<{ gateway: RunningGateway, logs: string[] }> {
   const logs: string[] = []
-  const config = parseConfig({ port: 0, store: { path: ':memory:' }, allowedOrigins: [], ...raw })
+  // Probe results sit in the state database. A file database lets the test write them before the gateway starts.
+  const directory = options.probes ? mkdtempSync(join(tmpdir(), 'companion-gateway-')) : undefined
+  let store: Record<string, unknown> = { path: ':memory:' }
+  if (directory && options.probes) {
+    const file = join(directory, 'state.sqlite')
+    const db = openDatabase(file)
+    const probes = new ProbeStore(db, Date.now)
+    for (const result of options.probes)
+      probes.set(result)
+    db.close()
+    store = { path: file }
+  }
+  const config = parseConfig({ port: 0, store, allowedOrigins: [], ...raw })
   const keys = new Map<string, string>()
   for (const provider of Object.values(config.providers)) {
     if (provider.keyRef)
@@ -109,6 +127,13 @@ export async function startRoutedGateway(raw: Record<string, unknown>): Promise<
     providerKeys: keys,
     writeLog: line => logs.push(line),
   })
+  if (directory) {
+    const close = gateway.close
+    gateway.close = async () => {
+      await close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  }
   return { gateway, logs }
 }
 
