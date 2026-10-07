@@ -81,6 +81,6 @@ export function withProbedCapabilities(configured: ModelCapabilities, probe: Pro
     tools: probe.tools,
     images: probe.images,
     structuredOutput: probe.structuredOutput,
-    maxPrompt: accepted === undefined ? configured.maxPrompt : Math.min(accepted, configured.maxPrompt ?? Number.POSITIVE_INFINITY),
+    maxPrompt: accepted === undefined || !probe.contextLimitFound ? configured.maxPrompt : Math.min(accepted, configured.maxPrompt ?? Number.POSITIVE_INFINITY),
   }
 }

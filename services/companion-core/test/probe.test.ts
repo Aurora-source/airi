@@ -35,6 +35,8 @@ function model(overrides: Record<string, unknown> = {}) {
 }
 
 interface Behavior {
+  /** A prompt above this many tokens is refused with a per-minute token limit error, as Groq does, and not a context error. */
+  rateLimitAbove?: number
   models?: string[] | 'missing'
   tools?: 'ok' | 'missing-index' | 'unsupported'
   images?: boolean
@@ -64,6 +66,8 @@ function behaves(behavior: Behavior = {}): ProviderHandler {
     const text = JSON.stringify(body.messages)
     if (behavior.contextLimit !== undefined && text.length / 3.4 > behavior.contextLimit)
       return fail(400, 'This model\'s maximum context length is exceeded.')
+    if (behavior.rateLimitAbove !== undefined && text.length / 3.4 > behavior.rateLimitAbove)
+      return fail(413, 'Request too large for model on tokens per minute (TPM): Limit 7000, Requested 9000, please reduce your message size.')
 
     let content = 'pong'
     let toolCalls: unknown[] | undefined
@@ -182,7 +186,18 @@ describe('probeModel', () => {
     const result = await probeModel(model(), { ...OPTIONS, deep: { stepsTokens: [1000, 4000, 8000, 16_000, 32_000] } })
 
     expect(result.maxAcceptedPromptTokens).toBe(8000)
+    expect(result.contextLimitFound).toBe(true)
     expect(result.failures.context).toContain('16000')
+  })
+
+  it('does not take a per-minute token limit for a context limit', async () => {
+    provider.setHandler(behaves({ rateLimitAbove: 5000 }))
+
+    const result = await probeModel(model(), { ...OPTIONS, deep: { stepsTokens: [1000, 4000, 8000] } })
+
+    expect(result.maxAcceptedPromptTokens).toBe(4000)
+    expect(result.contextLimitFound).toBe(false)
+    expect(result.failures.context).toContain('rate limit')
   })
 
   it('never puts the key into a stored failure text', async () => {
@@ -235,6 +250,14 @@ describe('probeStore', () => {
 
     expect(withProbedCapabilities(resolved.capabilities, deep).maxPrompt).toBe(8000)
     expect(withProbedCapabilities({ ...resolved.capabilities, maxPrompt: 4000 }, deep).maxPrompt).toBe(4000)
+  })
+
+  it('leaves the prompt limit alone when the deep probe only met a rate limit', async () => {
+    provider.setHandler(behaves({ rateLimitAbove: 5000 }))
+    const resolved = model()
+    const deep = await probeModel(resolved, { ...OPTIONS, deep: { stepsTokens: [1000, 4000, 8000] } })
+
+    expect(withProbedCapabilities(resolved.capabilities, deep).maxPrompt).toBeUndefined()
   })
 
   it('keeps the configuration when the provider was unreachable, because that says nothing about capabilities', async () => {

@@ -6,6 +6,7 @@ import { errorMessageFrom } from '@moeru/std'
 import { createRedactor } from '../logging/redact'
 import { sendChatCompletion } from '../providers/openai-compatible'
 import { parseRateLimitHeaders } from '../quota/rate-limit'
+import { solidColorPng } from './png'
 
 /**
  * What a live probe measured for one model. The router trusts it over the configuration, because a document can be
@@ -35,6 +36,11 @@ export interface ProbeResult {
   rateLimit?: ObservedLimits
   /** The largest prompt that a deep probe sent successfully. */
   maxAcceptedPromptTokens?: number
+  /**
+   * A deep probe was refused because the prompt exceeded the context of the model.
+   * A refusal by a per-minute token limit does not count, because that limit is a rate and the quota ledger handles it.
+   */
+  contextLimitFound?: boolean
   failures: Record<string, string>
 }
 
@@ -59,8 +65,8 @@ const WEATHER_TOOL = {
     parameters: { type: 'object', properties: { location: { type: 'string' } }, required: ['location'], additionalProperties: false },
   },
 }
-/** A 2 by 2 pixel red PNG. Any vision model can say that it is red. */
-const RED_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8z8DwnwEIAAUAAwDhtSLVAAAAAElFTkSuQmCC'
+/** A flat red image. Any vision model can say that it is red. */
+const RED_PNG = solidColorPng(32, 32, [255, 0, 0])
 const STRUCTURED_FORMAT = {
   type: 'json_schema',
   json_schema: { name: 'probe', strict: true, schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'], additionalProperties: false } },
@@ -169,9 +175,10 @@ export async function probeModel(model: ResolvedModel, options: ProbeOptions = {
     })
     if (!response.ok)
       return failure('images', response)
-    result.images = contentOf(await response.json()).trim() !== ''
+    // The model must name the color. A reply such as "I cannot see an image" is not vision.
+    result.images = /red/i.test(contentOf(await response.json()))
     if (!result.images)
-      result.failures.images = 'the model returned no text for an image'
+      result.failures.images = 'the model did not name the color of the image'
   })
 
   await attempt('structured', async () => {
@@ -199,7 +206,11 @@ export async function probeModel(model: ResolvedModel, options: ProbeOptions = {
         const text = FILLER_SENTENCE.repeat(Math.ceil((stepTokens * 3.4) / FILLER_SENTENCE.length)).slice(0, Math.round(stepTokens * 3.4))
         const { response } = await post({ messages: [{ role: 'user', content: `${text}\n\nReply with the single word: pong` }], max_tokens: 16 })
         if (!response.ok) {
-          result.failures.context = `rejected at ${stepTokens} tokens, HTTP ${response.status}: ${redact(await errorTextOf(response))}`
+          const message = redact(await errorTextOf(response))
+          // Groq refuses a large prompt with "tokens per minute". That is a rate limit, and it says nothing about the context window.
+          const rateBound = response.status === 429 || /per minute|\bTPM\b|rate limit|quota/i.test(message)
+          result.contextLimitFound = !rateBound
+          result.failures.context = `rejected at ${stepTokens} tokens, HTTP ${response.status}${rateBound ? ' (a rate limit, not the context window)' : ''}: ${message}`
           return
         }
         await response.arrayBuffer()
