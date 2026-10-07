@@ -8,6 +8,7 @@ import { once } from 'node:events'
 
 import { errorMessageFrom } from '@moeru/std'
 
+import { createGeminiToolCallIndexer } from '../providers/gemini-compat'
 import { sendChatCompletion } from '../providers/openai-compatible'
 import { readRequestBody, RequestBodyTooLargeError, sendError } from './http'
 
@@ -116,11 +117,16 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
   res.writeHead(upstream.status, headers)
   res.flushHeaders()
 
+  // Stream repair is provider-scoped and touches only successful event streams. Errors and JSON bodies stay byte-exact.
+  const repairsStream = provider.compat === 'gemini' && upstream.ok
+    && (upstream.headers.get('content-type') ?? '').includes('text/event-stream')
+  const responseBody = repairsStream ? upstream.body?.pipeThrough(createGeminiToolCallIndexer()) : upstream.body
+
   let firstByteMs: number | undefined
   let bytesOut = 0
   try {
-    if (upstream.body) {
-      for await (const chunk of upstream.body) {
+    if (responseBody) {
+      for await (const chunk of responseBody) {
         firstByteMs ??= elapsed(startedAt)
         bytesOut += chunk.byteLength
         // Respect backpressure instead of queueing the whole provider response in memory.

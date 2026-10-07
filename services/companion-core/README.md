@@ -15,6 +15,16 @@ This first slice (R2A) is only the **Companion Gateway**. It is a transparent, a
 
 It does **not** route between providers, track quotas, trim prompts, add memory, or watch the screen. Those parts come in later phases.
 
+## Provider compatibility
+
+A provider entry can set `"compat": "gemini"`. Only that provider's successful event streams change:
+
+- The Gemini OpenAI-compatible endpoint omits `index` on streamed tool-call fragments. OpenAI clients, including AIRI's xsAI client, drop such tool calls.
+- The adapter adds `index` from a stable per-choice `id` to index map. A fragment without an `id` continues the call that is still streaming.
+- Every other byte stays the same, including `finish_reason`, text, and `extra_content.google.thought_signature`. Error bodies and non-streaming responses are not touched.
+
+Without `compat`, the gateway is a byte-for-byte passthrough.
+
 ## Security
 
 | Control | Behavior |

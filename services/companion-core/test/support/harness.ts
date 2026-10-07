@@ -72,12 +72,12 @@ export const TEST_OPS_TOKEN = 'cc_ops_test-ops-token-00000000000000000000000'
 export const ALLOWED_ORIGIN = 'http://localhost:5173'
 
 /** Starts a gateway on a free port that forwards alias `companion-chat` to `providerBaseURL`. Log lines are captured. */
-export async function startTestGateway(providerBaseURL: string): Promise<{ gateway: RunningGateway, logs: string[] }> {
+export async function startTestGateway(providerBaseURL: string, options: { compat?: 'gemini' } = {}): Promise<{ gateway: RunningGateway, logs: string[] }> {
   const logs: string[] = []
   const config = parseConfig({
     port: 0,
     allowedOrigins: [ALLOWED_ORIGIN],
-    providers: { fake: { baseURL: providerBaseURL, keyRef: 'provider-fake' } },
+    providers: { fake: { baseURL: providerBaseURL, keyRef: 'provider-fake', ...options } },
     aliases: { 'companion-chat': { provider: 'fake', model: 'real-model-1' } },
   })
   const gateway = await startGateway({

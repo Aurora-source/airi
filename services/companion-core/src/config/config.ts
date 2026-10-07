@@ -16,6 +16,11 @@ const providerSchema = v.object({
   baseURL: v.pipe(v.string(), v.url(), v.endsWith('/')),
   /** Name of the protected secret that holds this provider's API key. */
   keyRef: v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/)),
+  /**
+   * Provider-specific stream repair. Absent means byte-for-byte passthrough.
+   * `gemini` adds the tool-call `index` that the Gemini OpenAI-compatible endpoint omits.
+   */
+  compat: v.optional(v.picklist(['gemini'])),
 })
 
 const aliasSchema = v.object({

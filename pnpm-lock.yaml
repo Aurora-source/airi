@@ -6516,6 +6516,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.2.0
+      '@xsai/stream-text':
+        specifier: 'catalog:'
+        version: 0.5.1
       tsx:
         specifier: 'catalog:'
         version: 4.23.12
