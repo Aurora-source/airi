@@ -75,6 +75,8 @@ export function useAudioRecorder(
   async function finalizeRecord(notifyStopHooks: boolean) {
     const activeOutput = mediaOutput.value
     const activeFormat = mediaFormat.value
+    // Finalization can outlive a microphone binding. Keep the original owners.
+    const stopHooks = [...onStopRecordHooks.value]
     if (!activeOutput)
       return
 
@@ -83,9 +85,11 @@ export function useAudioRecorder(
     mediaOutput.value = undefined
     mediaFormat.value = undefined
 
-    await activeOutput.finalize()
-    if (!notifyStopHooks)
+    if (!notifyStopHooks) {
+      await activeOutput.cancel()
       return
+    }
+    await activeOutput.finalize()
 
     const bufferTarget = activeOutput.target as BufferTarget | undefined
     const buffer = bufferTarget?.buffer
@@ -94,7 +98,7 @@ export function useAudioRecorder(
     recording.value = audioBlob
 
     // await hooks and catch errors
-    for (const hook of onStopRecordHooks.value) {
+    for (const hook of stopHooks) {
       try {
         await hook(audioBlob)
       }
@@ -113,7 +117,7 @@ export function useAudioRecorder(
     return await finalizeRecord(true)
   }
 
-  /** Finalizes the active recording without creating a blob or running stop hooks. */
+  /** Cancels the active recording without creating a blob or running stop hooks. */
   async function discardRecord() {
     await finalizeRecord(false)
   }
