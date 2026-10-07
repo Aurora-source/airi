@@ -142,6 +142,57 @@ describe('host and origin policy', () => {
   })
 })
 
+describe('ops routes', () => {
+  const opsHeaders = { authorization: `Bearer ${TEST_OPS_TOKEN}` }
+
+  it.each([
+    { name: 'no Authorization header', headers: {} },
+    { name: 'the inference token', headers: { authorization: `Bearer ${TEST_INFERENCE_TOKEN}` } },
+    { name: 'a wrong token', headers: { authorization: 'Bearer cc_ops_wrong-token-000000000000000000000000' } },
+  ])('rejects $name on /ops/status with 401', async ({ headers }) => {
+    const response = await rawRequest({ path: '/ops/status', headers })
+
+    expect(response.status).toBe(401)
+    expect(response.headers['www-authenticate']).toBe('Bearer')
+    expect(response.body).not.toContain('companion-chat')
+  })
+
+  it('serves the routing state to the ops token, without keys, tokens, or message text', async () => {
+    await fetch(new URL('chat/completions', gateway.baseURL), { method: 'POST', headers: authHeaders(), body: JSON.stringify({ model: 'companion-chat', messages: [{ role: 'user', content: 'a private sentence about my day' }] }) }).then(response => response.arrayBuffer())
+
+    const response = await rawRequest({ path: '/ops/status', headers: opsHeaders })
+
+    expect(response.status).toBe(200)
+    expect(response.body).toContain('companion-chat')
+    expect(response.body).not.toContain(TEST_PROVIDER_KEY)
+    expect(response.body).not.toContain(TEST_INFERENCE_TOKEN)
+    expect(response.body).not.toContain(TEST_OPS_TOKEN)
+    expect(response.body).not.toContain('private sentence')
+  })
+
+  it('rejects a foreign Host and a foreign Origin even with the ops token', async () => {
+    const forgedHost = await rawRequest({ path: '/ops/status', headers: { ...opsHeaders, host: 'evil.example:11980' } })
+    const foreignOrigin = await rawRequest({ path: '/ops/status', headers: { ...opsHeaders, origin: 'https://evil.example' } })
+
+    expect(forgedHost.status).toBe(421)
+    expect(foreignOrigin.status).toBe(403)
+  })
+
+  it('answers 404 for an unknown ops path and for an ops method that does not exist', async () => {
+    const unknown = await rawRequest({ path: '/ops/nothing', headers: opsHeaders })
+    const post = await rawRequest({ path: '/ops/status', method: 'POST', headers: opsHeaders, body: '{}' })
+
+    expect(unknown.status).toBe(404)
+    expect(post.status).toBe(404)
+  })
+
+  it('does not accept the ops token on /v1 routes', async () => {
+    const response = await rawRequest({ path: '/v1/models', headers: opsHeaders })
+
+    expect(response.status).toBe(401)
+  })
+})
+
 describe('p: secret redaction', () => {
   it('keeps tokens, provider keys, and message content out of every log line', async () => {
     const secretPrompt = 'my private diary entry 4f7c'
