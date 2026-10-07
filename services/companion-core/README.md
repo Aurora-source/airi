@@ -61,6 +61,8 @@ The file is `%LOCALAPPDATA%\AIRI-Companion\companion-core.json`. Provider and mo
 
 The chain order is a decision, not a guess. Run the persona benchmark and use its result.
 
+A model entry can also set `styleReminder`. The gateway adds that text to the end of the system prompt for that model only. Use it for a format rule that the model breaks, for example the closing of ACT tokens. It is off by default.
+
 ## Compute profiles
 
 | Profile | Models in a chain |
@@ -112,8 +114,10 @@ pnpm -F @proj-airi/companion-core persona score-blind --out <directory> --ranks 
 ```
 
 - Automatic checks cover ACT tokens, AI disclaimers, assistant phrases, length, reasoning in the reply, character voice, copied prompt text, and tool use.
-- A judge from **another provider** scores each answer. A model never judges its own family.
-- `report` writes `blind-ranking.html` and a sealed `key.json`. Rank the answers in the page without the key, then score the export.
+- A judge from **another provider** scores each answer. `--only <model>` makes one judge score every answer, so that all models share one scale. `--file <name>` keeps a separate judgment set.
+- A refused request has no reply. It counts in the failure rate and not as a broken format.
+- `report --blind-models a,b,c` writes `blind-ranking.html` for the finalists and a sealed `key.json`. Rank the answers in the page without the key, then score the export.
+- `--reminder <text>` adds a last instruction to the system prompt. Use it to test a `styleReminder` before you put it in the configuration.
 
 ## Provider compatibility
 
