@@ -313,6 +313,80 @@ describe('createChatOrchestratorRuntime', () => {
 
   // ROOT CAUSE:
   //
+  // Small deltas can make the marker parser emit a whitespace-only literal.
+  // `if (speechOnly.trim())` dropped it from content, slices, and the TTS hook.
+  // "Hello" + " " + "world." became "Helloworld.".
+  //
+  // We fixed this by keeping every nonempty speech literal: `if (speechOnly)`.
+  it.each([
+    {
+      name: 'one-character chunks',
+      chunks: 'Hello world.\nSecond line.'.split(''),
+      expectedText: 'Hello world.\nSecond line.',
+      expectedSpecials: [],
+    },
+    {
+      name: 'whitespace-only chunks',
+      chunks: ['Hello', ' ', '  ', '\t', 'world.', '  '],
+      expectedText: 'Hello   \tworld.  ',
+      expectedSpecials: [],
+    },
+    {
+      name: 'newline-only chunks between paragraphs',
+      chunks: ['First paragraph.', '\n', '\n', 'Second paragraph.', '\n', '\n', 'Third paragraph.', '\n'],
+      expectedText: 'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.\n',
+      expectedSpecials: [],
+    },
+    {
+      name: 'Unicode and indented code in one-character chunks',
+      chunks: 'こんにちは、世界！ 👋\n\n```python\nif ready:\n    print("Hi!")\n\tprint("Done.")\n```\n'.split(''),
+      expectedText: 'こんにちは、世界！ 👋\n\n```python\nif ready:\n    print("Hi!")\n\tprint("Done.")\n```\n',
+      expectedSpecials: [],
+    },
+    {
+      name: 'whitespace between adjacent control markers',
+      chunks: ['Hello', '<|ACT {"emotion":"happy"}|>', ' ', '<|DELAY:100|>', '\n', 'world.'],
+      expectedText: 'Hello \nworld.',
+      expectedSpecials: ['<|ACT {"emotion":"happy"}|>', '<|DELAY:100|>'],
+    },
+  ])('keeps whitespace-only streamed literals with $name', async ({ chunks, expectedText, expectedSpecials }) => {
+    const harness = createHarness()
+    const literals: string[] = []
+    const specials: string[] = []
+
+    // The stage forwards these literals to the active TTS session.
+    harness.runtime.hooks.onTokenLiteral(async (literal) => {
+      literals.push(literal)
+    })
+    harness.runtime.hooks.onTokenSpecial(async (special) => {
+      specials.push(special)
+    })
+    harness.stream.mockImplementationOnce(async (_model, _chatProvider, _messages, options) => {
+      for (const text of chunks)
+        await options?.onStreamEvent?.({ type: 'text-delta', text })
+      await options?.onStreamEvent?.({ type: 'finish' })
+    })
+
+    await harness.runtime.ingest('Keep the response formatting.', {
+      model: 'gpt-test',
+      chatProvider: provider,
+    })
+
+    const assistant = harness.sessionMessages['session-1'].find(message => message.role === 'assistant')
+    const displayedText = assistant?.slices.flatMap(slice => slice.type === 'text' ? [slice.text] : []).join('')
+
+    expect.soft(assistant?.content).toBe(expectedText)
+    expect.soft(displayedText).toBe(expectedText)
+    expect.soft(literals.join('')).toBe(expectedText)
+    expect.soft(specials).toEqual(expectedSpecials)
+    expect.soft(harness.foregroundPatches.at(-1)?.content).toBe(expectedText)
+    expect(harness.assistantAppended).toEqual([
+      expect.objectContaining({ messageText: chunks.join('') }),
+    ])
+  })
+
+  // ROOT CAUSE:
+  //
   // A transport failure cleared the foreground stream before the assistant
   // message was stored. Text that was already visible therefore disappeared.
   //
