@@ -121,18 +121,20 @@ export class Router {
 
   private errorFor(skipped: Skip[], pinned: string | undefined): RouteError {
     const summary = skipped.map(skip => `${skip.modelId}: ${skip.reason}${skip.detail ? ` (${skip.detail})` : ''}`).join('; ')
+    // "No model of this alias can ..." and "The pinned model "x" cannot ..." read as the same fact for the two cases.
     const subject = pinned ? `The pinned model "${pinned}"` : 'No model of this alias'
+    const can = pinned ? 'cannot' : 'can'
     const unavailable = skipped.filter(skip => skip.category === 'unavailable')
     if (unavailable.length > 0) {
       const earliest = Math.min(...unavailable.map(skip => skip.retryAtMs ?? Number.POSITIVE_INFINITY))
       const retryAfterMs = Number.isFinite(earliest) ? Math.max(0, earliest - this.deps.now()) : undefined
-      return { status: 429, code: 'rate_limit_exceeded', message: `${subject} can take this request right now. ${summary}`, retryAfterMs, skipped }
+      return { status: 429, code: 'rate_limit_exceeded', message: `${subject} ${can} take this request right now. ${summary}`, retryAfterMs, skipped }
     }
     if (skipped.some(skip => skip.reason === 'CONTEXT_TOO_SMALL' || skip.reason === 'TPM_INELIGIBLE'))
-      return { status: 413, code: 'request_too_large', message: `${subject} can take a request of this size. ${summary}`, skipped }
+      return { status: 413, code: 'request_too_large', message: `${subject} ${can} take a request of this size. ${summary}`, skipped }
     if (skipped.some(skip => skip.reason.startsWith('CAPABILITY_')))
-      return { status: 400, code: 'unsupported_request', message: `${subject} supports what this request needs. ${summary}`, skipped }
-    return { status: 503, code: 'no_provider_available', message: `${subject} is available. ${summary}`, skipped }
+      return { status: 400, code: 'unsupported_request', message: `${subject} ${pinned ? 'does not support' : 'supports'} what this request needs. ${summary}`, skipped }
+    return { status: 503, code: 'no_provider_available', message: `${subject} ${pinned ? 'is not' : 'is'} available. ${summary}`, skipped }
   }
 }
 

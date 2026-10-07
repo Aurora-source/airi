@@ -213,8 +213,10 @@ describe('router explicit override', () => {
     const result = router.plan(toolChat({ tool_choice: 'required' }, 'companion-chat:groq-qwen'))
 
     expect(result).toMatchObject({ ok: false, error: { status: 413, code: 'request_too_large' } })
-    if (!result.ok)
+    if (!result.ok) {
       expect(result.error.message).toContain('TPM_INELIGIBLE')
+      expect(result.error.message).toContain('The pinned model "groq-qwen" cannot take a request of this size.')
+    }
   })
 })
 
@@ -228,8 +230,10 @@ describe('router errors', () => {
     const result = router.plan(chat())
 
     expect(result).toMatchObject({ ok: false, error: { status: 429, code: 'rate_limit_exceeded', retryAfterMs: 12_000 } })
-    if (!result.ok)
+    if (!result.ok) {
       expect(result.error.skipped.map(skip => skip.modelId)).toEqual(['gemini-flash-lite', 'groq-qwen', 'groq-oss'])
+      expect(result.error.message).toContain('No model of this alias can take this request right now.')
+    }
   })
 
   it('answers 413 when the request is too large for every model, and never blames provider health', () => {
