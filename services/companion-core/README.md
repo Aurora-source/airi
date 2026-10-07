@@ -1,7 +1,7 @@
 # @proj-airi/companion-core
 
 Companion Core is a local service that sits between AIRI and cloud model providers.
-This first slice (R2A) is only the **Companion Gateway**. It is a transparent, authenticated proxy for OpenAI-compatible chat completions.
+The **Companion Gateway** forwards authenticated OpenAI-compatible chat completions and audio transcriptions.
 
 ## What it does
 
@@ -13,7 +13,7 @@ This first slice (R2A) is only the **Companion Gateway**. It is a transparent, a
 - Aborts the provider request when AIRI cancels.
 - Keeps provider API keys out of AIRI. AIRI holds only a local gateway token.
 
-It does **not** route between providers, track quotas, trim prompts, add memory, or watch the screen. Those parts come in later phases.
+Chat aliases retain one configured provider and model. Audio uses its separate profile configuration.
 
 ## Provider compatibility
 
@@ -79,6 +79,60 @@ Without `compat`, the gateway is a byte-for-byte passthrough.
    - API key: the output of `pnpm -F @proj-airi/companion-core cli token`
    - Model: `companion-chat`
 
+## Audio transcription
+
+Create `companion-audio.json` beside `companion-core.json`. `COMPANION_CORE_HOME` also applies to this file.
+An absent audio file disables transcription and omits `companion-stt` from `/v1/models`.
+
+For Groq transcription, use:
+
+```json
+{
+  "profile": "CLOUD"
+}
+```
+
+The CLI loads the `provider-groq` DPAPI secret first. Then it checks inherited `GROQ_API_KEY` and the Windows user environment.
+The key stays inside Companion Core. To store a key from the environment, run:
+
+```powershell
+rtk proxy pnpm -F @proj-airi/companion-core cli secret-import provider-groq --from-env GROQ_API_KEY
+```
+
+| Profile | Audio target |
+| --- | --- |
+| `CLOUD`, `cloud-mura` | Groq only. A local target is rejected. |
+| `LOCAL` | One explicit loopback target. Companion Core does not start its inference server. |
+| `HYBRID` | Groq first. A local fallback requires an explicit `local` entry. |
+
+For an explicit local target or HYBRID fallback, use:
+
+```json
+{
+  "profile": "HYBRID",
+  "local": {
+    "baseURL": "http://127.0.0.1:11437/v1/",
+    "model": "your-local-stt-model"
+  }
+}
+```
+
+Set `model` to the model your local server accepts. For local-only transcription, change `profile` to `LOCAL`.
+Local targets accept only literal `127.0.0.1` or `::1` addresses. The Groq endpoint is fixed, and redirects fail.
+
+Groq uses `whisper-large-v3-turbo`, then `whisper-large-v3` when the first model is unavailable.
+Cloud rate limits return their status and `Retry-After`. An explicit HYBRID local target can handle cloud rate limits or availability failures.
+The client model alias cannot change the profile or the provider model.
+
+In AIRI's OpenAI-compatible transcription provider, set the gateway base URL, inference token, and model `companion-stt`.
+`POST /v1/audio/transcriptions` accepts multipart `file` and `model` fields. URL input is rejected.
+Optional fields are `language` (ISO 639-1), `prompt`, `temperature` (0–1), and `response_format` (`json`, `text`, or `verbose_json`).
+Each request keeps audio in memory. Filenames change to `audio.<format>`, while the audio bytes and format stay intact.
+
+The defaults are `timeoutMs: 15000`, `maxRequestBytes: 26214400`, and `maxResponseBytes: 1048576`.
+The upload limit includes multipart headers. One deadline covers upload, fallback attempts, and the complete provider response.
+Client cancellation stops upload or the provider request. Logs contain metadata, with no audio, transcript, prompt, or key.
+
 ## When to use it
 
 - You want AIRI to use a cloud model without storing the provider key in AIRI.
@@ -98,3 +152,4 @@ pnpm -F @proj-airi/companion-core typecheck
 ```
 
 The tests start a fake provider and cover streaming, chunk boundaries, tool calls, tool results, images, provider errors, cancellation, authentication, Host and Origin checks, log redaction, loopback binding, and a DPAPI round trip on Windows.
+Audio tests also cover upload bounds, model fallback, profile isolation, three response formats, and request deadlines.
