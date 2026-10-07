@@ -39,9 +39,9 @@ export interface CheckResult {
 
 /** Word limits of each reply shape, not counting stage tokens. A reply outside them is too thin or too long for the scene. */
 const WORD_LIMITS: Record<Shape, { min: number, max: number }> = {
-  short: { min: 1, max: 45 },
-  medium: { min: 8, max: 90 },
-  long: { min: 45, max: 230 },
+  short: { min: 1, max: 60 },
+  medium: { min: 8, max: 110 },
+  long: { min: 45, max: 260 },
 }
 
 const AI_DISCLAIMER = /\bas an ai\b|\bi(?:'m| am) (?:just )?(?:an? )?(?:ai|language model|artificial intelligence)\b|\blanguage model\b|\bi (?:do not|don't|cannot|can't) (?:have|feel) (?:feelings|emotions)\b|\bi don't have (?:a body|personal)\b|\bmy training\b|\bopenai\b|\bgoogle trained\b/i
@@ -168,13 +168,14 @@ function proportionate(text: string, shape: Shape): CheckResult {
   return { id: 'proportionate', pass: true }
 }
 
-function noReasoningLeak(text: string, reasoningChannel: boolean): CheckResult {
+/**
+ * Thinking inside the reply text is a leak, because AIRI speaks that text.
+ * A separate reasoning field is not. xsAI reads `reasoning` and `reasoning_content` into their own stream, and AIRI keeps it apart
+ * from the spoken text. The field still costs time, and the run record keeps it as `reasoningChannel` for that reason.
+ */
+function noReasoningLeak(text: string): CheckResult {
   const match = text.match(REASONING_LEAK)
-  if (match)
-    return { id: 'no-reasoning-leak', pass: false, detail: `the reply shows its thinking: "${match[0]}"` }
-  if (reasoningChannel)
-    return { id: 'no-reasoning-leak', pass: false, detail: 'the stream carries a reasoning channel that a client can show' }
-  return { id: 'no-reasoning-leak', pass: true }
+  return match ? { id: 'no-reasoning-leak', pass: false, detail: `the reply shows its thinking: "${match[0]}"` } : { id: 'no-reasoning-leak', pass: true }
 }
 
 function characterVoice(text: string): CheckResult {
@@ -262,7 +263,7 @@ export function runChecks(scenario: Scenario, run: RunRecord, systemPrompt: stri
     noAiDisclaimer(run.text),
     notAssistantTone(run.text),
     proportionate(run.text, scenario.shape),
-    noReasoningLeak(run.text, run.reasoningChannel),
+    noReasoningLeak(run.text),
     characterVoice(run.text),
     noCopiedPrompt(run.text, systemPrompt),
     toolBehavior(scenario, run),

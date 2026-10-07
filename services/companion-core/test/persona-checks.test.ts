@@ -102,10 +102,13 @@ describe('persona checks: length, reasoning, and copied text', () => {
     expect(failures('reflect-1', '<|ACT {"emotion":"think"}|> Hmm, yes.')).toContain('proportionate')
   })
 
-  it('rejects visible thinking, and a reasoning channel that a client can show', () => {
+  it('rejects thinking that sits in the reply text, which AIRI would speak', () => {
     expect(failures('casual-1', '<|ACT {"emotion":"happy"}|> Okay, the user wants a warm welcome. Welcome back!')).toContain('no-reasoning-leak')
     expect(failures('casual-1', '<think>hmm</think><|ACT {"emotion":"happy"}|> Welcome back!')).toContain('no-reasoning-leak')
-    expect(failures('casual-1', GOOD, { reasoningChannel: true })).toContain('no-reasoning-leak')
+  })
+
+  it('accepts a separate reasoning field, because xsAI and AIRI keep it apart from the spoken text', () => {
+    expect(failures('casual-1', GOOD, { reasoningChannel: true })).toEqual([])
   })
 
   it('rejects instruction text and the prompt example that a small model copies', () => {
