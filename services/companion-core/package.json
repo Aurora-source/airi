@@ -1,0 +1,30 @@
+{
+  "name": "@proj-airi/companion-core",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local Companion Gateway for AIRI. It forwards OpenAI-compatible chat requests to one configured cloud provider.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "companion-core": "./src/bin/run.ts"
+  },
+  "scripts": {
+    "start": "tsx ./src/bin/run.ts serve",
+    "cli": "tsx ./src/bin/run.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@moeru/std": "catalog:",
+    "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:vitest"
+  }
+}

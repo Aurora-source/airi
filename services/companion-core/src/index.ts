@@ -1,0 +1,8 @@
+export type { GatewayCredentials } from './auth/credentials'
+export { loadOrCreateCredentials } from './auth/credentials'
+export type { SecretStore } from './auth/secret-store'
+export { DpapiSecretStore, MemorySecretStore } from './auth/secret-store'
+export type { CompanionConfig, ProviderConfig } from './config/config'
+export { loadConfig, parseConfig, resolveHome } from './config/config'
+export type { GatewayOptions, RunningGateway } from './server'
+export { startGateway } from './server'
