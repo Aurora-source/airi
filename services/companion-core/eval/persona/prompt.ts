@@ -75,12 +75,14 @@ And the last, do what ever you want!
  * The harness uses AIRI's own default character, because the character card of a user is private and lives in the app.
  * Pass `card` to test another persona. It replaces the persona text only. The stage instructions stay, because every
  * persona must obey them.
+ * Pass `reminder` to add a last instruction at the end of the system prompt. It tests a model-specific style reminder.
  */
-export function buildSystemPrompt(card?: string): string {
+export function buildSystemPrompt(card?: string, reminder?: string): string {
   return [
     card ?? PREFIX,
     EMOTION_INSTRUCTIONS + EMOTIONS.map(emotion => `- ${emotion}`).join('\n'),
     EMOJI_INSTRUCTION,
     SUFFIX,
+    ...(reminder ? [reminder] : []),
   ].join('\n')
 }

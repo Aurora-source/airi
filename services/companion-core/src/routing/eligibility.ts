@@ -7,6 +7,7 @@ import type { RequestTraits } from './request-analysis'
 
 import { budgetRequest, promptTokensOf } from '../budget/budgeter'
 import { createTokenEstimator } from '../budget/estimate'
+import { withStyleReminder } from '../providers/style-reminder'
 
 /** Output of the first round of a tool turn: a short tool call. */
 const TOOL_CALL_OUTPUT_TOKENS = 150
@@ -154,7 +155,9 @@ export function evaluateModel(model: ResolvedModel, body: WireRequest, traits: R
     rounds.push({ tier: 'full', rounds: 1 })
   }
 
-  const plans = rounds.map(({ tier, rounds: count }) => planTier(model, capabilities, body, traits, context, tier, count))
+  // The reminder is part of what the model receives, so it is counted and budgeted with the rest of the system prompt.
+  const prepared = withStyleReminder(body, model.styleReminder)
+  const plans = rounds.map(({ tier, rounds: count }) => planTier(model, capabilities, prepared, traits, context, tier, count))
   const feasible = plans.filter((plan): plan is Extract<TierPlan, { feasible: true }> => plan.feasible)
   if (feasible.length === 0) {
     const first = plans[0] as Extract<TierPlan, { feasible: false }>

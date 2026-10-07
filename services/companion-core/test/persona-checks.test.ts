@@ -34,6 +34,17 @@ describe('persona scenarios', () => {
   })
 })
 
+describe('persona prompt', () => {
+  it('ends with the reminder when one is given, and is the default prompt otherwise', () => {
+    const reminder = 'Close every ACT token with the two characters |> and nothing else.'
+
+    expect(buildSystemPrompt(undefined, reminder).endsWith(reminder)).toBe(true)
+    expect(buildSystemPrompt()).toBe(SYSTEM)
+    expect(buildSystemPrompt('You are Test.')).toContain('You are Test.')
+    expect(buildSystemPrompt('You are Test.')).toContain('The available emotions')
+  })
+})
+
 describe('persona checks: a good answer', () => {
   it('passes every check', () => {
     expect(failures('casual-1', GOOD)).toEqual([])

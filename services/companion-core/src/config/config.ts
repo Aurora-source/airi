@@ -71,6 +71,11 @@ const modelSchema = v.object({
   limits: v.optional(limitsSchema, {}),
   /** A free label for diagnostics, for example the persona rank of the model. */
   quality: v.optional(v.string()),
+  /**
+   * A last instruction that the gateway adds to the end of the system prompt for this model only.
+   * Use it for a format rule that the model breaks, for example the closing of ACT tokens. The benchmark shows whether it helps.
+   */
+  styleReminder: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(1200))),
 })
 
 const promptSchema = v.object({
@@ -210,6 +215,7 @@ export interface ResolvedModel {
   capabilities: ModelCapabilities
   limits: ModelLimits
   quality?: string
+  styleReminder?: string
   /**
    * The quota scope: one key on one model. Providers meter limits per model and key, so the ledger counts per scope.
    * A local provider has no key, so its scope uses the provider name.
@@ -244,6 +250,7 @@ export function resolveModel(config: CompanionConfig, modelId: string): Resolved
     capabilities: entry.capabilities,
     limits: entry.limits,
     quality: entry.quality,
+    styleReminder: entry.styleReminder,
     scope: `${provider.keyRef ?? entry.provider}|${entry.model}`,
   }
 }

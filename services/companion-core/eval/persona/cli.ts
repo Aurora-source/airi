@@ -35,6 +35,7 @@ Commands:
               --parallel <n>   Models that run at the same time. Default: 3.
               --limit <n>      Only the first n scenes.
               --card <file>    Persona text file that replaces AIRI's default character.
+              --reminder <t>   A last instruction added to the system prompt, to test a style reminder.
   judge       Score each answer with a judge from another provider. Resumes.
               --judges a,b     Judge models in order of preference. Default: groq-oss-120b,gemini-flash-lite.
   report      Write report.md, summary.json, blind-ranking.html, and key.json.
@@ -73,6 +74,7 @@ async function main(argv: string[]): Promise<void> {
       parallel: { type: 'string' },
       limit: { type: 'string' },
       card: { type: 'string' },
+      reminder: { type: 'string' },
       judges: { type: 'string' },
       seed: { type: 'string' },
       ranks: { type: 'string' },
@@ -97,7 +99,7 @@ async function main(argv: string[]): Promise<void> {
   const providerOf = (modelId: string) => config.models[modelId]?.provider ?? modelId
 
   const cardText = values.card ? readFileSync(values.card, 'utf8') : undefined
-  const systemPrompt = buildSystemPrompt(cardText)
+  const systemPrompt = buildSystemPrompt(cardText, values.reminder)
   const scenarios = values.limit ? SCENARIOS.slice(0, Number(values.limit)) : SCENARIOS
 
   const store = new DpapiSecretStore(join(resolveHome(), 'secrets'))
