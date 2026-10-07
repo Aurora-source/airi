@@ -1,3 +1,5 @@
+import type { WireMessage, WireRequest, WireToolCall } from '../budget/wire'
+
 /** One streamed tool-call fragment, as OpenAI-compatible providers send it inside `choices[].delta.tool_calls`. */
 interface ToolCallDelta {
   index?: number
@@ -118,4 +120,43 @@ export function createGeminiToolCallIndexer(): TransformStream<Uint8Array, Uint8
       flushEvents(controller, true)
     },
   })
+}
+
+/**
+ * NOTICE:
+ * Gemini 3 models reject a tool call in the history that has no thought signature, with HTTP 400
+ * "Function call is missing a thought_signature". A call that another model wrote has none. This happens
+ * when the router fails over from another provider in the middle of a tool turn.
+ * Live test on 2026-10-07: the placeholder below makes gemini-3.5-flash-lite and gemini-3.1-flash-lite accept the history.
+ * Source: https://ai.google.dev/gemini-api/docs/thought-signatures
+ * Removal condition: Google documents another way to continue history from another model, or drops the check.
+ */
+const PLACEHOLDER_THOUGHT_SIGNATURE = 'skip_thought_signature_validator'
+
+/**
+ * Makes a chat request acceptable to Gemini when its history holds tool calls that Gemini did not write.
+ *
+ * A call that already has a signature keeps it, because Gemini wrote it and checks it. A call without one gets the placeholder.
+ * The router shares one request between its candidates, so this returns a changed copy and never edits its input.
+ * A request that needs no change comes back as the same object.
+ */
+export function prepareGeminiRequest(body: WireRequest): WireRequest {
+  if (!body.messages?.some(message => message.tool_calls?.some(call => !hasSignature(call))))
+    return body
+  const messages = body.messages.map((message): WireMessage => {
+    if (!message.tool_calls?.some(call => !hasSignature(call)))
+      return message
+    return { ...message, tool_calls: message.tool_calls.map(call => hasSignature(call) ? call : withPlaceholder(call)) }
+  })
+  return { ...body, messages }
+}
+
+function hasSignature(call: WireToolCall): boolean {
+  const signature = (call.extra_content as { google?: { thought_signature?: unknown } } | undefined)?.google?.thought_signature
+  return typeof signature === 'string' && signature !== ''
+}
+
+function withPlaceholder(call: WireToolCall): WireToolCall {
+  const extra = (call.extra_content ?? {}) as { google?: Record<string, unknown> }
+  return { ...call, extra_content: { ...extra, google: { ...extra.google, thought_signature: PLACEHOLDER_THOUGHT_SIGNATURE } } }
 }

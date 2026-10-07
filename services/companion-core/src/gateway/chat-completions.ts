@@ -14,7 +14,7 @@ import { once } from 'node:events'
 import { errorMessageFrom } from '@moeru/std'
 
 import { promptTokensOf } from '../budget/budgeter'
-import { createGeminiToolCallIndexer } from '../providers/gemini-compat'
+import { createGeminiToolCallIndexer, prepareGeminiRequest } from '../providers/gemini-compat'
 import { sendChatCompletion } from '../providers/openai-compatible'
 import { createUsageSniffer } from '../providers/usage-sniffer'
 import { classifyUpstreamFailure, parseRateLimitHeaders } from '../quota/rate-limit'
@@ -211,7 +211,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
       provider: model.provider,
       apiKey,
       // Spread keeps the original key order. Overwriting `model` keeps its position.
-      body: JSON.stringify({ ...candidate.body, model: model.model }),
+      body: JSON.stringify({ ...(model.provider.compat === 'gemini' ? prepareGeminiRequest(candidate.body) : candidate.body), model: model.model }),
       signal,
     })
   }

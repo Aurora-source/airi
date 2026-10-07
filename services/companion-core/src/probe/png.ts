@@ -21,7 +21,10 @@ export function solidColorPng(width: number, height: number, [red, green, blue]:
   const row = Buffer.alloc(1 + width * 3)
   for (let x = 0; x < width; x++)
     row.set([red, green, blue], 1 + x * 3)
-  const pixels = Buffer.concat(Array.from({ length: height }).fill(row))
+  const rows: Buffer[] = []
+  for (let y = 0; y < height; y++)
+    rows.push(row)
+  const pixels = Buffer.concat(rows)
 
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
