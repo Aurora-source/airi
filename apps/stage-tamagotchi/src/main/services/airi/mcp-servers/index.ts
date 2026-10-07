@@ -148,7 +148,7 @@ export function createMcpStdioManager(): McpStdioManager {
     return parseElectronMcpConfigText(raw)
   }
 
-  const stopAll = async () => {
+  const stopSessions = async () => {
     const entries = [...sessions.entries()]
     for (const [name, session] of entries) {
       await closeSession(session)
@@ -164,6 +164,13 @@ export function createMcpStdioManager(): McpStdioManager {
   }
 
   const startServer = async (name: string, config: ElectronMcpStdioServerConfig) => {
+    // A session that is still registered under this name would lose its handle when the new one is stored, and its process would keep running.
+    const replaced = sessions.get(name)
+    if (replaced) {
+      sessions.delete(name)
+      await closeSession(replaced)
+    }
+
     const transport = new StdioClientTransport({
       command: config.command,
       args: config.args ?? [],
@@ -199,11 +206,11 @@ export function createMcpStdioManager(): McpStdioManager {
     }
   }
 
-  const applyAndRestart = async (): Promise<ElectronMcpStdioApplyResult> => {
+  const restartServers = async (): Promise<ElectronMcpStdioApplyResult> => {
     const { path } = await ensureConfigFile()
     const config = await readConfigFile(path)
 
-    await stopAll()
+    await stopSessions()
     runtimeStatuses.clear()
 
     const result: ElectronMcpStdioApplyResult = {
@@ -247,6 +254,31 @@ export function createMcpStdioManager(): McpStdioManager {
     updatedAt = Date.now()
 
     return result
+  }
+
+  // Lifecycle changes run one after another. Overlapping restarts each store their session over the other,
+  // so the first process loses its handle and keeps running. The app start, the settings page, and the overlay can overlap.
+  let lifecycleTail: Promise<unknown> = Promise.resolve()
+  /** The next restart, while it has not started. A caller that arrives in this time shares it, because it reads the config when it starts. */
+  let queuedRestart: Promise<ElectronMcpStdioApplyResult> | undefined
+
+  const applyAndRestart = (): Promise<ElectronMcpStdioApplyResult> => {
+    if (queuedRestart)
+      return queuedRestart
+
+    const run = lifecycleTail.catch(() => {}).then(() => {
+      queuedRestart = undefined
+      return restartServers()
+    })
+    queuedRestart = run
+    lifecycleTail = run
+    return run
+  }
+
+  const stopAll = (): Promise<void> => {
+    const run = lifecycleTail.catch(() => {}).then(stopSessions)
+    lifecycleTail = run
+    return run
   }
 
   const listTools = async (): Promise<ElectronMcpToolDescriptor[]> => {
