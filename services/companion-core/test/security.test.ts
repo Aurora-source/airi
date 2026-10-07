@@ -145,7 +145,7 @@ describe('host and origin policy', () => {
 describe('ops routes', () => {
   const opsHeaders = { authorization: `Bearer ${TEST_OPS_TOKEN}` }
 
-  it.each([
+  it.each<{ name: string, headers: Record<string, string> }>([
     { name: 'no Authorization header', headers: {} },
     { name: 'the inference token', headers: { authorization: `Bearer ${TEST_INFERENCE_TOKEN}` } },
     { name: 'a wrong token', headers: { authorization: 'Bearer cc_ops_wrong-token-000000000000000000000000' } },
