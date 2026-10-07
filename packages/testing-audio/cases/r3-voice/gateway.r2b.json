@@ -1,0 +1,59 @@
+{
+  "port": 0,
+  "allowedOrigins": [],
+  "profile": "cloud-mura-voice",
+  "store": { "path": ":memory:" },
+  "providers": {
+    "gemini": { "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/", "keyRef": "provider-gemini", "compat": "gemini" },
+    "groq": { "baseURL": "https://api.groq.com/openai/v1/", "keyRef": "provider-groq" }
+  },
+  "models": {
+    "gemini-flash-lite-31": {
+      "provider": "gemini",
+      "model": "gemini-3.1-flash-lite",
+      "capabilities": { "contextWindow": 1048576, "maxOutput": 8192, "tools": true, "images": true, "structuredOutput": true, "imageTokens": 1100 },
+      "limits": { "rpm": 15, "rpd": 500, "tpm": 250000, "dayReset": { "timeZone": "America/Los_Angeles" } },
+      "styleReminder": "Control tokens must be written exactly as <|ACT {...}|>. The closing is the two characters | and > together, never % and never > alone. Every reply starts with an ACT token."
+    },
+    "gemini-3-flash-preview": {
+      "provider": "gemini",
+      "model": "gemini-3-flash-preview",
+      "capabilities": { "contextWindow": 1048576, "maxOutput": 8192, "tools": true, "images": true, "structuredOutput": true, "imageTokens": 1100 },
+      "limits": { "rpm": 5, "rpd": 20, "tpm": 250000, "dayReset": { "timeZone": "America/Los_Angeles" } }
+    },
+    "gemini-flash-lite": {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite",
+      "capabilities": { "contextWindow": 1048576, "maxOutput": 8192, "tools": true, "images": true, "structuredOutput": true, "imageTokens": 1100 },
+      "limits": { "rpm": 15, "rpd": 500, "tpm": 250000, "dayReset": { "timeZone": "America/Los_Angeles" } }
+    },
+    "groq-oss-120b": {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "capabilities": { "contextWindow": 131072, "maxOutput": 8192, "tools": true, "images": false, "structuredOutput": true },
+      "limits": { "rpm": 30, "rpd": 1000, "tpm": 8000, "tpd": 200000 }
+    },
+    "groq-qwen": {
+      "provider": "groq",
+      "model": "qwen/qwen3.8-27b",
+      "capabilities": { "contextWindow": 131072, "maxOutput": 8192, "tools": true, "images": true, "imageTokens": 2048 },
+      "limits": { "rpm": 30, "rpd": 1000, "tpm": 7000, "tpd": 200000 }
+    },
+    "groq-whisper-turbo": {
+      "provider": "groq",
+      "model": "whisper-large-v3-turbo",
+      "capabilities": { "contextWindow": 448, "streaming": false, "tools": false }
+    },
+    "groq-whisper": {
+      "provider": "groq",
+      "model": "whisper-large-v3",
+      "capabilities": { "contextWindow": 448, "streaming": false, "tools": false }
+    }
+  },
+  "aliases": {
+    "companion-chat": { "role": "conversation", "chain": ["gemini-flash-lite-31", "gemini-3-flash-preview", "groq-oss-120b", "groq-qwen"] },
+    "companion-chat-fast": { "role": "conversation", "chain": ["gemini-flash-lite", "gemini-flash-lite-31", "gemini-3-flash-preview", "groq-oss-120b", "groq-qwen"] },
+    "companion-stt": { "role": "speech-recognition", "chain": ["groq-whisper-turbo", "groq-whisper"] }
+  },
+  "routing": { "stickyIdleMinutes": 360, "firstByteTimeoutMs": 30000 }
+}

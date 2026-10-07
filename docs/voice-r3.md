@@ -1,190 +1,137 @@
-# R3 voice implementation
+# R3 voice on the integrated branch
 
-R3 runs in `D:\AI\airi-r3` on `codex/r3-voice`, based on accepted R2A
-`ed5d2b8831dbe14b4b87568fc48508b0ca2d97a2`. It must wait for completed R2B
-before rebasing or merging. The active R2B and archived worktrees were not edited.
+R3 voice runs on `integration/r2b-r3`. That branch merges current upstream (`947e26ed8`), accepted R2B (`mura/main`), and R3 (`codex/r3-voice`).
+
+Upstream #2772 moved AIRI voice onto a shared VoiceController pipeline. That pipeline replaced every AIRI file that R3 had patched. The integrated branch uses the upstream pipeline and carries no R3 patch in `apps/` or `packages/`. R3 keeps three parts:
+
+- Companion Core speech recognition: `POST /v1/audio/transcriptions`, the multipart parser, the Groq adapter, and the fallback rules.
+- The live harness `packages/testing-audio/scripts/r3-live-voice.ts`.
+- The Mura test host `scripts/voice/mura-test-host.py`.
 
 ## Configuration
 
-Create `companion-audio.json` beside the existing Companion Core configuration:
+Speech recognition uses the R2B configuration file, providers, keys, and compute profile. Add an alias with the `speech-recognition` role:
 
 ```json
-{ "profile": "cloud-mura" }
+{
+  "models": {
+    "groq-whisper-turbo": { "provider": "groq", "model": "whisper-large-v3-turbo", "capabilities": { "contextWindow": 448, "streaming": false, "tools": false } },
+    "groq-whisper": { "provider": "groq", "model": "whisper-large-v3", "capabilities": { "contextWindow": 448, "streaming": false, "tools": false } }
+  },
+  "aliases": {
+    "companion-stt": { "role": "speech-recognition", "chain": ["groq-whisper-turbo", "groq-whisper"] }
+  }
+}
 ```
 
-An absent audio configuration leaves STT disabled. See
-[Companion Core audio configuration](../services/companion-core/README.md#audio-transcription)
-for bounds, credentials, and explicit LOCAL/HYBRID targets.
-
-| Profile | STT | Local STT fallback |
-| --- | --- | --- |
-| CLOUD / cloud-mura | Groq Whisper turbo, then large when unavailable | Rejected |
-| HYBRID | Groq first | Only an explicitly configured loopback target |
-| LOCAL | Explicit loopback Whisper-compatible server | No cloud request |
-
-Companion Core never starts a local STT process. Cloud 429 responses remain visible;
-they do not switch to a second cloud model. HYBRID can explicitly route eligible
-cloud failures to its local target within the original request deadline.
+The compute profile limits the speech chain. `cloud` and `cloud-mura-voice` reject a local speech model. `hybrid` accepts a local model only after every cloud model. See [Companion Core audio transcription](../services/companion-core/README.md#audio-transcription) for the fallback rules and bounds.
 
 In AIRI, use the existing OpenAI-compatible providers:
 
-| Module | Base URL | Model / voice |
+| Module | Base URL | Model and voice |
 | --- | --- | --- |
 | Hearing | Companion Gateway `/v1/` | `companion-stt` |
 | Consciousness | Companion Gateway `/v1/` | `companion-chat` |
 | Speech | `http://127.0.0.1:11996/v1/` | `qwen3-tts`, voice `mura` |
 
-The Gateway inference token stays in AIRI's existing provider settings. Groq and
-Gemini credentials stay in Companion Core. R3 does not proxy or replace Mura TTS.
-The existing AIRI speech sessions, chunking, ACT parsing, playback, and lip sync remain in use.
+Turn on **Auto send** in Hearing. Upstream keeps each voice transcript as a draft by default, so a voice conversation needs auto send.
 
 ## Listening and interruption
 
-The user's selected default is headphones with continuous listening. Policies use
-`settings/voice-input/mode` (`continuous`, `wake-word`, `push-to-talk`) and
-`settings/voice-input/output-device` (`headphones`, `speakers`). These are string
-settings. Reload after changing them directly in local storage.
+Upstream's voice store owns one VoiceController per audio host:
 
-Headphones allow continuous VAD while AIRI speaks. Detected speech publishes
-the existing stop-speaking action with reason `user-speech`. The Stage consumes it
-synchronously, cancels its speech session and queued playback, resets speaking/lip
-state, and cancels the identified chat generation. Late events from that response
-cannot feed a replacement speech session.
+- When the microphone is on, a Silero VAD plugin listens continuously.
+- Speech onset starts an input that interrupts the session's active responses before transcription starts.
+- An interrupted response cancels its speech, its playback, and its chat turn.
+- Responses are keyed by turn, so late audio of an old turn cannot play in a new one.
+- The default policy allows interruption during playback when the microphone reports echo cancellation. AIRI requests echo cancellation for every microphone.
+- Hold to talk sends begin, end, and cancel commands to the same controller.
 
-Speakers retain assistant echo suppression. Wake-word policy disables automatic
-capture; a wake-word detector belongs to a later phase. Batch providers have a
-Hold to talk control in Stage web. Hold the pointer or Space; release sends one
-recording. Focus loss and pointer cancellation discard it. Native AIRI retains its
-existing explicit recorder controls. Streaming providers retain their existing
-microphone control; the listening mode selector remains available when switching providers.
-
-An independent interactive-area streaming consumer is outside the measured batch
-Groq path. It does not yet share every speaker-policy suppression hook. Mobile
-composer auto-send and streaming TTS do not yet provide complete latency correlation.
+R3's earlier P2 stop path, recorder patches, and policy store are not needed on this pipeline.
 
 ## Reproducing validation
 
-Run these commands from the isolated worktree. Existing protected credentials are
-read without printing them. Do not configure or restart the active R2B Gateway.
+Run these commands from `D:\AI\airi-integration`. The harness reads protected keys without printing them. It never touches the live gateway configuration.
 
 ```powershell
-rtk proxy pnpm -F @proj-airi/stage-web dev --host 127.0.0.1 --port 5183
-rtk proxy python -B scripts/voice/mura-test-host.py --ops-config D:/AI/mura-console/backend/config.py
+pnpm -F @proj-airi/stage-web dev --host 127.0.0.1 --port 5183 --strictPort
+python -B scripts/voice/mura-test-host.py --ops-config D:/AI/mura-console/backend/config.py
 ```
 
-The optional Mura host starts only the existing CrispASR Qwen3-TTS service and
-proxy. Enter `stop` in its terminal to stop the processes it owns. It leaves an
-already-running Mura service alone.
+The Mura host starts the existing CrispASR Qwen3-TTS service and its proxy only when no Mura service runs. Type `stop` to stop the processes it started.
 
 ```powershell
-rtk proxy pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --config=packages/testing-audio/cases/r3-voice/gateway.r2a.json --samples=7
-rtk proxy pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --config=packages/testing-audio/cases/r3-voice/gateway.r2a.json --samples=50
-rtk proxy pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --config=packages/testing-audio/cases/r3-voice/gateway.r2a.json --samples=0 --capture-ms=450000 --min-completed=20 --app=http://127.0.0.1:5183/
-rtk proxy pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --config=packages/testing-audio/cases/r3-voice/gateway.r2a.json --samples=0 --capture-ms=50000 --min-completed=2 --barge-in --app=http://127.0.0.1:5183/
-rtk proxy pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --config=packages/testing-audio/cases/r3-voice/gateway.r2a.json --samples=0 --capture-ms=15000 --push-to-talk --app=http://127.0.0.1:5183/
-rtk proxy pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --config=packages/testing-audio/cases/r3-voice/gateway.r2a.json --samples=0 --stt-error --app=http://127.0.0.1:5183/
+pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --samples=7
+pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --samples=0 --app=http://127.0.0.1:5183/ --turns=20 --gap-seconds=40
+pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --samples=0 --app=http://127.0.0.1:5183/ --turns=2 --barge-in --gap-seconds=40
+pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --samples=0 --app=http://127.0.0.1:5183/ --push-to-talk --gap-seconds=5
+pnpm exec tsx packages/testing-audio/scripts/r3-live-voice.ts --samples=0 --app=http://127.0.0.1:5183/ --stt-error
 ```
 
-The harness creates an ephemeral authenticated Gateway and browser context. It
-can use an explicit R2A-compatible fixture because R2B may change the shared runtime
-schema. The fixture references protected keys and never contains their values.
-The harness
-uses Chromium's native file-backed microphone, AIRI VAD/recording, cloud STT/chat,
-the real local Mura service, and AIRI playback. It records timestamps and request
-counts without audio, transcript, prompt, or credentials. Corpus phrases are
-synthesized in memory. The Japanese greeting is Spesco's unchanged
-[CC BY-SA 4.0 sample](https://commons.wikimedia.org/wiki/File:Ja-konnichiwa.ogg), fetched into memory.
+The harness starts an ephemeral gateway from `packages/testing-audio/cases/r3-voice/gateway.r2b.json` with an in-memory state store. Pass `--config=<file>` for another R2B configuration and `--chat-model=<alias>` for another chat alias. The fixture holds key names, never key values.
 
-The `--barge-in` check injects a speech-start signal 500 ms after observed playback
-and exercises the mounted Stage's stop/generation ownership path. The ordinary
-21-turn run also observed a real VAD interruption and subsequent recovery.
-`--stt-error` injects a provider 429 to verify the real error toast and absence of
-downstream chat/TTS. Captures with too few completed responses fail. Corpus
-word matching is an observation, not a WER or an automatic accuracy acceptance gate.
+The microphone is Chromium's file-backed fake device. The harness synthesizes seven public phrases with Windows SAPI, separated by silence, into a temporary file that it deletes at the end. It measures from upstream IO trace spans and VoiceController attempt states:
 
-## Observed STT probe
+| Interval | Start | End |
+| --- | --- | --- |
+| VAD end to STT result | Attempt enters `finalizing` | `Speech recognition` span ends |
+| STT result to first text | `Speech recognition` span ends | `llm.first_token` event of the next `LLM inference` span |
+| First text to first TTS bytes | `llm.first_token` | First `TTS synthesis` span ends |
+| First TTS bytes to playback | First `TTS synthesis` span ends | First `Audio playback` span starts, plus Web Audio output latency |
 
-The paced 50-request probe completed with 50 HTTP-200 responses. Adapter-only
-latency was p50 263 ms / p95 413 ms. This repeated seven test categories; it is
-not a diverse 50-utterance accuracy benchmark and no WER is claimed.
+All intervals start after the 1200 ms VAD silence window. The user hears the reply about 1.2 s later than the total shows. The harness reports metadata only. It never stores audio, transcripts, prompts, or keys.
 
-| Category | Requests | Normalized reference matches |
-| --- | ---: | ---: |
-| English short | 8 | 8 |
-| English longer | 7 | 7 |
-| Punctuation / AIRI proper name | 7 | 0 |
-| Quiet | 7 | 7 |
-| Slow | 7 | 7 |
-| Added background noise | 7 | 7 |
-| Japanese greeting | 7 | 7 |
+## Results
 
-All seven punctuation samples contained punctuation, but the AIRI proper name
-differed from the strict reference. The Japanese result verifies this greeting,
-not broader Japanese or system-audio accuracy. An earlier rapid 50-request probe
-received 22 provider 429s; error propagation and explicit fallback restrictions
-also have automated coverage. A paced attempt stopped after 34 successes before
-the final retry; its preparation failure was not attributed to the STT provider.
+Measured on 2026-10-07 and 2026-10-08 on the integrated branch with the Vite dev server, local Mura TTS, and headless Chromium. Percentiles use nearest rank. p95 is withheld below 20 samples. Stage percentiles do not add up to the total percentile.
 
-## Observed latency
+### Speech recognition through the R2B gateway
 
-The 21-turn run repeated one upstream English fixture with conversation history
-growing normally. A single VAD interruption occurred. Background validation jobs
-ran during part of the capture. These are useful local measurements, not a
-representative human speech benchmark.
+Seven categories, one request each: 7 HTTP 200, 6 normalized matches, adapter p50 224 ms. The punctuation phrase kept its punctuation, but the AIRI name was spelled differently. The Japanese greeting matched. This verifies one greeting, not broad Japanese accuracy. No WER is claimed.
 
-| Interval | Samples | p50 ms | p95 ms |
-| --- | ---: | ---: | ---: |
-| VAD end → STT result | 21 | 674 | 854 |
-| STT result → first LLM text delta | 21 | 2261 | 2641 |
-| First LLM text delta → first TTS bytes | 21 | 1249 | 1525 |
-| First TTS bytes → Web Audio start | 21 | 123 | 723 |
-| VAD end → estimated audible output | 21 | 4286 | 5328 |
+### End-to-end latency
 
-The total adds Web Audio's reported base/output latency to the actual source
-start. It does not measure physical headphone output. Percentiles use nearest
-rank, and p95 is withheld below 20 samples. Per-stage percentiles do not add up
-to the percentile of the total.
+The chat alias was `companion-chat`, the provisional R2B chain. Gemini 3.1 Flash-Lite served almost every turn.
 
-The 2.5-second p50 target was not met. Chat and TTS were the largest intervals.
-R3 does not change R2B's provider routing or prompt budgets to improve this result.
-The mounted Stage signal-to-stop tests measured 0.3–0.8 ms; physical stop latency
-still requires the manual check below. Later functional checks running alongside
-other validation took approximately 12–14 seconds for a complete response. Those
-small runs verify recovery and do not replace the 21-turn latency measurement.
+| Run | Turns | VAD end → STT | STT → first text | First text → TTS | TTS → playback | Total p50 | Total p95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| A | 20 | 509 | 9498 | 1411 | 362 | 12523 | 19672 |
+| C | 8 | 618 | 2366 | 1018 | 366 | 4294 | n/a |
+| D | 20 | 587 | 14622 | 942 | 360 | 16557 | 28479 |
+| Old R3 (R2A path, Gemini 3.5 Flash-Lite) | 21 | 674 | 2261 | 1249 | 123 | 4286 | 5328 |
 
-## R2B integration point
+All values are p50 in milliseconds unless the column says otherwise. Run D also split the chat interval: AIRI's work from the STT result to the chat request took p50 635 ms, and the gateway saw the provider's first byte at p50 14440 ms.
 
-Audio implementation is isolated under Companion Core `src/audio/` and
-`providers/groq-transcription.ts`. Shared edits are:
+The provider's time to first token decides the total. The same model gave a 1.2 s first byte for one tiny prompt and 19.6 s for the next. Gemini 3.5 Flash-Lite and Gemini 3 Flash Preview returned daily-quota 429 errors during the runs, so the faster model could not be measured. `reasoning_effort` showed no consistent effect. The 2.5 s p50 target is not met.
 
-- `services/companion-core/src/server.ts`: audio options, alias discovery, route registration.
-- `services/companion-core/src/bin/run.ts`: separate audio configuration and protected key loading.
-- `services/companion-core/README.md`: audio setup documentation.
-- Stage web/native pages: speech-start stop action, listening policy, transcription/turn correlation.
-- `Stage.vue`: response ownership guards, cancellation, and TTS/playback timing.
-- `stores/chat.ts`: one first-text-delta timing hook.
-- Hearing consumers: speech-start event propagation.
-- Audio recorder: snapshot finalization hooks so old audio cannot move to a replacement binding;
-  cancel discarded recordings without finalizing an empty WAV.
+### Interruption, hold to talk, and errors
 
-R2B may replace the audio profile adapter/configuration boundary. Keep CLOUD's
-local-fallback prohibition and HYBRID's explicit opt-in. No provider-chain,
-quota, sticky-routing, prompt-budget, persona, MCP, or Watch Together feature was changed.
+| Check | Result |
+| --- | --- |
+| Interrupt while the reply is generating | Playback silent, chat turn closed, gateway logged the provider stream as cancelled |
+| Interrupt 500 ms after audible output | Silent after 5 ms in software |
+| Interrupt during a later chunk | Silent after 201 ms in software, including the fade |
+| Next turns after interruptions | 5 committed, 4 reached playback |
+| Hold to talk, cancelled hold | Cancelled, no turn |
+| Hold to talk, normal hold after that | Committed |
+| Hold to talk, immediate release | Committed. Whisper can return text for a very short clip, so check it by hand. |
+| Injected STT 429 | Error text visible, zero chat and TTS requests |
+
+These are software timings. They do not measure the sound that leaves your headphones.
 
 ## Manual acceptance checklist
 
-Use the intended headphones, avatar, and Mura voice. Enable microphone access and
-verify Hearing/Consciousness/Speech selections above. Check the following:
+Use the intended headphones, avatar, and Mura voice. Turn on the microphone and Hearing auto send. No item counts as passed until you confirm it.
 
-1. Say a short and long English sentence, speak quietly and slowly, and repeat with realistic background noise. Confirm one user turn per utterance and useful punctuation.
-2. Select Japanese language in Hearing and speak a Japanese sentence. Confirm the transcription and restore your usual language afterward.
-3. Have AIRI give a multi-sentence answer. Confirm Mura identity, prompt first chunk, ordered non-overlapping chunks, lip movement, and appropriate ACT/emotion behavior. ACT/reasoning markers must not be spoken.
-4. Interrupt during playback, including 500 ms after it begins. Repeat three times and during a later chunk. Measure detected speech to actual sound stopping with audio loopback/video if available; target approximately 300 ms.
-5. After each interruption, say a new sentence. Confirm current/queued old speech stays stopped, the new turn appears once, and its answer plays normally. Also speak while idle and verify no spurious stop or duplicate turn.
-6. Use Hold to talk: pointer hold/release, Space hold/release, Space followed by Tab, and window focus loss. Focus loss must discard the recording; the next normal hold must still work.
-7. Verify the visible STT error with the harness's 429 check. CLOUD must never start or call local STT; HYBRID fallback requires an explicitly configured, already-running local STT service.
-8. Confirm provider cancellation in Gateway metadata for an interruption while cloud generation is still active. Automated playback-stop checks do not prove that every live request is still active when interrupted.
-9. Repeat the latency run with real microphone and headphone loopback before accepting the physical end-to-end latency target.
-
-No claim is made that Mura sounds correct or that the avatar's emotion looks correct
-without these human checks.
+1. Speak short and long English sentences, quietly, slowly, and with background noise. Each utterance makes one user turn with useful punctuation.
+2. Set Hearing to Japanese and say a Japanese sentence. Check the transcript, then restore your language.
+3. Ask for a multi-sentence answer. Check that it is the Mura voice, that the first chunk starts promptly, and that chunks play in order without overlap.
+4. Watch the mouth move with speech and stop when speech stops.
+5. Watch the ACT emotion and motion change on the avatar. No ACT or reasoning marker is spoken or shown.
+6. Interrupt about 500 ms after audible speech begins. The voice stops, and your new utterance becomes one turn.
+7. Interrupt during a later chunk of a long answer. Old chunks never resume.
+8. After each interruption, speak a new sentence. It gets a normal spoken answer.
+9. Measure physical sound-stop latency with a loopback recording or a video, from your speech onset to silence. The target is about 300 ms.
+10. Interrupt while the reply text is still streaming. The chat turn stops, and no late text or audio of that turn appears.
+11. Speak while AIRI is idle. Nothing stops, and the turn appears once.
+12. Hold to talk: hold and release, then release immediately, then lose window focus while holding. A discarded hold makes no turn, and the next hold works.
