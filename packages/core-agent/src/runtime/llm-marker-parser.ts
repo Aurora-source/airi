@@ -3,6 +3,83 @@ const TAG_CLOSE = '|>'
 const ESCAPED_TAG_OPEN = '<{\'|\'}'
 const ESCAPED_TAG_CLOSE = '{\'|\'}>'
 
+const ACT_OPEN = /^<\|ACT\s+/
+// NOTICE:
+// Models close ACT markers with mistyped closers, for example `}%>`, `}#>`, `}>`, `}-->`, or `}||>`.
+// The marker then never closes, so the speech after it is withheld or dropped.
+// Source: R2B persona benchmark, Gemini 3.x Flash-Lite and Groq Qwen replies.
+// Removal condition: none while hosted models write these closers.
+const ACT_CLOSER = /^[ \t]*(?:[!#%/@|~-]\uFE0F?){0,2}>/
+const ACT_CLOSER_PREFIX = /^[ \t]*(?:[!#%/@|~-]\uFE0F?){0,2}$/
+const STANDARD_CLOSER = /^[ \t]*\|>$/
+
+type ActMarkerEnd
+  = | { status: 'pending' }
+    | { status: 'closed', length: number, special: string }
+
+/** Index of the brace that closes the JSON object at `start`, or -1 while the object is still open. */
+function jsonObjectEnd(text: string, start: number): number {
+  let depth = 0
+  let inString = false
+  let escaped = false
+  for (let index = start; index < text.length; index++) {
+    const char = text[index]
+    if (inString) {
+      if (escaped)
+        escaped = false
+      else if (char === '\\')
+        escaped = true
+      else if (char === '"')
+        inString = false
+    }
+    else if (char === '"') {
+      inString = true
+    }
+    else if (char === '{') {
+      depth++
+    }
+    else if (char === '}' && --depth === 0) {
+      return index
+    }
+  }
+  return -1
+}
+
+/**
+ * Finds where an ACT marker with a JSON payload ends when the model mistypes its closer.
+ *
+ * Returns:
+ * - `undefined` when the standard `|>` search applies: not an ACT payload, a `|>` before the payload ends, or text after it.
+ * - `pending` while the next characters decide between those cases.
+ * - `closed` with the canonical `<|ACT {...}|>` text when a known closer follows the payload.
+ */
+function findActMarkerEnd(buffer: string): ActMarkerEnd | undefined {
+  const open = ACT_OPEN.exec(buffer)
+  if (!open)
+    return /^<\|(?:A(?:C(?:T\s*)?)?)?$/.test(buffer) ? { status: 'pending' } : undefined
+
+  const payloadStart = open[0].length
+  if (payloadStart === buffer.length)
+    return { status: 'pending' }
+  if (buffer[payloadStart] !== '{')
+    return undefined
+
+  const payloadEnd = jsonObjectEnd(buffer, payloadStart)
+  const standardClose = buffer.indexOf(TAG_CLOSE, payloadStart)
+  if (payloadEnd < 0)
+    return standardClose < 0 ? { status: 'pending' } : undefined
+  if (standardClose >= 0 && standardClose < payloadEnd)
+    return undefined
+
+  const rest = buffer.slice(payloadEnd + 1)
+  const closer = ACT_CLOSER.exec(rest)
+  if (closer) {
+    const raw = buffer.slice(0, payloadEnd + 1 + closer[0].length)
+    return { status: 'closed', length: raw.length, special: STANDARD_CLOSER.test(closer[0]) ? raw : `${buffer.slice(0, payloadEnd + 1)}${TAG_CLOSE}` }
+  }
+  return ACT_CLOSER_PREFIX.test(rest) ? { status: 'pending' } : undefined
+}
+
 interface MarkerToken {
   type: 'literal' | 'special'
   value: string
@@ -102,6 +179,16 @@ function createLlmMarkerParser(options?: MarkerParserOptions) {
           inTag = true
         }
         else {
+          const act = findActMarkerEnd(buffer)
+          if (act?.status === 'pending')
+            break
+          if (act?.status === 'closed') {
+            buffer = buffer.slice(act.length)
+            await onSpecial(act.special)
+            inTag = false
+            continue
+          }
+
           const closeTagIndex = buffer.indexOf(TAG_CLOSE)
           if (closeTagIndex < 0)
             break
