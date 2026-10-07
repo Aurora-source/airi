@@ -247,7 +247,10 @@ export class QuotaLedger {
    * It walks the window from its oldest request, and stops when the freed weight covers the excess.
    */
   private freeAt(scope: string, sinceMs: number, excess: number, weight: (row: UsageRow) => number, windowMs: number): number {
-    const rows = this.db.prepare('SELECT at_ms, input_tokens, output_tokens FROM usage_event WHERE scope = ? AND counted = 1 AND at_ms > ? ORDER BY at_ms ASC').all(scope, sinceMs) as unknown as UsageRow[]
+    const rows: UsageRow[] = this.db
+      .prepare('SELECT at_ms, input_tokens, output_tokens FROM usage_event WHERE scope = ? AND counted = 1 AND at_ms > ? ORDER BY at_ms ASC')
+      .all(scope, sinceMs)
+      .map(row => ({ at_ms: Number(row.at_ms), input_tokens: Number(row.input_tokens), output_tokens: Number(row.output_tokens) }))
     let freed = 0
     for (const row of rows) {
       freed += weight(row)
