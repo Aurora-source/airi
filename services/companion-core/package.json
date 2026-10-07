@@ -14,6 +14,7 @@
   "scripts": {
     "start": "tsx ./src/bin/run.ts serve",
     "cli": "tsx ./src/bin/run.ts",
+    "persona": "tsx ./eval/persona/cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
