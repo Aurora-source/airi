@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util'
 
 import { errorMessageFrom } from '@moeru/std'
 
+import { loadAudioConfig, loadGroqKey } from '../audio/audio-config'
 import { INFERENCE_TOKEN_SECRET, loadOrCreateCredentials } from '../auth/credentials'
 import { DpapiSecretStore } from '../auth/secret-store'
 import { configPath, loadConfig, resolveHome, writeStarterConfig } from '../config/config'
@@ -53,6 +54,7 @@ async function main(argv: string[]): Promise<void> {
     }
     case 'serve': {
       const config = await loadConfig()
+      const audioConfig = await loadAudioConfig()
       const credentials = await loadOrCreateCredentials(store)
       const providerKeys = new Map<string, string>()
       for (const [providerName, provider] of Object.entries(config.providers)) {
@@ -65,7 +67,19 @@ async function main(argv: string[]): Promise<void> {
         else
           console.warn(`No API key stored for provider "${providerName}" (secret "${provider.keyRef}"). Its requests get 503.`)
       }
-      const gateway = await startGateway({ config, credentials, providerKeys })
+      if (audioConfig && audioConfig.profile !== 'LOCAL') {
+        const key = await loadGroqKey(store, audioConfig.cloud.keyRef)
+        if (key)
+          providerKeys.set(audioConfig.cloud.keyRef, key)
+        else
+          console.warn('No Groq API key is configured for audio transcription.')
+      }
+      if (audioConfig?.local?.keyRef) {
+        const key = await store.read(audioConfig.local.keyRef)
+        if (key)
+          providerKeys.set(audioConfig.local.keyRef, key)
+      }
+      const gateway = await startGateway({ config, credentials, providerKeys, audioConfig })
       console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'})`)
       const stop = () => {
         void gateway.close().finally(() => process.exit(0))

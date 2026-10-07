@@ -1,0 +1,17 @@
+{
+  "port": 0,
+  "allowedOrigins": [],
+  "providers": {
+    "gemini": {
+      "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "keyRef": "provider-gemini",
+      "compat": "gemini"
+    }
+  },
+  "aliases": {
+    "companion-chat": {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite"
+    }
+  }
+}
