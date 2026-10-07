@@ -130,6 +130,20 @@ describe('runScenario', () => {
     expect(row.record.totalMs).toBeLessThan(row.waitedMs)
   }, 20_000)
 
+  it('does not wait for a limit that lasts hours, such as a daily quota, and records the 429 at once', async () => {
+    provider.setHandler((_req, res) => {
+      res.writeHead(429, { 'content-type': 'application/json', 'retry-after': '14400' })
+      res.end('{"error":{"message":"daily quota"}}')
+    })
+    const started = performance.now()
+
+    const row = await runScenario(client, 'companion-eval:fake-model', 'fake-model', scene('casual-1'), SYSTEM)
+
+    expect(row.record.status).toBe(429)
+    expect(row.waitedMs).toBe(0)
+    expect(performance.now() - started).toBeLessThan(3000)
+  })
+
   it('records a final failure and goes on, such as a request that no wait can fix', async () => {
     provider.setHandler((_req, res) => {
       res.writeHead(400, { 'content-type': 'application/json' })

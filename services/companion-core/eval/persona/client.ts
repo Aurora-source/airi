@@ -59,8 +59,10 @@ export class GatewayClient {
     for (;;) {
       const attempt = await this.once(model, body)
       const totalMs = Math.round(performance.now() - started)
-      if (attempt.status === 429 && waitedMs < this.maxWaitMs) {
-        const wait = Math.min(attempt.retryAfterMs ?? 5000, MAX_RETRY_AFTER_MS) + 250
+      // A wait of hours is a daily quota. Waiting does not fix it, so the 429 is the answer.
+      const worthWaiting = (attempt.retryAfterMs ?? 0) <= MAX_RETRY_AFTER_MS
+      if (attempt.status === 429 && worthWaiting && waitedMs < this.maxWaitMs) {
+        const wait = (attempt.retryAfterMs ?? 5000) + 250
         waitedMs += wait
         await this.sleep(wait)
         continue
