@@ -14,6 +14,16 @@ export interface GatewayLogEvent {
   outcome: 'ok' | 'rejected' | 'cancelled' | 'upstream_error' | 'network_error'
   reason?: string
   alias?: string
+  /** The model that answered, as a key of `models`. */
+  model?: string
+  /** `full` or `first-round-only`. See the eligibility preflight. */
+  tier?: string
+  /** One `model=outcome` entry per model that the gateway tried, in order. */
+  attempts?: string[]
+  /** One `model=reason` entry per model that the preflight skipped before sending. */
+  skipped?: string[]
+  /** Estimated prompt size by part, in tokens. Counts only. */
+  tokens?: { system: number, conversation: number, tools: number, output: number, total: number }
   stream?: boolean
   /** Milliseconds from request start to the first provider body byte. */
   firstByteMs?: number

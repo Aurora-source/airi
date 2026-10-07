@@ -32,10 +32,9 @@ export type SkipReason
     | 'CAPABILITY_STRUCTURED_OUTPUT'
     | 'CONTEXT_TOO_SMALL'
     | 'TPM_INELIGIBLE'
-    | 'UNHEALTHY'
     | QuotaReason
 
-const UNAVAILABLE_REASONS = new Set<SkipReason>(['UNHEALTHY', 'COOLING_DOWN', 'OBSERVED_REQUESTS_EXHAUSTED', 'RPM_EXHAUSTED', 'RPD_EXHAUSTED', 'TPM_WINDOW_FULL', 'TPD_EXHAUSTED'])
+const UNAVAILABLE_REASONS = new Set<SkipReason>(['COOLING_DOWN', 'OBSERVED_REQUESTS_EXHAUSTED', 'RPM_EXHAUSTED', 'RPD_EXHAUSTED', 'TPM_WINDOW_FULL', 'TPD_EXHAUSTED'])
 
 export interface Skip {
   modelId: string
@@ -67,6 +66,11 @@ export interface Candidate {
   targetTokens: number
   /** Hard prompt limit of this model for this turn: context, `maxPrompt`, quality policy, and rate limit together. */
   maxPromptTokens: number
+  /**
+   * Set when the model failed recently. A resting model still takes requests, because the failure can be a one-off
+   * and a refusal costs more than a try. The router puts it behind every healthy model.
+   */
+  restingUntilMs?: number
 }
 
 export interface EligibilityContext {
@@ -107,7 +111,8 @@ export function policyTargetOf(prompt: AliasConfig['prompt'], traits: RequestTra
  * 1. Profile, key, and capabilities.
  * 2. Capacity: the budgeter trims the history to the smallest of the quality target, the context window, `maxPrompt`,
  *    and what the per-minute limit leaves for the turn. A request whose fixed part exceeds that is ineligible.
- * 3. Health, then the quota ledger.
+ * 3. The quota ledger. A quota block skips the model, because a request into a known 429 only wastes quota.
+ *    Health does not skip. A model that failed recently is marked as resting.
  *
  * Call stack:
  *
@@ -156,9 +161,7 @@ export function evaluateModel(model: ResolvedModel, body: WireRequest, traits: R
     return skip(first.reason, { detail: first.detail })
   }
 
-  const restingUntil = context.health.coolingUntil(model.id)
-  if (restingUntil !== undefined)
-    return skip('UNHEALTHY', { retryAtMs: restingUntil, detail: 'the model failed recently' })
+  const restingUntilMs = context.health.coolingUntil(model.id)
 
   let firstBlock: { reason: QuotaReason, retryAtMs: number, detail?: string } | undefined
   for (const plan of feasible) {
@@ -166,7 +169,7 @@ export function evaluateModel(model: ResolvedModel, body: WireRequest, traits: R
     const verdict = context.ledger.check(model.scope, model.limits, need)
     if (verdict.ok) {
       const { rounds: _rounds, ...candidate } = plan.candidate
-      return { candidate: { ...candidate, need } }
+      return { candidate: { ...candidate, need, restingUntilMs } }
     }
     firstBlock ??= verdict
   }

@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net'
 import type { GatewayCredentials } from './auth/credentials'
 import type { CompanionConfig } from './config/config'
 import type { GatewayLogEvent } from './gateway/http'
+import type { GatewayRuntimeOptions } from './gateway/runtime'
 
 import process from 'node:process'
 
@@ -13,6 +14,8 @@ import { createBearerCheck } from './auth/credentials'
 import { LOOPBACK_HOST } from './config/config'
 import { proxyChatCompletion } from './gateway/chat-completions'
 import { sendError } from './gateway/http'
+import { opsStatus } from './gateway/ops-status'
+import { GatewayRuntime } from './gateway/runtime'
 import { createRedactor } from './logging/redact'
 
 /** Request headers that a browser client can send in a CORS preflight. Anything else fails the preflight. */
@@ -25,6 +28,8 @@ export interface GatewayOptions {
   providerKeys: ReadonlyMap<string, string>
   /** Receives one redacted line per request. Defaults to stderr. */
   writeLog?: (line: string) => void
+  /** Capabilities that a probe measured, and a clock. Tests replace the clock. */
+  runtime?: Pick<GatewayRuntimeOptions, 'capabilitiesOf' | 'now'>
 }
 
 export interface RunningGateway {
@@ -42,6 +47,7 @@ export interface RunningGateway {
  * 2. A request with an `Origin` header must come from `config.allowedOrigins`, even when it has a valid token.
  * 3. `GET /livez` needs no token and reveals nothing but liveness.
  * 4. `/v1/*` needs the inference token. The ops token is rejected there.
+ * 5. `/ops/*` needs the ops token. The inference token is rejected there.
  *
  * Call stack:
  *
@@ -55,6 +61,8 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   const writeLog = options.writeLog ?? (line => process.stderr.write(`${line}\n`))
   const log = (event: GatewayLogEvent) => writeLog(redact(JSON.stringify({ time: new Date().toISOString(), ...event })))
   const isInferenceToken = createBearerCheck(options.credentials.inference)
+  const isOpsToken = createBearerCheck(options.credentials.ops)
+  const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, ...options.runtime })
   const allowedOrigins = new Set(config.allowedOrigins)
 
   let allowedHosts = new Set<string>()
@@ -113,6 +121,18 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
       return
     }
 
+    if (path.startsWith('/ops/')) {
+      if (!isOpsToken(req.headers.authorization))
+        return reject(401, 'invalid_token', 'A valid ops token is required.', { 'www-authenticate': 'Bearer' })
+      if (method === 'GET' && path === '/ops/status') {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify(opsStatus(runtime)))
+        log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
+        return
+      }
+      return reject(404, 'not_found', 'Not found.')
+    }
+
     if (!path.startsWith('/v1/'))
       return reject(404, 'not_found', 'Not found.')
 
@@ -121,7 +141,9 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
 
     if (method === 'GET' && path === '/v1/models') {
       // AIRI lists models when it validates the provider and when the user picks a model.
-      const data = Object.keys(config.aliases).map(id => ({ id, object: 'model', created: 0, owned_by: 'companion-core' }))
+      // `alias:model` names pin one model of the chain, which is how a user overrides the routing from AIRI's model list.
+      const ids = Object.entries(config.aliases).flatMap(([name, alias]) => [name, ...alias.chain.map(model => `${name}:${model}`)])
+      const data = ids.map(id => ({ id, object: 'model', created: 0, owned_by: 'companion-core' }))
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({ object: 'list', data }))
       log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
@@ -129,7 +151,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
     }
 
     if (method === 'POST' && path === '/v1/chat/completions') {
-      await proxyChatCompletion(req, res, { config, providerKeys: options.providerKeys, redact, log })
+      await proxyChatCompletion(req, res, { runtime, redact, log })
       return
     }
 
@@ -152,7 +174,13 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
     baseURL: `http://${LOOPBACK_HOST}:${port}/v1/`,
     close: () => new Promise<void>((resolve, reject) => {
       server.closeAllConnections()
-      server.close(error => error ? reject(error) : resolve())
+      server.close((error) => {
+        runtime.close()
+        if (error)
+          reject(error)
+        else
+          resolve()
+      })
     }),
   }
 }

@@ -2,7 +2,7 @@ import type { RunningGateway } from '../src'
 
 import { Buffer } from 'node:buffer'
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { authHeaders, readChunks, sse, startFakeProvider, startTestGateway, TEST_INFERENCE_TOKEN, TEST_PROVIDER_KEY, writeEvents } from './support/harness'
 
@@ -12,15 +12,19 @@ let logs: string[]
 
 beforeAll(async () => {
   provider = await startFakeProvider()
+})
+
+// Routing remembers failures: a model that returned 429 or 500 rests. Each test therefore starts its own gateway.
+beforeEach(async () => {
   ;({ gateway, logs } = await startTestGateway(provider.baseURL))
 })
 
-afterEach(() => {
+afterEach(async () => {
+  await gateway.close()
   provider.requests.length = 0
 })
 
 afterAll(async () => {
-  await gateway.close()
   await provider.close()
 })
 
@@ -321,7 +325,8 @@ describe('chat completions passthrough', () => {
 
     expect(response.status).toBe(200)
     expect(body.object).toBe('list')
-    expect(body.data.map(model => model.id)).toEqual(['companion-chat'])
+    // Each model of the chain is listed as alias:model, so that a user can pin one from AIRI's model list.
+    expect(body.data.map(model => model.id)).toEqual(['companion-chat', 'companion-chat:fake-model'])
   })
 })
 

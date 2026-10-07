@@ -260,11 +260,15 @@ describe('evaluateModel quota and health', () => {
     expect(expectSkip(evaluate('gemini-flash-lite', airiRequest()))).toMatchObject({ reason: 'COOLING_DOWN', category: 'unavailable', retryAtMs: T0 + 30_000 })
   })
 
-  it('skips a model that failed recently, as unhealthy', () => {
+  it('marks a model that failed recently as resting, and still admits it', () => {
     const { evaluate, health } = setup()
     health.recordFailure('gemini-flash-lite', 'network')
 
-    expect(expectSkip(evaluate('gemini-flash-lite', airiRequest()))).toMatchObject({ reason: 'UNHEALTHY', category: 'unavailable', retryAtMs: T0 + 10_000 })
+    expect(expectCandidate(evaluate('gemini-flash-lite', airiRequest())).restingUntilMs).toBe(T0 + 10_000)
+  })
+
+  it('leaves a healthy model without a resting mark', () => {
+    expect(expectCandidate(setup().evaluate('gemini-flash-lite', airiRequest())).restingUntilMs).toBeUndefined()
   })
 
   it('reports ineligible for a request that no wait can fix, before it reports a cool-down', () => {

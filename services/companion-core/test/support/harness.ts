@@ -76,15 +76,37 @@ export async function startTestGateway(providerBaseURL: string, options: { compa
   const logs: string[] = []
   const config = parseConfig({
     port: 0,
+    store: { path: ':memory:' },
     allowedOrigins: [ALLOWED_ORIGIN],
     providers: { fake: { baseURL: providerBaseURL, keyRef: 'provider-fake', ...options } },
-    models: { 'fake-model': { provider: 'fake', model: 'real-model-1', capabilities: { contextWindow: 128_000 } } },
+    models: { 'fake-model': { provider: 'fake', model: 'real-model-1', capabilities: { contextWindow: 128_000, images: true, structuredOutput: true } } },
     aliases: { 'companion-chat': { chain: ['fake-model'] } },
   })
   const gateway = await startGateway({
     config,
     credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN },
     providerKeys: new Map([['provider-fake', TEST_PROVIDER_KEY]]),
+    writeLog: line => logs.push(line),
+  })
+  return { gateway, logs }
+}
+
+/**
+ * Starts a gateway from a raw configuration object, with an in-memory state database, on a free port.
+ * The configuration holds providers, models, and aliases of the test. Every provider key that it names gets a test key.
+ */
+export async function startRoutedGateway(raw: Record<string, unknown>): Promise<{ gateway: RunningGateway, logs: string[] }> {
+  const logs: string[] = []
+  const config = parseConfig({ port: 0, store: { path: ':memory:' }, allowedOrigins: [], ...raw })
+  const keys = new Map<string, string>()
+  for (const provider of Object.values(config.providers)) {
+    if (provider.keyRef)
+      keys.set(provider.keyRef, `${TEST_PROVIDER_KEY}-${provider.keyRef}`)
+  }
+  const gateway = await startGateway({
+    config,
+    credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN },
+    providerKeys: keys,
     writeLog: line => logs.push(line),
   })
   return { gateway, logs }

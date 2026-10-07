@@ -78,6 +78,33 @@ describe('router chain order', () => {
   })
 })
 
+describe('router health', () => {
+  it('tries a model that failed recently after every healthy model, and does not refuse it', () => {
+    const { router, health } = setup()
+    health.recordFailure('gemini-flash-lite', 'network')
+
+    const plan = planOf(router.plan(chat()))
+
+    expect(ids(plan)).toEqual(['groq-qwen', 'groq-oss', 'gemini-flash-lite'])
+    expect(plan.skipped).toEqual([])
+  })
+
+  it('still tries the only model of a chain after it failed, so that one dropped stream does not stop the service', () => {
+    const { router, health } = setup(catalogConfig({ aliases: { 'companion-chat': { chain: ['gemini-flash-lite'] } } }))
+    health.recordFailure('gemini-flash-lite', 'network')
+
+    expect(ids(planOf(router.plan(chat())))).toEqual(['gemini-flash-lite'])
+  })
+
+  it('moves a sticky model that is resting behind the healthy ones, because the conversation leaves a failing model', () => {
+    const { router, health, sticky } = setup()
+    sticky.set('companion-chat', planOf(router.plan(chat())).conversationKey, 'groq-qwen', 'served')
+    health.recordFailure('groq-qwen', 'server')
+
+    expect(ids(planOf(router.plan(chat())))).toEqual(['gemini-flash-lite', 'groq-oss', 'groq-qwen'])
+  })
+})
+
 describe('router stickiness', () => {
   it('keeps the model that served the conversation, even when the head is free again', () => {
     const { router, sticky } = setup()

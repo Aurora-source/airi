@@ -3,7 +3,7 @@ import type { RunningGateway } from '../src'
 import { Buffer } from 'node:buffer'
 
 import { streamText } from '@xsai/stream-text'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { createGeminiToolCallIndexer } from '../src/providers/gemini-compat'
 import { authHeaders, readChunks, sse, startFakeProvider, startTestGateway, TEST_INFERENCE_TOKEN } from './support/harness'
@@ -149,17 +149,20 @@ describe('gateway with the gemini compat adapter', () => {
 
   beforeAll(async () => {
     provider = await startFakeProvider()
+  })
+
+  beforeEach(async () => {
     ;({ gateway: geminiGateway, logs } = await startTestGateway(provider.baseURL, { compat: 'gemini' }))
     ;({ gateway: plainGateway } = await startTestGateway(provider.baseURL))
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await geminiGateway.close()
+    await plainGateway.close()
     provider.requests.length = 0
   })
 
   afterAll(async () => {
-    await geminiGateway.close()
-    await plainGateway.close()
     await provider.close()
   })
 

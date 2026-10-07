@@ -50,10 +50,11 @@ export type RoutePlan
  * Chooses which models can serve a request and in what order. It sends nothing and changes nothing.
  *
  * Order of candidates:
- * 1. Models that carry the whole logical turn come before models that carry only its first round.
- * 2. Inside each group, the model that already serves this conversation comes first.
+ * 1. Healthy models come before models that failed recently. A resting model is a last resort and not a refusal.
+ * 2. Models that carry the whole logical turn come before models that carry only its first round.
+ * 3. Inside each group, the model that already serves this conversation comes first.
  *    A different model can change the character, so the conversation moves only when its model cannot take the request.
- * 3. The rest follow the chain order of the alias.
+ * 4. The rest follow the chain order of the alias.
  *
  * A model name `alias:model` is an explicit override. Only that model serves it.
  */
@@ -140,10 +141,10 @@ function failure(status: RouteError['status'], code: string, message: string, sk
 }
 
 function orderCandidates(candidates: Candidate[], stickyModelId: string | undefined): Candidate[] {
-  const order = (tier: Candidate['tier']) => {
-    const group = candidates.filter(candidate => candidate.tier === tier)
+  const order = (tier: Candidate['tier'], resting: boolean) => {
+    const group = candidates.filter(candidate => candidate.tier === tier && (candidate.restingUntilMs !== undefined) === resting)
     const sticky = group.filter(candidate => candidate.model.id === stickyModelId)
     return [...sticky, ...group.filter(candidate => candidate.model.id !== stickyModelId)]
   }
-  return [...order('full'), ...order('first-round-only')]
+  return [order('full', false), order('first-round-only', false), order('full', true), order('first-round-only', true)].flat()
 }
