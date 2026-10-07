@@ -8,6 +8,7 @@ import { once } from 'node:events'
 
 import { errorMessageFrom } from '@moeru/std'
 
+import { resolveAlias } from '../config/config'
 import { createGeminiToolCallIndexer } from '../providers/gemini-compat'
 import { sendChatCompletion } from '../providers/openai-compatible'
 import { readRequestBody, RequestBodyTooLargeError, sendError } from './http'
@@ -65,16 +66,18 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
   }
 
   const aliasName = body.model
-  const alias = context.config.aliases[aliasName]
-  if (!alias) {
+  const chain = resolveAlias(context.config, aliasName)
+  if (!chain) {
     sendError(res, 404, 'invalid_request_error', 'model_not_found', `Model "${aliasName}" is not a configured alias.`)
     context.log({ ...logBase, status: 404, outcome: 'rejected', reason: 'model_not_found', durationMs: elapsed(startedAt) })
     return
   }
-  const provider = context.config.providers[alias.provider]
-  const apiKey = context.providerKeys.get(provider.keyRef)
-  if (!apiKey) {
-    sendError(res, 503, 'server_error', 'provider_key_missing', `No API key is stored for provider "${alias.provider}".`)
+  // Routing across the chain arrives with the router. Until then the head of the chain serves every request.
+  const target = chain[0]
+  const provider = target.provider
+  const apiKey = provider.keyRef ? context.providerKeys.get(provider.keyRef) : undefined
+  if (provider.keyRef && !apiKey) {
+    sendError(res, 503, 'server_error', 'provider_key_missing', `No API key is stored for provider "${target.providerName}".`)
     context.log({ ...logBase, status: 503, outcome: 'rejected', reason: 'provider_key_missing', alias: aliasName, durationMs: elapsed(startedAt) })
     return
   }
@@ -96,7 +99,7 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
   let upstream: Response
   try {
     // Spread keeps the original key order. Overwriting `model` keeps its position.
-    upstream = await sendChatCompletion({ provider, apiKey, body: JSON.stringify({ ...body, model: alias.model }), signal: controller.signal })
+    upstream = await sendChatCompletion({ provider, apiKey, body: JSON.stringify({ ...body, model: target.model }), signal: controller.signal })
   }
   catch (error) {
     if (controller.signal.aborted) {
@@ -104,7 +107,7 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
       return
     }
     const message = context.redact(errorMessageFrom(error) ?? 'Provider request failed.')
-    sendError(res, 502, 'upstream_error', 'provider_unreachable', `Provider "${alias.provider}" is unreachable: ${message}`)
+    sendError(res, 502, 'upstream_error', 'provider_unreachable', `Provider "${target.providerName}" is unreachable: ${message}`)
     log({ status: 502, outcome: 'network_error', reason: message, durationMs: elapsed(startedAt) })
     return
   }

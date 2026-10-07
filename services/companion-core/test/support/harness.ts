@@ -78,7 +78,8 @@ export async function startTestGateway(providerBaseURL: string, options: { compa
     port: 0,
     allowedOrigins: [ALLOWED_ORIGIN],
     providers: { fake: { baseURL: providerBaseURL, keyRef: 'provider-fake', ...options } },
-    aliases: { 'companion-chat': { provider: 'fake', model: 'real-model-1' } },
+    models: { 'fake-model': { provider: 'fake', model: 'real-model-1', capabilities: { contextWindow: 128_000 } } },
+    aliases: { 'companion-chat': { chain: ['fake-model'] } },
   })
   const gateway = await startGateway({
     config,

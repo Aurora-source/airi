@@ -10,7 +10,8 @@ import type { ProviderConfig } from '../config/config'
  */
 export function sendChatCompletion(input: {
   provider: ProviderConfig
-  apiKey: string
+  /** Absent for a local provider that needs no key. */
+  apiKey?: string
   body: string
   signal: AbortSignal
 }): Promise<Response> {
@@ -19,7 +20,7 @@ export function sendChatCompletion(input: {
     headers: {
       'accept': 'application/json, text/event-stream',
       'accept-encoding': 'identity',
-      'authorization': `Bearer ${input.apiKey}`,
+      ...(input.apiKey ? { authorization: `Bearer ${input.apiKey}` } : {}),
       'content-type': 'application/json',
     },
     body: input.body,

@@ -51,6 +51,9 @@ async function main(argv: string[]): Promise<void> {
       const credentials = await loadOrCreateCredentials(store)
       const providerKeys = new Map<string, string>()
       for (const [providerName, provider] of Object.entries(config.providers)) {
+        // A local provider can run without a key.
+        if (!provider.keyRef)
+          continue
         const key = await store.read(provider.keyRef)
         if (key)
           providerKeys.set(provider.keyRef, key)
