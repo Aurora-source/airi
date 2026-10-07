@@ -3,6 +3,8 @@ export const DEFAULT_ASSISTANT_SPEECH_INPUT_COOLDOWN_MS = 800
 export interface VoiceInputSuppressionOptions {
   assistantSpeaking: boolean
   suppressedUntil: number
+  /** Continuous headphone input bypasses speaker echo suppression. */
+  allowBargeIn?: boolean
 }
 
 /**
@@ -19,6 +21,9 @@ export interface VoiceInputSuppressionOptions {
  * - `true` when capture, transcription, and ingestion should be skipped.
  */
 export function shouldSuppressVoiceInput(options: VoiceInputSuppressionOptions, now = Date.now()) {
+  if (options.allowBargeIn)
+    return false
+
   return options.assistantSpeaking || now < options.suppressedUntil
 }
 

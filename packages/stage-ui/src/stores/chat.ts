@@ -27,6 +27,7 @@ import {
   AIRI_CHAT_ROUND_ID_HEADER,
   AIRI_CHAT_SESSION_ID_HEADER,
 } from '../libs/product-signals/headers'
+import { voiceLatencyTrace } from '../libs/voice/voice-latency'
 import { useLLM } from './ai/chat-llm/llm'
 import { resolveLlmTools } from './ai/chat-llm/tool-resolver'
 import { useLlmToolsStore } from './ai/chat-llm/tools'
@@ -372,6 +373,8 @@ export const useChatStore = defineStore('chat', () => {
             llmOutputChunkLengths.push(event.text.length)
             if (!llmFirstTokenEmitted) {
               llmFirstTokenEmitted = true
+              if (options?.requestCorrelation?.turnId)
+                voiceLatencyTrace.markFirstToken(options.requestCorrelation.turnId)
               llmSpan.addEvent(IOEvents.LLMFirstToken, {
                 [IOAttributes.LLM_TTFT]: performance.now() - llmRequestTs,
               })

@@ -1,5 +1,7 @@
 /** Callbacks that receive results from one shared streaming transcription session. */
 export interface StreamingTranscriptionCallbacks {
+  /** Receives detected speech before transcription or provider startup. */
+  onSpeechStart?: () => void
   onSentenceEnd?: (delta: string) => void
   onSpeechEnd?: (text: string) => void
   /** Receives the complete current transcript after each provider update. */
@@ -24,6 +26,7 @@ export class StreamingTranscriptionConsumers {
   /** Registers or replaces the callbacks for one consumer. */
   register(consumer: StreamingTranscriptionConsumer) {
     this.consumers.set(consumer.consumerId, {
+      onSpeechStart: consumer.onSpeechStart,
       onSentenceEnd: consumer.onSentenceEnd,
       onSpeechEnd: consumer.onSpeechEnd,
       onTranscriptionUpdate: consumer.onTranscriptionUpdate,
@@ -38,6 +41,18 @@ export class StreamingTranscriptionConsumers {
   /** Whether any owner still needs the shared provider session. */
   hasConsumers() {
     return this.consumers.size > 0
+  }
+
+  /** Sends detected speech start to all current consumers. */
+  emitSpeechStart() {
+    for (const [consumerId, callbacks] of this.consumers) {
+      try {
+        callbacks.onSpeechStart?.()
+      }
+      catch (cause) {
+        console.error(`[Hearing Pipeline] Streaming consumer ${consumerId} onSpeechStart failed:`, cause)
+      }
+    }
   }
 
   /** Sends a completed sentence to all current consumers. */
@@ -55,7 +70,7 @@ export class StreamingTranscriptionConsumers {
     this.emit('onTranscriptionUpdate', text)
   }
 
-  private emit(callbackName: keyof StreamingTranscriptionCallbacks, text: string) {
+  private emit(callbackName: Exclude<keyof StreamingTranscriptionCallbacks, 'onSpeechStart'>, text: string) {
     for (const [consumerId, callbacks] of this.consumers) {
       try {
         callbacks[callbackName]?.(text)

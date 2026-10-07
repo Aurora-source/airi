@@ -8,6 +8,7 @@ import { computed, ref, shallowRef, toRef } from 'vue'
 
 import workletUrl from '../../workers/vad/process.worklet?worker&url'
 
+import { voiceLatencyTrace } from '../../libs/voice/voice-latency'
 import { useVAD } from '../../stores/ai/models/vad'
 import { useHearingSpeechInputPipeline } from '../../stores/modules/hearing'
 import { useAudioRecorder } from './audio-recorder'
@@ -30,6 +31,8 @@ export interface VoiceInputSessionGate {
 
 export interface VoiceInputSessionEvent {
   trigger: VoiceInputSessionTrigger
+  /** Links recorder completion to opt-in voice latency capture. */
+  latencyInputId?: string
   recording?: Blob
   text?: string
   error?: unknown
@@ -120,6 +123,7 @@ export function useVoiceInputSession(
   const transcriptionChain = createVoiceInputTranscriptionChain()
   const stoppedRecordingSegments: VoiceInputRecordingSegment[] = []
   const vadRecordings = new Map<number, Blob>()
+  const latencyInputs = new Map<number, string | undefined>()
   let nextRecordingSegmentId = 0
   let discardNextRecording = false
   let activeTranscriptionCount = 0
@@ -144,6 +148,7 @@ export function useVoiceInputSession(
       void startSegment('vad')
     },
     onSpeechEnd: () => {
+      voiceLatencyTrace.markSpeechEnd(latencyInputs.get(activeRecordingSegment.value?.id ?? -1))
       void stopSegment('vad')
     },
     onSpeechCancel: () => {
@@ -209,6 +214,7 @@ export function useVoiceInputSession(
     finally {
       discardNextRecording = false
       vadRecordings.delete(segment.id)
+      latencyInputs.delete(segment.id)
       activeRecordingSegment.value = resolveActiveVoiceInputRecordingSegmentAfterStop(activeRecordingSegment.value, segment)
     }
   }
@@ -249,6 +255,8 @@ export function useVoiceInputSession(
     }
 
     try {
+      event.latencyInputId = voiceLatencyTrace.beginInput()
+      latencyInputs.set(segment.id, event.latencyInputId)
       await options.onSegmentStart?.(event)
       await recorder.startRecord()
 
@@ -263,6 +271,7 @@ export function useVoiceInputSession(
       return true
     }
     catch (error) {
+      latencyInputs.delete(segment.id)
       activeRecordingSegment.value = resolveActiveVoiceInputRecordingSegmentAfterStop(activeRecordingSegment.value, segment)
       lastError.value = error
       log('error', 'segment-start-failed', 'Failed to start recorder-backed voice input segment.', { trigger, error })
@@ -294,6 +303,7 @@ export function useVoiceInputSession(
     }
 
     const stoppedSegment = segment ?? createVoiceInputRecordingSegment(++nextRecordingSegmentId, trigger)
+    voiceLatencyTrace.markSpeechEnd(latencyInputs.get(stoppedSegment.id))
 
     try {
       await options.onSegmentStop?.(event)
@@ -315,6 +325,7 @@ export function useVoiceInputSession(
       if (queuedIndex !== -1)
         stoppedRecordingSegments.splice(queuedIndex, 1)
       vadRecordings.delete(stoppedSegment.id)
+      latencyInputs.delete(stoppedSegment.id)
       lastError.value = error
       log('error', 'segment-stop-failed', 'Failed to stop recorder-backed voice input segment.', { trigger, error })
       await options.onTranscriptionError?.({ trigger, error })
@@ -324,8 +335,8 @@ export function useVoiceInputSession(
     }
   }
 
-  async function processRecording(recording: Blob | undefined, trigger: VoiceInputSessionTrigger, ticket: VoiceInputTranscriptionTicket) {
-    const event: VoiceInputSessionEvent = { trigger, recording }
+  async function processRecording(recording: Blob | undefined, trigger: VoiceInputSessionTrigger, ticket: VoiceInputTranscriptionTicket, latencyInputId?: string) {
+    const event: VoiceInputSessionEvent = { trigger, recording, latencyInputId }
 
     if (isStaleTranscriptionTicket(ticket, trigger, 'recording-start'))
       return
@@ -363,6 +374,8 @@ export function useVoiceInputSession(
         return
 
       text = await transcribeForRecording(recording) ?? ''
+      if (text.trim())
+        voiceLatencyTrace.markSttResult(latencyInputId)
     }
     catch (error) {
       if (isStaleTranscriptionTicket(ticket, trigger, 'transcription-error'))
@@ -418,8 +431,11 @@ export function useVoiceInputSession(
       : recording
     if (segment)
       vadRecordings.delete(segment.id)
+    const latencyInputId = segment ? latencyInputs.get(segment.id) : undefined
+    if (segment)
+      latencyInputs.delete(segment.id)
     await transcriptionChain
-      .enqueue(ticket => processRecording(recordingForTranscription, trigger, ticket))
+      .enqueue(ticket => processRecording(recordingForTranscription, trigger, ticket, latencyInputId))
       .catch((error) => {
         lastError.value = error
         log('error', 'recording-processing-error', 'Voice input recording processing failed.', { trigger, error })
@@ -581,6 +597,7 @@ export function useVoiceInputSession(
     transcriptionChain.reset()
     stoppedRecordingSegments.length = 0
     vadRecordings.clear()
+    latencyInputs.clear()
 
     if (options.flushActiveRecording && isRecording.value) {
       await stopSegment(activeRecordingTrigger.value ?? 'manual')

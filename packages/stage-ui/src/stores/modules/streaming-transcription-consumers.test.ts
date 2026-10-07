@@ -3,6 +3,21 @@ import { describe, expect, it, vi } from 'vitest'
 import { StreamingTranscriptionConsumers } from './streaming-transcription-consumers'
 
 describe('streaming transcription consumers', () => {
+  it('routes speech start without committing a transcript or duplicate turn', () => {
+    const consumers = new StreamingTranscriptionConsumers()
+    const onSpeechStart = vi.fn()
+    const onSentenceEnd = vi.fn()
+    consumers.register({ consumerId: 'input', onSpeechStart, onSentenceEnd })
+
+    consumers.emitSpeechStart()
+
+    expect(onSpeechStart).toHaveBeenCalledOnce()
+    expect(onSentenceEnd).not.toHaveBeenCalled()
+    consumers.remove('input')
+    consumers.emitSpeechStart()
+    expect(onSpeechStart).toHaveBeenCalledOnce()
+  })
+
   it('updates and removes consumers without restarting other callbacks', () => {
     // ROOT CAUSE:
     //

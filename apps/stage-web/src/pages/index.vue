@@ -13,15 +13,20 @@ import { HoloCoupon } from '@proj-airi/stage-ui/components'
 import { ViewControlSlider, WidgetStage } from '@proj-airi/stage-ui/components/scenes'
 import { useAudioRecorder } from '@proj-airi/stage-ui/composables/audio/audio-recorder'
 import { createVoiceInputBinding } from '@proj-airi/stage-ui/libs/audio/voice-input-binding'
+import { voiceLatencyTrace } from '@proj-airi/stage-ui/libs/voice/voice-latency'
 import { useVAD } from '@proj-airi/stage-ui/stores/ai/models/vad'
+import { useSpeakingStore } from '@proj-airi/stage-ui/stores/audio'
 import { useChatStore } from '@proj-airi/stage-ui/stores/chat'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
 import { useHearingSpeechInputPipeline } from '@proj-airi/stage-ui/stores/modules/hearing'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
+import { useSpeechOutputControlStore } from '@proj-airi/stage-ui/stores/speech-output-control'
 import { useStartupResourcesStore } from '@proj-airi/stage-ui/stores/startup-resources'
-import { breakpointsTailwind, useBreakpoints, useMouse } from '@vueuse/core'
+import { useVoiceInputPolicyStore } from '@proj-airi/stage-ui/stores/voice-input-policy'
+import { breakpointsTailwind, useBreakpoints, useEventListener, useMouse } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onUnmounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { toast } from 'vue-sonner'
 
 const paused = ref(false)
 const modelRenderState = ref<'pending' | 'loading' | 'mounted'>('pending')
@@ -75,13 +80,37 @@ onMounted(() => syncBackgroundTheme())
 // Audio + transcription pipeline (mirrors stage-tamagotchi)
 const settingsAudioDeviceStore = useSettingsAudioDevice()
 const { stream, enabled } = storeToRefs(settingsAudioDeviceStore)
-const { discardRecord, startRecord, stopRecord, onStopRecord } = useAudioRecorder(stream)
+const { discardRecord, startRecord, stopRecord, onStopRecord, isRecording } = useAudioRecorder(stream)
 const hearingPipeline = useHearingSpeechInputPipeline()
 const { releaseStreamingTranscriptionConsumer, transcribeForMediaStream, transcribeForRecording } = hearingPipeline
 const { supportsStreamInput } = storeToRefs(hearingPipeline)
+watch(() => hearingPipeline.error, (error) => {
+  if (error)
+    toast.error('Voice input failed', { description: error })
+})
 const consciousnessStore = useConsciousnessStore()
 const { activeProvider: activeChatProvider, activeModel: activeChatModel, activeTemperature, activeTopP } = storeToRefs(consciousnessStore)
 const chatStore = useChatStore()
+const speechOutputControl = useSpeechOutputControlStore()
+const { nowSpeaking } = storeToRefs(useSpeakingStore())
+const { mode: voiceInputMode, automaticListeningEnabled, bargeInEnabled } = storeToRefs(useVoiceInputPolicyStore())
+const speakerCooldownActive = ref(false)
+let speakerCooldownTimer: ReturnType<typeof setTimeout> | undefined
+const voiceInputSuppressed = computed(() => !bargeInEnabled.value && (nowSpeaking.value || speakerCooldownActive.value))
+
+watch(nowSpeaking, (speaking) => {
+  if (bargeInEnabled.value)
+    return
+  clearTimeout(speakerCooldownTimer)
+  speakerCooldownActive.value = true
+  if (!speaking)
+    speakerCooldownTimer = setTimeout(() => speakerCooldownActive.value = false, 800)
+})
+
+function interruptAssistantSpeech() {
+  if (enabled.value && bargeInEnabled.value)
+    speechOutputControl.requestStopSpeaking('user-speech')
+}
 
 /** Identifies this page in the shared streaming transcription session. */
 const transcriptionConsumerId = 'stage-web:voice-input'
@@ -101,8 +130,10 @@ const {
 
 let stopOnStopRecord: (() => void) | undefined
 let currentBinding: VoiceInputBinding | undefined
+let activeLatencyInputId: string | undefined
+const stoppedLatencyInputs: Array<string | undefined> = []
 
-async function sendVoiceInputTextToChat(text: string | undefined) {
+async function sendVoiceInputTextToChat(text: string | undefined, latencyInputId?: string) {
   if (!text?.trim())
     return
 
@@ -114,7 +145,10 @@ async function sendVoiceInputTextToChat(text: string | undefined) {
 
     const provider = await consciousnessStore.getChatProviderInstance(providerId)
 
+    const messageId = crypto.randomUUID()
+    voiceLatencyTrace.bindTurn(latencyInputId, messageId)
     await chatStore.ingest(text, {
+      messageId,
       model,
       chatProvider: provider,
       temperature: activeTemperature.value,
@@ -126,9 +160,9 @@ async function sendVoiceInputTextToChat(text: string | undefined) {
   }
 }
 
-function handleVoiceInputText(text: string | undefined) {
+function handleVoiceInputText(text: string | undefined, latencyInputId?: string) {
   if (!isMobile.value)
-    return sendVoiceInputTextToChat(text)
+    return sendVoiceInputTextToChat(text, latencyInputId)
   if (text?.trim())
     mobileInteractiveArea.value?.receiveTranscription(text)
 }
@@ -138,6 +172,10 @@ async function startAudioInteraction(binding: VoiceInputBinding) {
   if (binding.mode === 'stream') {
     await transcribeForMediaStream(binding.stream, {
       consumerId: transcriptionConsumerId,
+      onSpeechStart: () => {
+        if (currentBinding === binding)
+          interruptAssistantSpeech()
+      },
       onSentenceEnd: (text) => {
         if (currentBinding === binding)
           void handleVoiceInputText(text)
@@ -148,40 +186,107 @@ async function startAudioInteraction(binding: VoiceInputBinding) {
     return
   }
 
+  stopOnStopRecord = onStopRecord(async (recording) => {
+    if (currentBinding !== binding)
+      return
+    const latencyInputId = stoppedLatencyInputs.shift()
+    const text = await transcribeForRecording(recording)
+    if (text?.trim())
+      voiceLatencyTrace.markSttResult(latencyInputId)
+    if (currentBinding === binding)
+      await handleVoiceInputText(text, latencyInputId)
+  })
+  if (binding.mode === 'push-to-talk')
+    return
+
   await initVAD()
   if (!vadLoaded.value)
     throw new Error(vadError.value || 'Failed to initialize voice activity detection.')
   if (currentBinding !== binding)
     return
   await startVAD(binding.stream)
-
-  stopOnStopRecord = onStopRecord(async (recording) => {
-    const text = await transcribeForRecording(recording)
-    if (currentBinding === binding)
-      await handleVoiceInputText(text)
-  })
 }
 
+let pushToTalkStart: Promise<void> | undefined
+
+async function startPushToTalk() {
+  if (currentBinding?.mode !== 'push-to-talk' || isRecording.value || pushToTalkStart)
+    return
+  speechOutputControl.requestStopSpeaking('user-speech')
+  activeLatencyInputId = voiceLatencyTrace.beginInput()
+  pushToTalkStart = startRecord()
+  try {
+    await pushToTalkStart
+  }
+  catch {
+    activeLatencyInputId = undefined
+    toast.error('Could not start voice input. Check microphone access.')
+  }
+  finally {
+    pushToTalkStart = undefined
+  }
+}
+
+async function finishPushToTalk(discard = false) {
+  await pushToTalkStart?.catch(() => undefined)
+  if (!isRecording.value || currentBinding?.mode !== 'push-to-talk')
+    return
+  const latencyInputId = activeLatencyInputId
+  try {
+    if (discard) {
+      activeLatencyInputId = undefined
+      await discardRecord()
+      return
+    }
+    voiceLatencyTrace.markSpeechEnd(latencyInputId)
+    stoppedLatencyInputs.push(latencyInputId)
+    activeLatencyInputId = undefined
+    await stopRecord()
+  }
+  catch {
+    activeLatencyInputId = undefined
+    const index = stoppedLatencyInputs.indexOf(latencyInputId)
+    if (index !== -1)
+      stoppedLatencyInputs.splice(index, 1)
+    toast.error('Could not capture voice input. Hold to talk longer and try again.')
+  }
+}
+
+useEventListener('blur', () => {
+  void finishPushToTalk(true)
+})
+
 async function handleSpeechStart() {
-  if (currentBinding?.mode === 'recording')
+  interruptAssistantSpeech()
+  if (currentBinding?.mode === 'recording') {
+    activeLatencyInputId = voiceLatencyTrace.beginInput()
     await startRecord()
+  }
 }
 
 async function handleSpeechEnd() {
-  if (currentBinding?.mode === 'recording')
+  if (currentBinding?.mode === 'recording') {
+    voiceLatencyTrace.markSpeechEnd(activeLatencyInputId)
+    stoppedLatencyInputs.push(activeLatencyInputId)
+    activeLatencyInputId = undefined
     await stopRecord()
+  }
 }
 
 async function handleSpeechCancel() {
+  activeLatencyInputId = undefined
   if (currentBinding?.mode === 'recording')
     await discardRecord()
 }
 
 async function stopAudioInteraction() {
+  activeLatencyInputId = undefined
+  stoppedLatencyInputs.length = 0
   currentBinding = undefined
   stopOnStopRecord?.()
   stopOnStopRecord = undefined
   disposeVAD()
+  await pushToTalkStart?.catch(() => undefined)
   await discardRecord()
   await releaseStreamingTranscriptionConsumer(transcriptionConsumerId)
 }
@@ -191,16 +296,19 @@ const voiceInputBinding = createVoiceInputBinding({
   stop: stopAudioInteraction,
 })
 
-watch([enabled, stream, supportsStreamInput], ([isEnabled, currentStream, supportsStream]) => {
-  const binding: VoiceInputBinding | undefined = isEnabled && currentStream
-    ? { stream: currentStream, mode: supportsStream ? 'stream' : 'recording' }
+watch([enabled, stream, supportsStreamInput, automaticListeningEnabled, voiceInputSuppressed, voiceInputMode], ([isEnabled, currentStream, supportsStream, automatic, suppressed, mode]) => {
+  const manual = mode === 'push-to-talk' && !supportsStream
+  const binding: VoiceInputBinding | undefined = isEnabled && currentStream && (manual || (automatic && !suppressed))
+    ? { stream: currentStream, mode: manual ? 'push-to-talk' : supportsStream ? 'stream' : 'recording' }
     : undefined
   void voiceInputBinding.update(binding).catch((error) => {
     console.error('Audio interaction failed:', error)
+    toast.error('Could not start voice input. Check Hearing settings and microphone access.')
   })
 }, { immediate: true })
 
 onUnmounted(() => {
+  clearTimeout(speakerCooldownTimer)
   void voiceInputBinding.update().catch(error => console.error('Failed to stop audio interaction:', error))
 })
 
@@ -229,6 +337,34 @@ const cursorPosition = computed(() => ({
       <!-- header -->
       <div class="px-0 py-1 md:px-3 md:py-3" w-full gap-2>
         <Header class="hidden md:flex" />
+        <div flex="~ items-center gap-2" px-2>
+          <select v-model="voiceInputMode" aria-label="Voice listening mode" rounded p-1>
+            <option value="continuous">
+              Continuous listening
+            </option>
+            <option value="push-to-talk" :disabled="supportsStreamInput">
+              Push to talk
+            </option>
+          </select>
+          <button
+            v-if="voiceInputMode === 'push-to-talk' && !supportsStreamInput"
+            :disabled="!enabled || !stream"
+            :aria-pressed="isRecording"
+            rounded px-3 py-1
+            @pointerdown.prevent="startPushToTalk"
+            @pointerup="finishPushToTalk()"
+            @pointerleave="finishPushToTalk()"
+            @pointercancel="finishPushToTalk(true)"
+            @blur="finishPushToTalk(true)"
+            @keydown.space.prevent="!$event.repeat && startPushToTalk()"
+            @keyup.space.prevent="finishPushToTalk()"
+          >
+            {{ isRecording ? 'Listening…' : 'Hold to talk' }}
+          </button>
+          <span v-if="voiceInputMode === 'push-to-talk' && supportsStreamInput">
+            Use the microphone button for this provider, or select continuous listening.
+          </span>
+        </div>
       </div>
       <!-- page -->
       <div relative flex="~ 1 row gap-y-0 gap-x-2 <md:col">

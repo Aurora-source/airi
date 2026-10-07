@@ -7,6 +7,11 @@ import {
 } from './voice-input-suppression'
 
 describe('shouldSuppressVoiceInput', () => {
+  it('keeps headphone barge-in available during playback and 500 ms after playback', () => {
+    expect(shouldSuppressVoiceInput({ assistantSpeaking: true, suppressedUntil: 0, allowBargeIn: true }, 1000)).toBe(false)
+    expect(shouldSuppressVoiceInput({ assistantSpeaking: false, suppressedUntil: 1800, allowBargeIn: true }, 1500)).toBe(false)
+  })
+
   it('suppresses voice input while assistant speech is active', () => {
     const result = shouldSuppressVoiceInput({
       assistantSpeaking: true,

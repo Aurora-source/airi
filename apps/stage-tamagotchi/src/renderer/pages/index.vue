@@ -11,7 +11,6 @@ import {
   useElectronMouseInWindow,
   useElectronRelativeMouse,
 } from '@proj-airi/electron-vueuse'
-import { createTranscriptBuffer } from '@proj-airi/pipelines-audio'
 import { hearingInputChannelName } from '@proj-airi/stage-shared'
 import { useExpressionStore } from '@proj-airi/stage-ui-live2d/stores/expression-store'
 import { useModelStore, useThreeSceneIsTransparentAtPoint } from '@proj-airi/stage-ui-three'
@@ -23,12 +22,15 @@ import {
 import { WidgetStage } from '@proj-airi/stage-ui/components/scenes'
 import { useVoiceInputSession } from '@proj-airi/stage-ui/composables'
 import { useCanvasPixelIsTransparentAtPoint } from '@proj-airi/stage-ui/composables/canvas-alpha'
+import { voiceLatencyTrace } from '@proj-airi/stage-ui/libs/voice/voice-latency'
 import { useSpeakingStore } from '@proj-airi/stage-ui/stores/audio'
 import { useChatStore } from '@proj-airi/stage-ui/stores/chat'
 import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-store'
 import { useHearingSpeechInputPipeline, useHearingStore } from '@proj-airi/stage-ui/stores/modules/hearing'
 import { useOnboardingStore } from '@proj-airi/stage-ui/stores/onboarding'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
+import { useSpeechOutputControlStore } from '@proj-airi/stage-ui/stores/speech-output-control'
+import { useVoiceInputPolicyStore } from '@proj-airi/stage-ui/stores/voice-input-policy'
 import { refDebounced, useBroadcastChannel } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onUnmounted, ref, shallowRef, toRef, watch } from 'vue'
@@ -381,26 +383,15 @@ const transcriptionConsumerId = 'stage-tamagotchi:voice-input'
 const chatStore = useChatStore()
 const chatSession = useChatSessionStore()
 const streamingTranscriptionUnavailable = ref(false)
+const { automaticListeningEnabled, bargeInEnabled } = storeToRefs(useVoiceInputPolicyStore())
+const speechOutputControl = useSpeechOutputControlStore()
 const shouldUseStreamInput = computed(() => supportsStreamInput.value && !!stream.value && !streamingTranscriptionUnavailable.value)
-const voiceTranscriptBuffer = createTranscriptBuffer({
-  flushDelayMs: 1200,
-  maxBufferedTextLength: 90,
-  async flush(text) {
-    await sendVoiceInputTextToChat(text)
-  },
-})
 
 const assistantSpeechSuppressedUntil = shallowRef(0)
 const assistantSpeechResumeTimer = shallowRef<ReturnType<typeof setTimeout>>()
 let voiceInputGeneration = 0
 
-/** Controls transcript cleanup while voice input stops. */
-interface StopAudioInteractionOptions {
-  /** Flushes pending transcript text to chat before stop completes. */
-  flushTranscript?: boolean
-}
-
-const voiceInputInteractionLifecycle = createVoiceInputInteractionLifecycle<StopAudioInteractionOptions>({
+const voiceInputInteractionLifecycle = createVoiceInputInteractionLifecycle({
   start: startAudioInteractionConsumers,
   stop: stopAudioInteractionConsumers,
 })
@@ -467,6 +458,7 @@ function isVoiceInputSuppressed(now = Date.now()) {
   return shouldSuppressVoiceInput({
     assistantSpeaking: nowSpeaking.value,
     suppressedUntil: assistantSpeechSuppressedUntil.value,
+    allowBargeIn: bargeInEnabled.value,
   }, now)
 }
 
@@ -594,9 +586,12 @@ function postSpeakerCaption(text: string, operation: NonNullable<CaptionChannelE
 /**
  * Sends buffered voice input text to the active chat session.
  */
-async function sendVoiceInputTextToChat(text: string) {
+async function sendVoiceInputTextToChat(text: string, latencyInputId?: string) {
   try {
+    const messageId = crypto.randomUUID()
+    voiceLatencyTrace.bindTurn(latencyInputId, messageId)
     await chatStore.send({
+      messageId,
       sessionId: chatSession.activeSessionId,
       text,
     })
@@ -623,6 +618,12 @@ function handleStreamingSentenceEnd(delta: string) {
   void sendVoiceInputTextToChat(finalText)
 }
 
+/** Stops output at detected speech start. Transcription commits the next turn separately. */
+function interruptAssistantSpeech() {
+  if (enabled.value && bargeInEnabled.value)
+    speechOutputControl.requestStopSpeaking('user-speech')
+}
+
 /** Replaces the caption with the provider's current volatile transcript. */
 function handleStreamingTranscriptionUpdate(text: string) {
   if (isVoiceInputSuppressed())
@@ -647,6 +648,7 @@ function getVoiceInputGeneration(metadata?: Record<string, unknown>) {
 
 const voiceInputSession = useVoiceInputSession(stream, {
   shouldUseStreamInput,
+  onSegmentStart: interruptAssistantSpeech,
   onLog(level, event, message, details) {
     const output = `[Voice Input] ${event}: ${message}`
     if (level === 'error') {
@@ -663,10 +665,10 @@ const voiceInputSession = useVoiceInputSession(stream, {
   inspectBeforeTranscription: ({ metadata }) => inspectVoiceInputProviderRequestGate(getVoiceInputGeneration(metadata)),
   inspectAfterTranscription: ({ metadata }) => inspectVoiceInputProviderRequestGate(getVoiceInputGeneration(metadata)),
   onRecordingReady: () => ({ generation: voiceInputGeneration }),
-  onTranscriptionResult: ({ text }) => {
+  onTranscriptionResult: ({ text, latencyInputId }) => {
     postSpeakerCaption(text)
     toast(`Voice input transcribed: ${text}`)
-    voiceTranscriptBuffer.push(text)
+    void sendVoiceInputTextToChat(text, latencyInputId)
   },
   onTranscriptionEmpty: () => {
     if (transcriptionError.value) {
@@ -683,6 +685,9 @@ const voiceInputSession = useVoiceInputSession(stream, {
 
 /** Starts the active streaming or recorder-backed voice-input consumers. */
 async function startAudioInteractionConsumers() {
+  if (!automaticListeningEnabled.value)
+    return
+
   if (isVoiceInputSuppressed()) {
     scheduleAssistantSpeechResume()
     return
@@ -702,6 +707,7 @@ async function startAudioInteractionConsumers() {
 
     await transcribeForMediaStream(currentStream, {
       consumerId: transcriptionConsumerId,
+      onSpeechStart: interruptAssistantSpeech,
       onSentenceEnd: handleStreamingSentenceEnd,
       onSpeechEnd: handleStreamingSpeechEnd,
       onTranscriptionUpdate: handleStreamingTranscriptionUpdate,
@@ -726,9 +732,7 @@ async function startAudioInteractionConsumers() {
 /**
  * Stops active microphone consumers before the stage binds to another audio stream.
  */
-async function stopAudioInteractionConsumers(options: StopAudioInteractionOptions = {}) {
-  const flushTranscript = options.flushTranscript ?? true
-
+async function stopAudioInteractionConsumers() {
   clearAssistantSpeechResumeTimer()
   clearHearingInput()
   voiceInputGeneration += 1
@@ -737,11 +741,6 @@ async function stopAudioInteractionConsumers(options: StopAudioInteractionOption
     stopStreamingTranscription(true),
     voiceInputSession.stop({ flushActiveRecording: false }),
   ])
-
-  if (flushTranscript)
-    await voiceTranscriptBuffer.dispose()
-  else
-    voiceTranscriptBuffer.clear()
 }
 
 watch(enabled, async (val) => {
@@ -767,7 +766,7 @@ watch([activeTranscriptionProvider, activeTranscriptionModel, supportsStreamInpu
     return
 
   try {
-    await voiceInputInteractionLifecycle.stop({ flushTranscript: false })
+    await voiceInputInteractionLifecycle.stop()
     await voiceInputInteractionLifecycle.start()
   }
   catch (error) {
@@ -777,10 +776,13 @@ watch([activeTranscriptionProvider, activeTranscriptionModel, supportsStreamInpu
 })
 
 watch(nowSpeaking, async (speaking) => {
+  if (bargeInEnabled.value)
+    return
+
   if (speaking) {
     clearAssistantSpeechResumeTimer()
     try {
-      await voiceInputInteractionLifecycle.stop({ flushTranscript: false })
+      await voiceInputInteractionLifecycle.stop()
     }
     catch (error) {
       reportVoiceInputFailure('pause while assistant is speaking', error)
@@ -790,6 +792,18 @@ watch(nowSpeaking, async (speaking) => {
 
   assistantSpeechSuppressedUntil.value = assistantSpeechCooldownDeadline()
   scheduleAssistantSpeechResume()
+})
+
+watch([automaticListeningEnabled, bargeInEnabled], async () => {
+  assistantSpeechSuppressedUntil.value = 0
+  try {
+    await voiceInputInteractionLifecycle.stop()
+    if (enabled.value && automaticListeningEnabled.value)
+      await voiceInputInteractionLifecycle.start()
+  }
+  catch (error) {
+    reportVoiceInputFailure('apply listening policy', error)
+  }
 })
 
 onMounted(() => {
@@ -814,10 +828,10 @@ watch(stream, async (currentStream) => {
   if (!enabled.value || !currentStream || voiceInputInteractionLifecycle.isStarting() || voiceInputInteractionLifecycle.isStopping() || isVoiceInputSuppressed())
     return
 
-  // NOTICE: The controls-island mic toggle and device changes can replace the underlying MediaStream
-  // without reloading the page. When that happens, VAD may successfully restart against the new stream,
-  // but any existing transcription transport is still bound to the old one. Always allow the page to
-  // restart voice input for a newly available stream unless another lifecycle operation is underway.
+  // NOTICE:
+  // Mic toggles and device changes replace the MediaStream without reloading.
+  // Restart the consumers so ASR cannot keep using the old stream.
+  // Remove this watcher when the shared voice session owns stream replacement.
   try {
     await voiceInputInteractionLifecycle.stop()
     await voiceInputInteractionLifecycle.start()

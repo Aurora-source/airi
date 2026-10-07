@@ -40,19 +40,9 @@ function errorMessage(err: unknown): string {
   return msg
 }
 
-// NOTICE: Realtime transcription intentionally uses `AbortError` as a control-flow signal when the
-// current stream session is being stopped on purpose.
-//
-// This happens in `stopStreamingTranscription()`,
-// which aborts the session with one of the DOMException messages below when the user disables the mic,
-// the page tears down audio interaction, callbacks are intentionally rebound, or the idle timeout closes
-// an inactive stream. Those cases should not be surfaced as provider failures because the session was
-// explicitly asked to stop. If a future abort is noisy or unexpected, inspect the abort source first:
-// `stopStreamingTranscription()` in this file is the primary origin, and provider-specific teardown
-// provider adapters in `packages/stage-ui/src/libs/providers/providers/` propagate the
-// same reason through the transport. Only treat an abort as "expected" if it is one of these known
-// shutdown paths; any other `AbortError` should still be investigated as a real lifecycle bug or a
-// provider/runtime failure.
+// NOTICE: stopStreamingTranscription() uses these AbortError reasons for deliberate
+// microphone, consumer, and idle shutdown. Provider teardown propagates the reason.
+// Suppress only those known shutdowns; unexpected aborts remain provider failures.
 function isExpectedStreamStopError(err: unknown): boolean {
   return err instanceof DOMException
     && err.name === 'AbortError'
@@ -1002,6 +992,7 @@ export const useHearingSpeechInputPipeline = defineStore('modules:hearing:speech
     let vadSession!: NonNullable<typeof streamingVadSession.value>
     const vad = useVAD(vadWorkletUrl, {
       onSpeechStart: () => {
+        streamingConsumers.emitSpeechStart()
         const segment: VadSpeechSegment = { audioChunks: [] }
         vadSession.activeSegment = segment
         vadSession.lifecycle.onSpeechStart(segment)
@@ -1179,6 +1170,9 @@ export const useHearingSpeechInputPipeline = defineStore('modules:hearing:speech
               error.value = 'No transcription result returned from the browser'
           },
           onSpeechStart: () => {
+            if (abortController.signal.aborted)
+              return
+            streamingConsumers.emitSpeechStart()
             error.value = undefined
             speechHasFinalResult = false
             if (finishingSession.value === abortController)

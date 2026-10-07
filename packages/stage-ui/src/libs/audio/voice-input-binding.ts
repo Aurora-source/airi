@@ -1,7 +1,7 @@
 /** The microphone stream and transcription mode owned by one page interaction. */
 export interface VoiceInputBinding {
   stream: MediaStream
-  mode: 'stream' | 'recording'
+  mode: 'stream' | 'recording' | 'push-to-talk'
 }
 
 /** Operations that install and release one page's microphone consumers. */
