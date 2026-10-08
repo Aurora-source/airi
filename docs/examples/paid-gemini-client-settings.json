@@ -1,0 +1,11 @@
+{
+  "description": "Illustrative client request fields. This file is separate from the Gateway configuration schema.",
+  "aliases": {
+    "companion-chat": { "reasoning_effort": "low", "max_tokens": 2048, "temperature": 1 },
+    "companion-chat-lite": { "reasoning_effort": "minimal", "max_tokens": 2048, "temperature": 1 },
+    "companion-chat-long": { "reasoning_effort": "low", "max_tokens": 4096, "temperature": 1 },
+    "companion-vision": { "reasoning_effort": "low", "max_tokens": 2048, "temperature": 1 },
+    "companion-utility": { "reasoning_effort": "minimal", "max_tokens": 1024, "temperature": 1 },
+    "companion-reasoning": { "reasoning_effort": "medium", "max_tokens": 4096, "temperature": 1 }
+  }
+}

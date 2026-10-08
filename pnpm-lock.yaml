@@ -6516,6 +6516,9 @@ importers:
         specifier: 'catalog:'
         version: 1.4.2(typescript@6.0.3)
     devDependencies:
+      '@proj-airi/pipelines-audio':
+        specifier: workspace:^
+        version: link:../../packages/pipelines-audio
       '@proj-airi/server-runtime':
         specifier: workspace:^
         version: link:../../packages/server-runtime

@@ -17,6 +17,7 @@
     "start": "tsx ./src/bin/run.ts serve",
     "cli": "tsx ./src/bin/run.ts",
     "persona": "tsx ./eval/persona/cli.ts",
+    "gemini-bench": "tsx ./eval/gemini/cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -27,6 +28,7 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@proj-airi/pipelines-audio": "workspace:^",
     "@proj-airi/server-runtime": "workspace:^",
     "@types/node": "catalog:",
     "@xsai/stream-text": "catalog:",

@@ -1,0 +1,53 @@
+{
+  "profile": "cloud",
+  "providers": {
+    "gemini": {
+      "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "keyRef": "provider-gemini",
+      "compat": "gemini",
+      "locality": "cloud"
+    }
+  },
+  "models": {
+    "mura-flash": {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
+      "styleReminder": "The supplied API functions are separate from stage CALL markers. Invoke them with native API tool_calls, never text CALL markers.",
+      "capabilities": {
+        "contextWindow": 1048576,
+        "maxOutput": 65536,
+        "tools": true,
+        "images": true,
+        "structuredOutput": true,
+        "imageTokens": 1100
+      },
+      "limits": {}
+    },
+    "mura-lite": {
+      "provider": "gemini",
+      "model": "gemini-3.1-flash-lite",
+      "styleReminder": "The supplied API functions are separate from stage CALL markers. Invoke them with native API tool_calls, never text CALL markers.",
+      "capabilities": {
+        "contextWindow": 1048576,
+        "maxOutput": 65536,
+        "tools": true,
+        "images": true,
+        "structuredOutput": true,
+        "imageTokens": 1100
+      },
+      "limits": {}
+    }
+  },
+  "aliases": {
+    "companion-chat": { "role": "conversation", "chain": ["mura-flash"] },
+    "companion-chat-lite": { "role": "conversation", "chain": ["mura-lite"] },
+    "companion-chat-long": {
+      "role": "conversation",
+      "chain": ["mura-flash"],
+      "prompt": { "softTarget": 60000, "expandedTarget": 80000, "maxTarget": 100000 }
+    },
+    "companion-vision": { "role": "vision", "chain": ["mura-flash"] },
+    "companion-utility": { "role": "conversation", "chain": ["mura-lite"] },
+    "companion-reasoning": { "role": "reasoning", "chain": ["mura-flash"] }
+  }
+}
