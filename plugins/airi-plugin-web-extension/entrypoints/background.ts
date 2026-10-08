@@ -80,7 +80,7 @@ async function init() {
   emitStatus()
 }
 
-function handleContentMessage(message: ContentToBackgroundMessage) {
+function handleContentMessage(message: ContentToBackgroundMessage, tab: number | undefined) {
   switch (message.type) {
     case 'content:page': {
       const payload = {
@@ -96,7 +96,7 @@ function handleContentMessage(message: ContentToBackgroundMessage) {
         ...message.payload,
         site: message.payload.site === 'unknown' ? detectSiteFromUrl(message.payload.url) : message.payload.site,
       }
-      handleVideoContext(state, settings, payload, { notify: shouldNotifyVideo(payload), stamp: message.stamp })
+      handleVideoContext(state, settings, payload, { notify: shouldNotifyVideo(payload), stamp: { ...message.stamp, tab } })
       emitStatus()
       break
     }
@@ -105,7 +105,7 @@ function handleContentMessage(message: ContentToBackgroundMessage) {
         ...message.payload,
         site: message.payload.site === 'unknown' ? detectSiteFromUrl(message.payload.url) : message.payload.site,
       }
-      handleSubtitle(state, settings, payload, message.stamp)
+      handleSubtitle(state, settings, payload, { ...message.stamp, tab })
       emitStatus()
       break
     }
@@ -151,13 +151,13 @@ export default defineBackground(() => {
 
   void init()
 
-  browser.runtime.onMessage.addListener((message: unknown) => {
+  browser.runtime.onMessage.addListener((message: unknown, sender) => {
     if (!message || typeof message !== 'object')
       return
     if ('__eventa' in message)
       return
     if ('type' in message && typeof message.type === 'string' && message.type.startsWith('content:')) {
-      handleContentMessage(message as ContentToBackgroundMessage)
+      handleContentMessage(message as ContentToBackgroundMessage, sender.tab?.id)
     }
   })
 

@@ -56,6 +56,11 @@ export interface ObservationStamp {
   observedAt: number
   /** Playback timeline. It grows on a seek, a media change, and a new video element. */
   timeline: number
+  /**
+   * Browser tab of the observer, added by the background from the message sender.
+   * A new stream in the same tab replaces the old one at once, for example after a navigation.
+   */
+  tab?: number
 }
 
 /** The stamp that the background adds to context updates. `connection` changes on every server reconnect. */
