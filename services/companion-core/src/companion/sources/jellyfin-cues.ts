@@ -146,6 +146,7 @@ export class JellyfinCueWindow {
       sync: request.sync,
       ...fields,
     }
-    this.options.publish({ player: { key: `jellyfin-cues:${request.player}`, kind: 'jellyfin-client', reach: 'server', eligible: true, links: [`jf-item:${request.item}`] }, update })
+    // Cues only add text to a playback that another player started, so they never make a group eligible.
+    this.options.publish({ player: { key: `jellyfin-cues:${request.player}`, kind: 'jellyfin-client', reach: 'server', eligible: false, links: request.links.length > 0 ? [...request.links] : [`jf-item:${request.item}`] }, update })
   }
 }

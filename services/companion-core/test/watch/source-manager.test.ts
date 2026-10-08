@@ -200,6 +200,41 @@ describe('jellyfin correlation', () => {
     expect(manager.observe(cues.subtitle('Late server cue', { sync: 'estimated' }))).toEqual([])
   })
 
+  it('lets server cues join a Jellyfin Web group whose server session has only a device link', () => {
+    const page = new Feed(ref('browser:tab1', { kind: 'jellyfin-web', links: ['jf-device:web1'] }), { id: 'jellyfin:bbbb', site: 'jellyfin', title: evidence('Frieren', 'browser', 0.9) })
+    const session = new Feed(ref('jellyfin:s2', { kind: 'jellyfin-web', reach: 'server', eligible: false, links: ['jf-device:web1'] }), { id: 'jellyfin:bbbb', site: 'jellyfin', title: evidence('Sousou no Frieren', 'metadata', 0.95) })
+    session.jellyfin = { item: 'bbbb', device: 'web1', media_source: 'ms', subtitle_stream: 2 }
+    session.captions = { form: 'text', codec: 'ass' }
+    manager.observe(page.video({ position: 30 }))
+    manager.observe(session.video())
+    const request = manager.cueRequest()!
+    expect(request.links).toEqual(['jf-device:web1'])
+    const cues = new Feed(ref('jellyfin-cues:jellyfin:s2', { kind: 'jellyfin-client', reach: 'server', links: request.links }), { id: 'jellyfin:bbbb' })
+    expect(kinds(manager.observe(cues.subtitle('From the server', { sync: 'exact' })))).toEqual(['update:subtitle'])
+  })
+
+  it('ends the session as stopped when the page leaves, even while server cues remain', () => {
+    const page = new Feed(ref('browser:tab1', { kind: 'jellyfin-web', links: ['jf-device:web1'] }), { id: 'jellyfin:bbbb', site: 'jellyfin' })
+    const session = new Feed(ref('jellyfin:s2', { kind: 'jellyfin-web', reach: 'server', eligible: false, links: ['jf-device:web1'] }), { id: 'jellyfin:bbbb', site: 'jellyfin', title: evidence('Sousou no Frieren', 'metadata', 0.95) })
+    session.jellyfin = { item: 'bbbb', device: 'web1' }
+    const cues = new Feed(ref('jellyfin-cues:jellyfin:s2', { kind: 'jellyfin-client', reach: 'server', eligible: false, links: ['jf-device:web1'] }), { id: 'jellyfin:bbbb' })
+    manager.observe(page.video())
+    const start = manager.observe(session.video())[0]
+    manager.observe(cues.subtitle('Line'))
+    expect(manager.gone('browser:tab1', 'stopped')).toEqual([{ kind: 'end', key: (start as Extract<ManagerOutput, { kind: 'start' }>).key, reason: 'stopped' }])
+  })
+
+  it('keeps the cue clock when a page update carries no position', () => {
+    const { mpv, server } = jmp()
+    manager.observe(mpv.video({ position: 50 }))
+    manager.observe(server.video())
+    clock += 2000
+    // A title poll of a page reports state without a position.
+    manager.observe(mpv.video({ position: undefined }))
+    clock += 1000
+    expect(manager.cueRequest()!.position()).toBeCloseTo(53, 5)
+  })
+
   it('asks for server cues only while the player reports no subtitle text', () => {
     const { mpv, server } = jmp()
     manager.observe(mpv.video())

@@ -54,7 +54,7 @@ export interface JellyfinAdapterOptions {
   report?: (message: string) => void
   /** Poll interval while a session of the user plays or pauses. @default 1500 */
   pollMs?: number
-  /** @default 5000 */
+  /** Poll interval while no session of the user plays. A new session shows up within it. @default 3000 */
   idlePollMs?: number
   /** Unchanged playback is reported at least this often. @default 5000 */
   heartbeatMs?: number
@@ -93,6 +93,14 @@ function playerKindOf(client: string | null | undefined): PlayerKind {
 function bounded(value: string | null | undefined, limit: number): string | undefined {
   const cleaned = value?.replace(/\p{Cc}/gu, ' ').trim()
   return cleaned ? cleaned.slice(0, limit) : undefined
+}
+
+/**
+ * A client device id as the server reports it. jellyfin-web ids are about 200 characters of base64 text, and the
+ * extension sends the same full value, so the id is never shortened. Other characters give no id and no link.
+ */
+function deviceIdOf(value: string | null | undefined): string | undefined {
+  return value && /^[\w=+/.-]{1,256}$/.test(value) ? value : undefined
 }
 
 /** Jellyfin writes seven fractional digits. Three are enough and parse everywhere. */
@@ -248,7 +256,7 @@ export class JellyfinAdapter implements MediaSourceAdapter {
     this.lastSyncAt = receivedAt
     this.read(Array.isArray(reply.data) ? reply.data : [], receivedAt, reply.serverDate)
     const active = [...this.followed.values()].length > 0
-    this.schedule(active ? this.options.pollMs ?? 1500 : this.options.idlePollMs ?? 5000)
+    this.schedule(active ? this.options.pollMs ?? 1500 : this.options.idlePollMs ?? 3000)
   }
 
   private failed(failure: JellyfinFailure): void {
@@ -305,7 +313,7 @@ export class JellyfinAdapter implements MediaSourceAdapter {
     const position = Math.max(0, ticks / 10_000_000 + (playing ? age / 1000 : 0))
     const mediaSource = guidOf(state.MediaSourceId)
     const subtitle = typeof state.SubtitleStreamIndex === 'number' && state.SubtitleStreamIndex >= 0 ? state.SubtitleStreamIndex : undefined
-    const deviceId = bounded(session.DeviceId, 128)
+    const deviceId = deviceIdOf(session.DeviceId)
     const deviceName = bounded(session.DeviceName, 64)
     const client = bounded(session.Client, 64)
     const kind = playerKindOf(session.Client)

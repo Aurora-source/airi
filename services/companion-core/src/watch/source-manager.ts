@@ -71,6 +71,11 @@ interface Player {
   timeline: number
   lanes: { video?: Lane, subtitle?: Lane }
   video?: VideoUpdate
+  /**
+   * Media time anchor of the player. An update without a position, for example a page title poll, moves it by the
+   * playback rate instead of erasing it. A new timeline without a position drops it.
+   */
+  anchor?: { position: number, at: number, playing: boolean, rate: number, timeline: number }
   playStart?: number
   lastSeen: number
   group?: Group
@@ -258,6 +263,7 @@ export class MediaSourceManager {
       session: group.session!,
       timeline: group.timeline,
       ...(server.video.captions.language ? { language: server.video.captions.language } : {}),
+      links: [...server.ref.links],
       playing: playback.video.playing === true,
       position: () => this.positionOf(group),
     }
@@ -326,6 +332,7 @@ export class MediaSourceManager {
       player.timeline = stamp.timeline
       player.lanes = {}
       player.video = undefined
+      player.anchor = undefined
     }
     const observed_at = Math.min(stamp.observed_at, now)
     const lane = player.lanes[update.kind]
@@ -342,6 +349,7 @@ export class MediaSourceManager {
     if (stored.kind === 'video') {
       if (stored.playing === true && player.video?.playing !== true)
         player.playStart = observed_at
+      this.anchor(player, stored)
       player.video = stored
     }
     return { player, update: stored }
@@ -424,8 +432,15 @@ export class MediaSourceManager {
     // A group that waits for identity does not displace the current one yet.
     if (target && !this.ready(target))
       return undefined
-    if (current)
-      this.stop(current, reason, out)
+    if (current) {
+      // A group without playback or without an eligible member ends for that reason, not because another one won.
+      let ended: GroupEndReason = reason
+      if (!this.playbackMember(current))
+        ended = 'stopped'
+      else if (!this.eligible(current))
+        ended = 'ineligible'
+      this.stop(current, ended, out)
+    }
     this.activeKey = target?.key
     if (!target)
       return undefined
@@ -687,12 +702,24 @@ export class MediaSourceManager {
     return playback ? this.extrapolate(playback) : undefined
   }
 
-  /** Media time now, from the newest position read and the playback rate. */
+  private anchor(player: Player, video: VideoUpdate): void {
+    const previous = player.anchor
+    const at = video.stamp.observed_at
+    const rate = video.rate && video.rate > 0 ? video.rate : previous?.rate ?? 1
+    const playing = video.playing ?? previous?.playing ?? false
+    if (video.position !== undefined)
+      player.anchor = { position: video.position, at, playing, rate, timeline: video.stamp.timeline }
+    else if (previous && previous.timeline === video.stamp.timeline)
+      player.anchor = { position: previous.position + (previous.playing ? (at - previous.at) / 1000 * previous.rate : 0), at, playing, rate, timeline: previous.timeline }
+    else
+      player.anchor = undefined
+  }
+
+  /** Media time now, from the newest anchor and the playback rate. */
   private extrapolate(player: Player): number | undefined {
-    const video = player.video
-    if (!video || video.position === undefined)
+    const anchor = player.anchor
+    if (!anchor)
       return undefined
-    const elapsed = video.playing === true ? (this.options.now() - video.stamp.observed_at) / 1000 * (video.rate && video.rate > 0 ? video.rate : 1) : 0
-    return video.position + elapsed
+    return anchor.position + (anchor.playing ? (this.options.now() - anchor.at) / 1000 * anchor.rate : 0)
   }
 }

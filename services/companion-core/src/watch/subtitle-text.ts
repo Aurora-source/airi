@@ -9,6 +9,8 @@ export interface SubtitleLine {
 /** Upper bound of one current subtitle, the same bound that browser captions get. */
 const MAX_SUBTITLE_CHARS = 320
 const MAX_SUBTITLE_LINES = 6
+/** Direction marks and byte order marks that players insert. They carry no text. Emoji joiners stay. */
+const INVISIBLE_MARKS = /[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g
 
 /** Style, name, or effect labels that fansub typesetters use for lyrics. */
 const SONG_LABEL = /(?:^|[\s_-])(?:op|ed|song|lyrics?|kara(?:oke)?|insert|opening|ending|romaji|kanji)(?:$|[\s_\d-])/i
@@ -69,7 +71,7 @@ export function subtitleTextOf(input: string): string {
   const lines = input
     .replace(/\r\n?/g, '\n')
     .split('\n')
-    .map(line => line.replace(/\p{Cc}/gu, '').replace(/\s+/g, ' ').trim())
+    .map(line => line.replace(/\p{Cc}/gu, '').replace(INVISIBLE_MARKS, '').replace(/\s+/g, ' ').trim())
     .filter(Boolean)
     .slice(0, MAX_SUBTITLE_LINES)
   return lines.join('\n').slice(0, MAX_SUBTITLE_CHARS)

@@ -15,6 +15,11 @@ export interface CueRequest {
   timeline: number
   /** Language of the selected stream, when the server names it. */
   language?: string
+  /**
+   * Correlation links of the server session that named the stream. The cue player reports with them, so its cues
+   * join the group that asked, also when that session has only a device link.
+   */
+  links: readonly string[]
   playing: boolean
   /** Media time in seconds, from the newest playback evidence. */
   position: () => number | undefined

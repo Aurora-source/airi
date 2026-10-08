@@ -92,6 +92,24 @@ describe('jellyfin adapter', () => {
     expect(byKey['jellyfin:tv']).toMatchObject({ kind: 'jellyfin-client', eligible: false })
   })
 
+  it('keeps the full web client device id, so a Jellyfin Web page can link to its session', async () => {
+    const f = await start()
+    // jellyfin-web device ids are base64 of the user agent and a time, about 200 characters.
+    const webDevice = `${'TW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCk'.repeat(3)}fDE3OTE0NjkyNjc1MDg1`
+    f.jellyfin.sessions = [session({ Id: 'web', Client: 'Jellyfin Web', DeviceName: 'Edge Chromium', DeviceId: webDevice })]
+    await until(() => f.videos().length > 0)
+    expect(webDevice.length).toBeGreaterThan(128)
+    expect(f.videos()[0].player.links).toEqual([`jf-device:${webDevice}`])
+    expect(f.videos()[0].update.jellyfin?.device).toBe(webDevice)
+  })
+
+  it('gives no device link for a device id with unexpected characters', async () => {
+    const f = await start()
+    f.jellyfin.sessions = [session({ Id: 'odd', Client: 'Jellyfin Web', DeviceId: 'bad id"with quotes' })]
+    await until(() => f.videos().length > 0)
+    expect(f.videos()[0].player.links).toEqual([])
+  })
+
   it('follows a device that the user configured', async () => {
     const f = await start({ devices: ['Living Room TV'] })
     f.jellyfin.sessions = [session({ Id: 'tv', Client: 'Jellyfin Android TV', DeviceName: 'Living Room TV', DeviceId: 'tv-device' })]
@@ -172,7 +190,7 @@ describe('jellyfin adapter', () => {
 
 describe('jellyfin cue window', () => {
   function request(position: () => number, fields: Partial<CueRequest> = {}): CueRequest {
-    return { player: 'jellyfin:session1', item: ITEM, media_source: SOURCE, index: 2, sync: 'exact', session: 1, timeline: 0, playing: true, position, language: 'en', ...fields }
+    return { player: 'jellyfin:session1', item: ITEM, media_source: SOURCE, index: 2, sync: 'exact', session: 1, timeline: 0, playing: true, position, language: 'en', links: [], ...fields }
   }
 
   it('asks for one instant only and reports the cue that shows now', async () => {
@@ -186,7 +204,7 @@ describe('jellyfin cue window', () => {
     await until(() => f.subtitles().length === 1)
     const cue = f.subtitles()[0]
     expect(cue.update).toMatchObject({ text: 'Where are we going?', start_ms: 1000, end_ms: 3000, language: 'en', sync: 'exact', automatic: false })
-    expect(cue.player).toEqual({ key: 'jellyfin-cues:jellyfin:session1', kind: 'jellyfin-client', reach: 'server', eligible: true, links: [`jf-item:${ITEM}`] })
+    expect(cue.player).toEqual({ key: 'jellyfin-cues:jellyfin:session1', kind: 'jellyfin-client', reach: 'server', eligible: false, links: [`jf-item:${ITEM}`] })
     const lookups = f.jellyfin.requests.filter(entry => entry.url.includes('/Stream.js'))
     for (const lookup of lookups) {
       const url = new URL(lookup.url, 'http://x')

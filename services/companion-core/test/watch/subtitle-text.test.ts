@@ -22,6 +22,12 @@ describe('subtitleTextOf', () => {
     expect(subtitleTextOf('First line\n\n\nSecond   line')).toBe('First line\nSecond line')
   })
 
+  it('removes invisible direction marks that players add, and keeps emoji joiners', () => {
+    expect(subtitleTextOf('‎どこへ行くの？‏')).toBe('どこへ行くの？')
+    expect(subtitleTextOf('﻿‫Hello‬')).toBe('Hello')
+    expect(subtitleTextOf('👨‍👩')).toBe('👨‍👩')
+  })
+
   it('removes control characters and bounds the length', () => {
     expect(subtitleTextOf('a\u0000b\u001Bc')).toBe('abc')
     expect(subtitleTextOf('x'.repeat(500))).toHaveLength(320)
