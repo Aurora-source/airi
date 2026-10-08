@@ -1,0 +1,103 @@
+{
+  "capturedDate": "2026-10-08",
+  "branch": "codex/r7-director-foundation",
+  "baseSha": "4c35d4a048b4f06aa490aad69a7dc68da4c38eb8",
+  "command": "node --expose-gc --import tsx services/companion-core/eval/director/measure.ts",
+  "scope": "Synthetic standalone Director only. No production Stage, renderer, cloud call, or private user content.",
+  "node": "v22.22.2",
+  "platform": "win32",
+  "architecture": "x64",
+  "exposedGc": true,
+  "consecutive": {
+    "events": 100000,
+    "storm": false,
+    "elapsedMs": 524.2225000000001,
+    "cpuMs": 547,
+    "eventsPerSecond": 190758.69501976736,
+    "retainedHeapBytes": 86272,
+    "queuedBeforeDrain": 0,
+    "resources": {
+      "queue": 0,
+      "eventIds": 256,
+      "candidates": 0,
+      "fingerprints": 0,
+      "history": 64,
+      "activeOutput": 0,
+      "activeVisual": 0,
+      "activeRecall": 0,
+      "activeReasoning": 0,
+      "inFlightOutput": 0,
+      "inFlightRecall": 0,
+      "inFlightReasoning": 0
+    },
+    "overflow": 0
+  },
+  "storm": {
+    "events": 100000,
+    "storm": true,
+    "elapsedMs": 354.02369999999996,
+    "cpuMs": 390,
+    "eventsPerSecond": 282466.96478230134,
+    "retainedHeapBytes": 32280,
+    "queuedBeforeDrain": 128,
+    "resources": {
+      "queue": 0,
+      "eventIds": 256,
+      "candidates": 0,
+      "fingerprints": 0,
+      "history": 64,
+      "activeOutput": 0,
+      "activeVisual": 0,
+      "activeRecall": 0,
+      "activeReasoning": 0,
+      "inFlightOutput": 0,
+      "inFlightRecall": 0,
+      "inFlightReasoning": 0
+    },
+    "overflow": 99872
+  },
+  "idle": {
+    "virtualHours": 12,
+    "advances": 21600,
+    "elapsedMs": 31.072099999999864,
+    "cpuMs": 32,
+    "speechAttempts": 0,
+    "reasoningAttempts": 0,
+    "timers": 0,
+    "resources": {
+      "queue": 0,
+      "eventIds": 0,
+      "candidates": 0,
+      "fingerprints": 0,
+      "history": 64,
+      "activeOutput": 0,
+      "activeVisual": 0,
+      "activeRecall": 0,
+      "activeReasoning": 0,
+      "inFlightOutput": 0,
+      "inFlightRecall": 0,
+      "inFlightReasoning": 0
+    }
+  },
+  "session": {
+    "virtualHours": 8,
+    "events": 3849,
+    "reactiveSpeech": 25,
+    "watchVisuals": 24,
+    "watchSpeech": 0,
+    "idleSpeech": 0,
+    "absentSpeech": 0,
+    "quietSpeech": 0,
+    "reasoningRequests": 0,
+    "peak": {
+      "queue": 2,
+      "eventIds": 151,
+      "candidates": 2,
+      "history": 64,
+      "timers": 2
+    },
+    "remainingTimers": 0,
+    "elapsedMs": 272.8143,
+    "cpuMs": 484
+  }
+}
