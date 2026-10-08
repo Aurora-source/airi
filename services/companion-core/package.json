@@ -6,7 +6,8 @@
   "description": "Local Companion Gateway for AIRI. It forwards OpenAI-compatible chat requests to one configured cloud provider.",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./watch": "./src/watch/index.ts"
   },
   "bin": {
     "companion-core": "./src/bin/run.ts"
