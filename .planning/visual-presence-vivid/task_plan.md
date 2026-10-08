@@ -16,7 +16,7 @@ Tune with the primary local avatar. Validate every behavior in Chromium and all 
 - [x] Implement reusable gestures, distinct behavior timelines, phase delays, asymmetry, and tuning controls.
 - [x] Review all 30 behaviors on the primary avatar. Tune and repeat.
 - [x] Run six-model regression, ownership checks, performance measurements, typechecks, and lint.
-- [ ] Review changes, document evidence and integration, commit, and push without merging.
+- [x] Review changes, document evidence and integration, commit, and push without merging.
 
 ## Design
 

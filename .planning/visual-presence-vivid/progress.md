@@ -41,3 +41,6 @@
 - Final corpus completed four passes and 8,640 advancing rendered samples, all six × all 30 behaviors. Natural-end base restoration, finite transforms, neutral expressions, disposal, ACT/speaking priority, manual cancellation, and unmount all passed; zero browser errors.
 - Same-model renderer geometry/texture counts stayed fixed. Listeners 174→174, nodes 395→395, post-GC heap 13,658,744→14,170,944 bytes, within the regression bound.
 - Final full-bucket controls check passed; mean active pose hook 0.0875–0.1342 ms. Source/docs lint, root lint, root typecheck, gallery typecheck, and final builds pass. Preparing commits and authorized push; no merge.
+- Committed implementation and evidence documentation as `dc7fb462c3770fe803a5feaa9f9aed6f1ccb0b27` (`feat(visual): add vivid embodied behavior motion`). Repository staged-file checks passed; fresh post-commit driver run passed 52 tests.
+- Pushed `codex/visual-presence-vivid` successfully. No merge was performed. The original `codex/visual-presence` remote remains at the exact foundation SHA.
+- This documentation closure records completed delivery. The final branch SHA and remote equality are recorded outside Git in `D:\AI\vivid-evidence\FINAL_REPORT.md` after the last push.
