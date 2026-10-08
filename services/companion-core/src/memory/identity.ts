@@ -16,15 +16,16 @@ export function normalizeText(text: string): string {
 
 /**
  * Preserves visible wording while removing upstream formatting and reasoning.
+ * AIRI writes markers as `<|ACT {"emotion":"happy"}|>` and `<|DELAY:1|>`. The older `<|ACT:wave|>` form is also removed.
  *
  * @example
- * visibleText('[09:10] <|ACT:wave|> Hello')
+ * visibleText('[09:10] <|ACT {"emotion":"happy"}|> Hello <|DELAY:1|>')
  * // => 'Hello'
  */
 export function visibleText(text: string): string {
   return text.normalize('NFKC')
     .replace(/<(think|thinking|reasoning|analysis)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi, '')
-    .replace(/<\|ACT:[^|]*\|>/gi, '')
+    .replace(/<\|(?:ACT|DELAY)\b[\s\S]*?\|>/gi, '')
     .replace(/^\s*\[\d{1,2}:\d{2}\]\s*/, '')
     .replace(/\s+/g, ' ')
     .trim()
