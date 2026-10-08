@@ -108,7 +108,8 @@ export class ChannelSystemAudioPort implements SystemAudioPort {
 
   /** Rejects every pending capture. The channel dropped or the owner shut down. */
   shutdown(): void {
-    for (const entry of [...this.pending.values()])
+    // Each reject deletes its own entry. Map iteration stays valid while entries are deleted.
+    for (const entry of this.pending.values())
       entry.reject(new Error('System audio capture stopped'))
   }
 }
