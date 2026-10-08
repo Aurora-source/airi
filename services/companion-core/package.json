@@ -7,7 +7,8 @@
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
-    "./memory": "./src/memory/index.ts"
+    "./memory": "./src/memory/index.ts",
+    "./watch": "./src/watch/index.ts"
   },
   "bin": {
     "companion-core": "./src/bin/run.ts"
