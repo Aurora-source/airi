@@ -8,8 +8,28 @@ import { parseConversation } from './request-units'
 import { isInstructionRole } from './wire'
 
 /**
- * Where the tokens of one request go. The three gateway-injected blocks are zero until the memory, awareness,
- * and watch phases exist. Their fields are here so that every later phase reports into the same shape.
+ * A context block that the gateway writes: recalled memory (`MEMORY`) or current screen state (`NOW`).
+ *
+ * It is a `user` message, because it holds data and not instructions, like the recap.
+ * The budgeter keeps or drops it whole and never counts it in the fixed part of a request.
+ */
+export interface InjectedUnit {
+  kind: 'memory' | 'awareness'
+  message: WireMessage
+}
+
+/** Order in which injected units survive a tight budget. The first kind is dropped last. */
+const INJECTED_PRIORITY: readonly InjectedUnit['kind'][] = ['memory', 'awareness']
+
+/** What happened to the injected units of one request. */
+export interface InjectionReport {
+  kept: InjectedUnit['kind'][]
+  dropped: InjectedUnit['kind'][]
+}
+
+/**
+ * Where the tokens of one request go. `memoryTokens` and `awarenessTokens` count the injected units.
+ * `watchTokens` stays zero until the watch phase exists.
  */
 export interface PromptDiagnostics {
   /** Leading `system` and `developer` messages: the character card and the ACT instructions. */
@@ -60,6 +80,12 @@ export interface BudgetOptions {
    * @default 500
    */
   summaryMaxTokens?: number
+  /**
+   * Units that go directly before the current turn, so the kept history prefix stays the same for prompt caching.
+   * Older history is trimmed before a unit is dropped. Units are dropped by {@link INJECTED_PRIORITY}.
+   * A malformed history gets no units.
+   */
+  injected?: readonly InjectedUnit[]
 }
 
 export interface TrimReport {
@@ -77,8 +103,8 @@ export interface TrimReport {
 }
 
 export type BudgetResult
-  = | { status: 'fits', body: WireRequest, diagnostics: PromptDiagnostics }
-    | { status: 'trimmed', body: WireRequest, diagnostics: PromptDiagnostics, original: PromptDiagnostics, trim: TrimReport }
+  = | { status: 'fits', body: WireRequest, diagnostics: PromptDiagnostics, injection?: InjectionReport }
+    | { status: 'trimmed', body: WireRequest, diagnostics: PromptDiagnostics, original: PromptDiagnostics, trim: TrimReport, injection?: InjectionReport }
     /** The history is not valid, or the trim broke an invariant. The request is unchanged and may exceed the target. */
     | { status: 'untrimmed', body: WireRequest, diagnostics: PromptDiagnostics, reason: MalformedReason | 'invariant-violation', detail: string }
     /** System messages, tool schemas, and the current turn alone exceed the target. Nothing is truncated. */
@@ -106,6 +132,8 @@ const injectedMessages = new WeakSet<object>()
  * 2. Drop the oldest whole turns and put a recap in their place, right after the system messages.
  * 3. Report `impossible` when the fixed part alone does not fit.
  *
+ * Injected units are not part of the fixed part. They survive until only the fixed part is left, then go whole by priority.
+ *
  * A request with a broken tool history is returned as `untrimmed`, so that the gateway never makes it worse.
  *
  * Call stack:
@@ -126,15 +154,27 @@ export function budgetRequest(body: WireRequest, options: BudgetOptions): Budget
   const parsed = parseConversation(messages)
   if (!parsed.ok)
     return { status: 'untrimmed', body, diagnostics, reason: parsed.reason, detail: parsed.detail }
-  if (promptTokensOf(diagnostics) <= options.targetTokens)
-    return { status: 'fits', body, diagnostics }
 
   const groups = parsed.groups
   const current = groups[groups.length - 1]
   const older = groups.slice(0, -1)
-  const baseTokens = diagnostics.systemTokens + toolTokens + sumCosts(costs, current.start, current.end)
-  if (baseTokens > options.targetTokens)
-    return { status: 'impossible', diagnostics, requiredTokens: baseTokens }
+  const fixedTokens = diagnostics.systemTokens + toolTokens + sumCosts(costs, current.start, current.end)
+  if (fixedTokens > options.targetTokens)
+    return { status: 'impossible', diagnostics, requiredTokens: fixedTokens }
+
+  const units = selectInjectedUnits(options.injected ?? [], fixedTokens, options.targetTokens, estimator)
+  const unitTokens = units.kept.reduce((sum, unit) => sum + unit.tokens, 0)
+  const injection = units.report
+  if (promptTokensOf(diagnostics) + unitTokens <= options.targetTokens) {
+    if (units.kept.length === 0)
+      return { status: 'fits', body, diagnostics, injection }
+    const output = [...messages.slice(0, current.start), ...units.kept.map(unit => unit.message), ...messages.slice(current.start)]
+    const added = unitTokensOf(units.kept)
+    const withUnits = diagnose(diagnostics.systemTokens, diagnostics.conversationTokens, toolTokens, outputTokens, added.memory, added.awareness)
+    return { status: 'fits', body: { ...body, messages: output }, diagnostics: withUnits, injection }
+  }
+
+  const baseTokens = fixedTokens + unitTokens
 
   const summaryKind = options.summary ?? 'recap'
   // A recap must not crowd out whole turns when the target is small, so it never takes more than a tenth of the target.
@@ -217,6 +257,8 @@ export function budgetRequest(body: WireRequest, options: BudgetOptions): Budget
         keep(group.assistant.finalTextIndex, group.assistant.finalTextIndex + 1)
     }
   })
+  for (const unit of units.kept)
+    output.push(unit.message)
   keep(current.start, current.end)
 
   const trimmedBody: WireRequest = { ...body, messages: output }
@@ -226,14 +268,54 @@ export function budgetRequest(body: WireRequest, options: BudgetOptions): Budget
 
   const outputCosts = output.map(message => estimator.message(message))
   const outputLeading = leadingInstructionCount(output)
-  const trimmedDiagnostics = diagnose(sumCosts(outputCosts, 0, outputLeading), sumCosts(outputCosts, outputLeading, output.length), toolTokens, outputTokens)
+  const added = unitTokensOf(units.kept)
+  const outputConversation = sumCosts(outputCosts, outputLeading, output.length) - added.memory - added.awareness
+  const trimmedDiagnostics = diagnose(sumCosts(outputCosts, 0, outputLeading), outputConversation, toolTokens, outputTokens, added.memory, added.awareness)
   return {
     status: 'trimmed',
     body: trimmedBody,
     diagnostics: trimmedDiagnostics,
     original: diagnostics,
     trim: { droppedGroups: dropped.length, compactedGroups: compacted, keptIndexes, summary },
+    injection,
   }
+}
+
+interface SizedUnit extends InjectedUnit {
+  tokens: number
+}
+
+/**
+ * Keeps the injected units that fit next to the fixed part, in priority order.
+ * A unit that does not fit is dropped whole. Older history is trimmed later to make room for the kept units.
+ */
+function selectInjectedUnits(injected: readonly InjectedUnit[], fixedTokens: number, targetTokens: number, estimator: TokenEstimator): { kept: SizedUnit[], report: InjectionReport | undefined } {
+  if (injected.length === 0)
+    return { kept: [], report: undefined }
+  const sized = injected.map(unit => ({ ...unit, tokens: estimator.message(unit.message) }))
+  const ordered = [...sized].sort((a, b) => INJECTED_PRIORITY.indexOf(a.kind) - INJECTED_PRIORITY.indexOf(b.kind))
+  const keptSet = new Set<SizedUnit>()
+  const dropped: InjectedUnit['kind'][] = []
+  let used = fixedTokens
+  for (const unit of ordered) {
+    if (used + unit.tokens > targetTokens) {
+      dropped.push(unit.kind)
+      continue
+    }
+    used += unit.tokens
+    keptSet.add(unit)
+  }
+  // The output keeps the caller's order, so equal inputs give an equal prompt.
+  const kept = sized.filter(unit => keptSet.has(unit))
+  for (const unit of kept)
+    injectedMessages.add(unit.message)
+  return { kept, report: { kept: kept.map(unit => unit.kind), dropped } }
+}
+
+/** Token counts of the kept units, by kind. */
+function unitTokensOf(units: readonly SizedUnit[]): { memory: number, awareness: number } {
+  const of = (kind: InjectedUnit['kind']) => units.filter(unit => unit.kind === kind).reduce((sum, unit) => sum + unit.tokens, 0)
+  return { memory: of('memory'), awareness: of('awareness') }
 }
 
 /**
@@ -267,16 +349,16 @@ export function checkContextInvariants(input: readonly WireMessage[], output: re
   return violations
 }
 
-function diagnose(systemTokens: number, conversationTokens: number, toolSchemaTokens: number, estimatedOutputTokens: number): PromptDiagnostics {
+function diagnose(systemTokens: number, conversationTokens: number, toolSchemaTokens: number, estimatedOutputTokens: number, memoryTokens = 0, awarenessTokens = 0): PromptDiagnostics {
   return {
     systemTokens,
     conversationTokens,
     toolSchemaTokens,
-    memoryTokens: 0,
-    awarenessTokens: 0,
+    memoryTokens,
+    awarenessTokens,
     watchTokens: 0,
     estimatedOutputTokens,
-    totalEstimatedTokens: systemTokens + conversationTokens + toolSchemaTokens + estimatedOutputTokens,
+    totalEstimatedTokens: systemTokens + conversationTokens + toolSchemaTokens + memoryTokens + awarenessTokens + estimatedOutputTokens,
   }
 }
 

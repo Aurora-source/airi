@@ -406,3 +406,79 @@ describe('budgetRequest speed', () => {
     expect(result.status).toBe('trimmed')
   })
 })
+
+describe('budgetRequest injected units', () => {
+  const memory = (tokens = 120) => ({ kind: 'memory' as const, message: user(`MEMORY ${filler(tokens, 'm')}`) })
+  const awareness = (tokens = 80) => ({ kind: 'awareness' as const, message: user(`NOW ${filler(tokens, 'n')}`) })
+
+  it('places units directly before the current turn and counts them in their own fields', () => {
+    const body = request(longChat(3))
+    const units = [memory(), awareness()]
+
+    const result = budgetRequest(body, options(Number.MAX_SAFE_INTEGER, { injected: units }))
+
+    expect(result.status).toBe('fits')
+    const out = messagesOf(result)
+    const original = body.messages!
+    expect(out.slice(0, original.length - 1)).toEqual(original.slice(0, -1))
+    expect(out.at(-3)).toBe(units[0].message)
+    expect(out.at(-2)).toBe(units[1].message)
+    expect(out.at(-1)).toBe(original.at(-1))
+    expect(result.diagnostics.memoryTokens).toBe(estimator.message(units[0].message))
+    expect(result.diagnostics.awarenessTokens).toBe(estimator.message(units[1].message))
+    expect(result.diagnostics.conversationTokens).toBe(budgetRequest(body, options(Number.MAX_SAFE_INTEGER)).diagnostics.conversationTokens)
+    expect(checkContextInvariants(original, out)).toEqual([])
+  })
+
+  it('trims older history before it drops a unit, and keeps the result within the target', () => {
+    const body = request(longChat(10))
+    const units = [memory(), awareness()]
+    const target = Math.round(sizeOf(body) * 0.6)
+
+    const result = budgetRequest(body, options(target, { injected: units }))
+
+    expect(result.status).toBe('trimmed')
+    const out = messagesOf(result)
+    expect(out).toContain(units[0].message)
+    expect(out).toContain(units[1].message)
+    expect(result.status === 'trimmed' && result.injection).toEqual({ kept: ['memory', 'awareness'], dropped: [] })
+    expect(promptTokensOf(result.diagnostics)).toBeLessThanOrEqual(target)
+    expect(checkContextInvariants(body.messages!, out)).toEqual([])
+  })
+
+  it('drops awareness before memory when only the fixed part and one unit fit', () => {
+    const body = request([system(filler(300, 's')), user(filler(100, 'now'))])
+    const units = [awareness(200), memory(200)]
+
+    const result = budgetRequest(body, options(sizeOf(body) + estimator.message(units[1].message) + 5, { injected: units }))
+
+    const out = messagesOf(result)
+    expect(out).toContain(units[1].message)
+    expect(out).not.toContain(units[0].message)
+    expect(result.status !== 'impossible' && result.status !== 'untrimmed' && result.injection).toEqual({ kept: ['memory'], dropped: ['awareness'] })
+  })
+
+  it('never lets a unit make a request impossible, and never adds a unit to a malformed history', () => {
+    const tight = request([system(filler(300, 's')), user(filler(100, 'now'))])
+    const result = budgetRequest(tight, options(sizeOf(tight), { injected: [memory(400)] }))
+    expect(result.status).toBe('fits')
+    expect(messagesOf(result)).toBe(tight.messages)
+
+    const broken = request([system('c'), user('a'), toolResult('x', 'r'), user('b')])
+    const untrimmed = budgetRequest(broken, options(10_000, { injected: [memory()] }))
+    expect(untrimmed.status).toBe('untrimmed')
+    expect(messagesOf(untrimmed)).toBe(broken.messages)
+  })
+
+  it('puts units before a tool continuation turn and keeps its exchange whole', () => {
+    const messages = [system('card'), user(filler(200, 'old')), assistant(filler(200, 'old reply')), user('what is the weather'), assistantCalls([toolCall('c1', 'weather')]), toolResult('c1', 'sunny')]
+    const body = request(messages)
+    const unit = memory(50)
+
+    const out = messagesOf(budgetRequest(body, options(Number.MAX_SAFE_INTEGER, { injected: [unit] })))
+
+    expect(out.indexOf(unit.message)).toBe(3)
+    expect(out.slice(4)).toEqual(messages.slice(3))
+    expect(checkContextInvariants(messages, out)).toEqual([])
+  })
+})

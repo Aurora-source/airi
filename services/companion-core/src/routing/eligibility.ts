@@ -1,4 +1,4 @@
-import type { BudgetResult, PromptDiagnostics } from '../budget/budgeter'
+import type { BudgetResult, InjectedUnit, PromptDiagnostics } from '../budget/budgeter'
 import type { WireRequest } from '../budget/wire'
 import type { AliasConfig, ModelCapabilities, Profile, ResolvedModel, RoutingOptions } from '../config/config'
 import type { QuotaLedger, QuotaNeed, QuotaReason } from '../quota/ledger'
@@ -84,6 +84,8 @@ export interface EligibilityContext {
   hasKey: (model: ResolvedModel) => boolean
   /** Capabilities that a live probe measured. They replace the configured ones. */
   capabilitiesOf?: (model: ResolvedModel) => ModelCapabilities
+  /** Memory and awareness blocks. They never count in the fixed part, so they never make a model ineligible. */
+  injected?: readonly InjectedUnit[]
 }
 
 type TierPlan
@@ -208,7 +210,7 @@ function planTier(model: ResolvedModel, capabilities: ModelCapabilities, body: W
   const target = Math.max(Math.min(policyTargetOf(context.alias.prompt, traits), cap), required)
   const result = fixed.status === 'untrimmed'
     ? fixed
-    : budgetRequest(body, { estimator, targetTokens: target, outputReserveTokens: outputReserve, lowWaterRatio: context.alias.prompt.lowWaterRatio })
+    : budgetRequest(body, { estimator, targetTokens: target, outputReserveTokens: outputReserve, lowWaterRatio: context.alias.prompt.lowWaterRatio, injected: context.injected })
   if (result.status === 'impossible')
     return { feasible: false, reason: 'CONTEXT_TOO_SMALL', detail: `the fixed part of the request is ${result.requiredTokens} tokens` }
 

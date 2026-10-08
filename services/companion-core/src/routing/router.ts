@@ -1,3 +1,4 @@
+import type { InjectedUnit } from '../budget/budgeter'
 import type { WireRequest } from '../budget/wire'
 import type { CompanionConfig, ModelCapabilities, ResolvedModel } from '../config/config'
 import type { QuotaLedger } from '../quota/ledger'
@@ -61,7 +62,8 @@ export type RoutePlan
 export class Router {
   constructor(private readonly deps: RouterDeps) {}
 
-  plan(body: WireRequest): RoutePlan {
+  /** `injected` holds the gateway's memory and awareness blocks. Each candidate budgets them with its own limits. */
+  plan(body: WireRequest, injected?: readonly InjectedUnit[]): RoutePlan {
     const target = this.resolveTarget(body.model)
     if (!target)
       return failure(404, 'model_not_found', `Model "${body.model}" is not a configured alias or a model of one.`, [])
@@ -81,6 +83,7 @@ export class Router {
       health: this.deps.health,
       hasKey: this.deps.hasKey,
       capabilitiesOf: this.deps.capabilitiesOf,
+      injected,
     }
 
     const candidates: Candidate[] = []
