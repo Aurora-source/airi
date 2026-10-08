@@ -154,6 +154,32 @@ describe('mpv adapter', () => {
     expect(f.subtitles()[3]).toMatchObject({ text: '', cleared: true })
   })
 
+  it('uses full ASS events on a build whose version names no release', async () => {
+    const f = await start(playing({ 'mpv-version': 'mpv 9f8e7d6' }))
+    load(f.mpv)
+    await until(() => f.videos().length === 1)
+    // A sign style without placement tags: only the style name tells it apart from dialogue.
+    f.mpv.properties['sub-text/ass-full'] = ['Dialogue: 0,0:01:00.00,0:01:02.00,Signs,,0000,0000,0000,,Bakery', 'Dialogue: 0,0:01:00.00,0:01:02.00,Default,,0000,0000,0000,,Where are we going?'].join('\n')
+    f.mpv.properties['sub-end'] = 62
+    f.mpv.set('sub-text', 'Bakery\nWhere are we going?')
+    await until(() => f.subtitles().length === 1)
+    expect(f.subtitles()[0].text).toBe('Where are we going?')
+    expect(adapter!.status().limitations).not.toContain('ass-styles-unavailable')
+  })
+
+  it('falls back to event text tags when this mpv has no full ASS events', async () => {
+    const f = await start(playing({ 'mpv-version': 'mpv 1c9c2f5' }))
+    f.mpv.unknownProperties.add('sub-text/ass-full')
+    load(f.mpv)
+    await until(() => f.videos().length === 1)
+    f.mpv.properties['sub-text-ass'] = '{\\pos(320,80)}Bakery\nWhere are we going?'
+    f.mpv.properties['sub-end'] = 62
+    f.mpv.set('sub-text', 'Bakery\nWhere are we going?')
+    await until(() => f.subtitles().length === 1)
+    expect(f.subtitles()[0].text).toBe('Where are we going?')
+    expect(adapter!.status().limitations).toContain('ass-styles-unavailable')
+  })
+
   it('keeps a secondary subtitle beside the primary one', async () => {
     const f = await start(playing({ 'secondary-sid': 2, 'track-list': [
       { 'id': 1, 'type': 'sub', 'codec': 'subrip', 'lang': 'eng', 'selected': true, 'main-selection': 0 },

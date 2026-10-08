@@ -331,6 +331,27 @@ describe('local players through the watch runtime', () => {
     expect(capture.requests).toHaveLength(1)
   })
 
+  it('cancels system audio of a local player when the user pauses perception', async () => {
+    const capture = new FakeCapture()
+    const perception = new FakePerception()
+    start({ capture, perception, watchConfig: { systemAudio: { enabled: true } } })
+    const player = vlc.player({ key: 'vlc:8080', kind: 'vlc' }, { id: 'local:v', player: 'vlc' })
+    player.captions = { form: 'unknown' }
+    player.video()
+    for (let i = 0; i < 31; i++) {
+      advance(1000)
+      player.video({ position: 10 + i + 1 })
+    }
+    const pending = watch!.listen()
+    await flush()
+    expect(capture.requests).toHaveLength(1)
+    perception.paused = true
+    perception.publish({ status: 'unavailable' })
+    await flush()
+    expect(capture.requests[0].signal.aborted).toBe(true)
+    expect((await pending).status).not.toBe('transcribed')
+  })
+
   it('stops the sources at shutdown', async () => {
     start()
     await watch!.shutdown()

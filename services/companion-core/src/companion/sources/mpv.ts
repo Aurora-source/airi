@@ -81,10 +81,15 @@ function same(a: unknown, b: unknown): boolean {
   return a === b || JSON.stringify(a) === JSON.stringify(b)
 }
 
-/** mpv's version string, for example `mpv v0.41.0-244-g...`. `sub-text/ass-full` exists since 0.38. */
-function hasFullAss(version: unknown): boolean {
+/**
+ * Whether this mpv has `sub-text/ass-full`, which exists since 0.38. Release builds name their version, for example
+ * `mpv v0.41.0-244-g...`. Builds that name only a commit give `undefined`, and the first subtitle read decides.
+ */
+function hasFullAss(version: unknown): boolean | undefined {
   const match = typeof version === 'string' ? /\bv?(\d+)\.(\d+)/.exec(version) : null
-  return Boolean(match && (Number(match[1]) > 0 || Number(match[2]) >= 38))
+  if (!match)
+    return undefined
+  return Number(match[1]) > 0 || Number(match[2]) >= 38
 }
 
 /**
@@ -239,7 +244,7 @@ class MpvConnection {
       const reply = values[index]
       this.props[name] = reply.ok ? reply.data : undefined
     })
-    this.assForm = hasFullAss(this.props['mpv-version']) ? 'ass-full' : 'ass'
+    this.assForm = hasFullAss(this.props['mpv-version']) === false ? 'ass' : 'ass-full'
     OBSERVED.forEach((name, index) => void this.request(['observe_property', index + 1, name]))
     this.ready = true
     // The player already plays a file. It counts as loaded from now on.
@@ -433,12 +438,18 @@ class MpvConnection {
     const session = this.session
     const timeline = this.timeline
     const secondarySelected = typeof this.props['secondary-sid'] === 'number'
-    const [start, end, ass, secondary] = await Promise.all([
+    const [start, end, full, secondary] = await Promise.all([
       this.read('sub-start'),
       this.read('sub-end'),
       this.read(this.assForm === 'ass-full' ? 'sub-text/ass-full' : 'sub-text-ass'),
       secondarySelected ? this.read('secondary-sub-text') : Promise.resolve<Reply>({ ok: false, error: 'not selected' }),
     ])
+    let ass = full
+    // This mpv has no full ASS events. The event text with override tags is the next best form, from now on.
+    if (this.assForm === 'ass-full' && !full.ok && full.error !== 'property unavailable') {
+      this.assForm = 'ass'
+      ass = await this.read('sub-text-ass')
+    }
     if (request !== this.subtitleRequest || session !== this.session || timeline !== this.timeline || !this.loaded || this.seeking)
       return
     const plain = typeof this.props['sub-text'] === 'string' ? this.props['sub-text'] : ''

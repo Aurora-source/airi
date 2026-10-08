@@ -16,6 +16,8 @@ import { createServer } from 'node:net'
 export class FakeMpv {
   readonly pipe = `airi-test-${randomUUID().slice(0, 8)}`
   readonly commands: unknown[][] = []
+  /** Properties that this mpv version does not have. mpv answers them with `property not found`. */
+  readonly unknownProperties = new Set<string>()
   private server?: Server
   private readonly sockets = new Set<Socket>()
   private readonly observers = new Map<string, number[]>()
@@ -96,7 +98,9 @@ export class FakeMpv {
     }
     if (name === 'get_property') {
       const property = args[0] as string
-      if (this.properties[property] === undefined)
+      if (this.unknownProperties.has(property))
+        reply({ error: 'property not found' })
+      else if (this.properties[property] === undefined)
         reply({ error: 'property unavailable' })
       else
         reply({ error: 'success', data: this.properties[property] })
