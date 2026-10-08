@@ -8,18 +8,22 @@ import { parseConversation } from './request-units'
 import { isInstructionRole } from './wire'
 
 /**
- * A context block that the gateway writes: recalled memory (`MEMORY`) or current screen state (`NOW`).
+ * A context block that the gateway writes: recalled memory (`MEMORY`), the watched video (`WATCH`), or current screen
+ * state (`NOW`).
  *
  * It is a `user` message, because it holds data and not instructions, like the recap.
  * The budgeter keeps or drops it whole and never counts it in the fixed part of a request.
  */
 export interface InjectedUnit {
-  kind: 'memory' | 'awareness'
+  kind: 'memory' | 'watch' | 'awareness'
   message: WireMessage
 }
 
-/** Order in which injected units survive a tight budget. The first kind is dropped last. */
-const INJECTED_PRIORITY: readonly InjectedUnit['kind'][] = ['memory', 'awareness']
+/**
+ * Order in which injected units survive a tight budget. The first kind is dropped last.
+ * WATCH outlives NOW: browser facts about the video are more reliable than a screen frame of it.
+ */
+const INJECTED_PRIORITY: readonly InjectedUnit['kind'][] = ['memory', 'watch', 'awareness']
 
 /** What happened to the injected units of one request. */
 export interface InjectionReport {
@@ -27,10 +31,7 @@ export interface InjectionReport {
   dropped: InjectedUnit['kind'][]
 }
 
-/**
- * Where the tokens of one request go. `memoryTokens` and `awarenessTokens` count the injected units.
- * `watchTokens` stays zero until the watch phase exists.
- */
+/** Where the tokens of one request go. `memoryTokens`, `watchTokens`, and `awarenessTokens` count the injected units. */
 export interface PromptDiagnostics {
   /** Leading `system` and `developer` messages: the character card and the ACT instructions. */
   systemTokens: number
@@ -170,7 +171,7 @@ export function budgetRequest(body: WireRequest, options: BudgetOptions): Budget
       return { status: 'fits', body, diagnostics, injection }
     const output = [...messages.slice(0, current.start), ...units.kept.map(unit => unit.message), ...messages.slice(current.start)]
     const added = unitTokensOf(units.kept)
-    const withUnits = diagnose(diagnostics.systemTokens, diagnostics.conversationTokens, toolTokens, outputTokens, added.memory, added.awareness)
+    const withUnits = diagnose(diagnostics.systemTokens, diagnostics.conversationTokens, toolTokens, outputTokens, added)
     return { status: 'fits', body: { ...body, messages: output }, diagnostics: withUnits, injection }
   }
 
@@ -269,8 +270,8 @@ export function budgetRequest(body: WireRequest, options: BudgetOptions): Budget
   const outputCosts = output.map(message => estimator.message(message))
   const outputLeading = leadingInstructionCount(output)
   const added = unitTokensOf(units.kept)
-  const outputConversation = sumCosts(outputCosts, outputLeading, output.length) - added.memory - added.awareness
-  const trimmedDiagnostics = diagnose(sumCosts(outputCosts, 0, outputLeading), outputConversation, toolTokens, outputTokens, added.memory, added.awareness)
+  const outputConversation = sumCosts(outputCosts, outputLeading, output.length) - added.memory - added.watch - added.awareness
+  const trimmedDiagnostics = diagnose(sumCosts(outputCosts, 0, outputLeading), outputConversation, toolTokens, outputTokens, added)
   return {
     status: 'trimmed',
     body: trimmedBody,
@@ -313,10 +314,14 @@ function selectInjectedUnits(injected: readonly InjectedUnit[], fixedTokens: num
 }
 
 /** Token counts of the kept units, by kind. */
-function unitTokensOf(units: readonly SizedUnit[]): { memory: number, awareness: number } {
+function unitTokensOf(units: readonly SizedUnit[]): UnitTokens {
   const of = (kind: InjectedUnit['kind']) => units.filter(unit => unit.kind === kind).reduce((sum, unit) => sum + unit.tokens, 0)
-  return { memory: of('memory'), awareness: of('awareness') }
+  return { memory: of('memory'), watch: of('watch'), awareness: of('awareness') }
 }
+
+type UnitTokens = Record<InjectedUnit['kind'], number>
+
+const NO_UNIT_TOKENS: Readonly<UnitTokens> = Object.freeze({ memory: 0, watch: 0, awareness: 0 })
 
 /**
  * Checks the structural invariants of a trimmed message list against the list it came from.
@@ -349,16 +354,16 @@ export function checkContextInvariants(input: readonly WireMessage[], output: re
   return violations
 }
 
-function diagnose(systemTokens: number, conversationTokens: number, toolSchemaTokens: number, estimatedOutputTokens: number, memoryTokens = 0, awarenessTokens = 0): PromptDiagnostics {
+function diagnose(systemTokens: number, conversationTokens: number, toolSchemaTokens: number, estimatedOutputTokens: number, units: Readonly<UnitTokens> = NO_UNIT_TOKENS): PromptDiagnostics {
   return {
     systemTokens,
     conversationTokens,
     toolSchemaTokens,
-    memoryTokens,
-    awarenessTokens,
-    watchTokens: 0,
+    memoryTokens: units.memory,
+    awarenessTokens: units.awareness,
+    watchTokens: units.watch,
     estimatedOutputTokens,
-    totalEstimatedTokens: systemTokens + conversationTokens + toolSchemaTokens + memoryTokens + awarenessTokens + estimatedOutputTokens,
+    totalEstimatedTokens: systemTokens + conversationTokens + toolSchemaTokens + units.memory + units.watch + units.awareness + estimatedOutputTokens,
   }
 }
 

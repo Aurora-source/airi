@@ -458,6 +458,22 @@ describe('budgetRequest injected units', () => {
     expect(result.status !== 'impossible' && result.status !== 'untrimmed' && result.injection).toEqual({ kept: ['memory'], dropped: ['awareness'] })
   })
 
+  it('drops NOW first and WATCH second, and counts WATCH in its own field', () => {
+    const watch = (tokens = 150) => ({ kind: 'watch' as const, message: user(`WATCH ${filler(tokens, 'w')}`) })
+    const body = request([system(filler(300, 's')), user(filler(100, 'now'))])
+    const units = [memory(200), watch(200), awareness(200)]
+    const room = (count: number) => units.slice(0, count).reduce((sum, unit) => sum + estimator.message(unit.message), 0)
+
+    const two = budgetRequest(body, options(sizeOf(body) + room(2) + 5, { injected: units }))
+    expect(two.status !== 'impossible' && two.status !== 'untrimmed' && two.injection).toEqual({ kept: ['memory', 'watch'], dropped: ['awareness'] })
+    expect(two.diagnostics.watchTokens).toBe(estimator.message(units[1].message))
+    expect(two.diagnostics.awarenessTokens).toBe(0)
+
+    const one = budgetRequest(body, options(sizeOf(body) + room(1) + 5, { injected: units }))
+    expect(one.status !== 'impossible' && one.status !== 'untrimmed' && one.injection).toEqual({ kept: ['memory'], dropped: ['watch', 'awareness'] })
+    expect(one.diagnostics.watchTokens).toBe(0)
+  })
+
   it('never lets a unit make a request impossible, and never adds a unit to a malformed history', () => {
     const tight = request([system(filler(300, 's')), user(filler(100, 'now'))])
     const result = budgetRequest(tight, options(sizeOf(tight), { injected: [memory(400)] }))
