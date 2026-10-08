@@ -260,6 +260,26 @@ const watchSchema = v.object({
   }), {}),
 })
 
+const minuteOfDay = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(1439))
+
+/**
+ * The Director chooses when the companion reacts, waits, or stays silent. It uses the server channel.
+ * Proactive speech and optional reasoning are not configuration: only an authenticated Ops request enables them.
+ */
+const directorSchema = v.object({
+  enabled: v.optional(v.boolean(), true),
+  /** Silent visual reactions. `low` allows one per 30 seconds, `normal` one per 15 seconds. R6 cooldown still applies. */
+  reactionFrequency: v.optional(v.picklist(['off', 'low', 'normal']), 'low'),
+  /** Suppresses speech and visual reactions. Answers to the user stay unchanged. */
+  quietMode: v.optional(v.boolean(), false),
+  /** Local offset for quiet periods. @default the offset of this computer when the Director starts */
+  utcOffsetMinutes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-840), v.maxValue(840))),
+  /** Daily quiet intervals in local minutes. An interval can cross midnight. Equal ends mean the whole day. */
+  quietPeriods: v.optional(v.pipe(v.array(v.strictObject({ startMinute: minuteOfDay, endMinute: minuteOfDay })), v.maxLength(8)), []),
+  /** A `reasoning` alias for optional Director reasoning. Without it, reasoning stays unavailable. */
+  reasoningAlias: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(64))),
+})
+
 const PROFILES = ['local', 'cloud', 'cloud-mura-voice', 'hybrid'] as const
 
 const configSchema = v.pipe(
@@ -292,6 +312,7 @@ const configSchema = v.pipe(
     channel: v.optional(channelSchema, {}),
     perception: v.optional(perceptionSchema, {}),
     watch: v.optional(watchSchema, {}),
+    director: v.optional(directorSchema, {}),
     providers: v.record(v.string(), providerSchema),
     models: v.optional(v.record(v.string(), modelSchema), {}),
     aliases: v.record(v.string(), aliasSchema),

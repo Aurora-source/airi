@@ -1,8 +1,10 @@
 import type { InjectedUnit } from '../budget/budgeter'
 import type { CompanionConfig } from '../config/config'
+import type { DirectorClock } from '../director'
 import type { GatewayRuntime } from '../gateway/runtime'
 import type { GatewayTurn, TurnHooks } from '../gateway/turn-hooks'
 import type { MediaSourceAdapter } from '../watch'
+import type { CompanionDirectorOptions } from './director'
 import type { MemoryPorts } from './memory'
 import type { ScreenBackend } from './perception'
 import type { CompanionWatchOptions } from './watch'
@@ -14,6 +16,7 @@ import { dirname, join } from 'node:path'
 import { MemoryClient } from '../memory/client'
 import { awarenessUnit } from './awareness'
 import { ChannelObserver } from './channel-observer'
+import { CompanionDirector } from './director'
 import { CompanionMemory } from './memory'
 import { CompanionPerception } from './perception'
 import { createPrivateDirectory } from './private-directory'
@@ -42,22 +45,25 @@ export interface CompanionRuntimeOptions {
   watchPorts?: Pick<CompanionWatchOptions, 'createClient' | 'systemAudio' | 'recognition' | 'reactionOutput' | 'anilistTransport'>
   /** Desktop player and media server sources that the caller built from configuration and protected secrets. */
   mediaSources?: readonly MediaSourceAdapter[]
+  /** Tests replace the Director's channel client and clock. */
+  directorPorts?: Pick<CompanionDirectorOptions, 'createClient'> & { clock?: DirectorClock }
 }
 
 /**
- * Owns the companion services next to the gateway: memory, the AIRI server channel observer, screen perception, and
- * Watch Together. It implements the gateway's turn hooks. Open it before the gateway listens and attach it after.
- * Shut watch and perception down before the gateway closes, and close the rest after the gateway closed.
+ * Owns the companion services next to the gateway: memory, the AIRI server channel observer, screen perception,
+ * Watch Together, and the Director host. It implements the gateway's turn hooks. Open it before the gateway listens
+ * and attach it after. Shut the Director, watch, and perception down before the gateway closes, and close the rest
+ * after the gateway closed.
  *
  * Call stack:
  *
  * main (../bin/run)
  *   -> {@link CompanionRuntime.open}
  *     -> MemoryClient.ready / CompanionMemory.startConsolidation / ChannelObserver.start / CompanionPerception
- *     -> CompanionWatch
- *   -> {@link CompanionRuntime.attach} -> CompanionPerception.attach / CompanionWatch.attach
+ *     -> CompanionDirector / CompanionWatch (reaction output through the Director's relay)
+ *   -> {@link CompanionRuntime.attach} -> CompanionPerception.attach / CompanionWatch.attach / CompanionDirector.attach
  * proxyChatCompletion (../gateway/chat-completions)
- *   -> {@link CompanionRuntime.begin} -> CompanionMemory.begin / CompanionWatch.unit / awarenessUnit
+ *   -> {@link CompanionRuntime.begin} -> CompanionDirector.beginTurn / CompanionMemory.begin / CompanionWatch.unit / awarenessUnit
  */
 export class CompanionRuntime implements TurnHooks {
   private closed = false
@@ -68,6 +74,7 @@ export class CompanionRuntime implements TurnHooks {
     private readonly channel: ChannelObserver | undefined,
     readonly perception: CompanionPerception | undefined,
     readonly watch: CompanionWatch | undefined,
+    readonly director: CompanionDirector | undefined,
     private readonly now: () => number,
   ) {}
 
@@ -99,11 +106,17 @@ export class CompanionRuntime implements TurnHooks {
       : undefined
     channel?.start()
     const perception = openPerception(options, memory)
-    // Watch follows the extension through the server channel. Without the channel nothing can reach it.
-    const watch = config.watch.enabled && config.channel.enabled && (options.channel !== false || options.watchPorts?.createClient)
-      ? new CompanionWatch({ config, channelToken: options.channelToken, memory, perception, now: options.now, report: options.report, mediaSources: options.mediaSources, ...options.watchPorts })
+    // The Director talks to the stage through the server channel. Without the channel it has no output.
+    const director = config.director.enabled && config.channel.enabled && (options.channel !== false || options.directorPorts?.createClient)
+      ? new CompanionDirector({ config, channelToken: options.channelToken, report: options.report, createClient: options.directorPorts?.createClient, clock: options.directorPorts?.clock })
       : undefined
-    return new CompanionRuntime(memory, client, channel, perception, watch, options.now ?? Date.now)
+    // Watch follows the extension through the server channel. Without the channel nothing can reach it.
+    // Admitted reactions go to the Director's relay. A test output replaces it.
+    const watch = config.watch.enabled && config.channel.enabled && (options.channel !== false || options.watchPorts?.createClient)
+      ? new CompanionWatch({ config, channelToken: options.channelToken, memory, perception, now: options.now, report: options.report, mediaSources: options.mediaSources, reactionOutput: director?.reactionOutput(), ...options.watchPorts })
+      : undefined
+    director?.connect({ watch, perception, memory })
+    return new CompanionRuntime(memory, client, channel, perception, watch, director, options.now ?? Date.now)
   }
 
   /**
@@ -112,8 +125,10 @@ export class CompanionRuntime implements TurnHooks {
    */
   attach(runtime: GatewayRuntime, gateway?: { baseURL: string, token: string }): void {
     this.perception?.attach(runtime)
-    if (gateway)
+    if (gateway) {
       this.watch?.attach(gateway)
+      this.director?.attach(gateway)
+    }
   }
 
   /**
@@ -125,10 +140,11 @@ export class CompanionRuntime implements TurnHooks {
     if (this.closed)
       return undefined
     const identity = turnIdentityOf(request.headers)
-    if (!identity || (!this.memory && !this.perception && !this.watch))
+    if (!identity || (!this.memory && !this.perception && !this.watch && !this.director))
       return undefined
     if (this.watch && !isToolContinuation(request.body))
       this.watch.userSpeech()
+    const directorTurn = this.director?.beginTurn(identity, request.body)
     const units: InjectedUnit[] = []
     const memoryTurn = await this.memory?.begin(identity, request.body)
     if (memoryTurn?.unit)
@@ -139,13 +155,20 @@ export class CompanionRuntime implements TurnHooks {
     const awareness = this.perception && awarenessUnit(this.perception.current(), this.now())
     if (awareness)
       units.push(awareness)
-    return { units, finish: outcome => memoryTurn?.finish(outcome) }
+    return {
+      units,
+      finish: (outcome) => {
+        directorTurn?.finish(outcome)
+        memoryTurn?.finish(outcome)
+      },
+    }
   }
 
   async close(): Promise<void> {
     if (this.closed)
       return
     this.closed = true
+    await this.director?.close()
     await this.watch?.shutdown()
     await this.perception?.shutdown()
     this.channel?.close()

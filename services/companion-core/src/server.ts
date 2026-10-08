@@ -2,6 +2,7 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
 import type { GatewayCredentials } from './auth/credentials'
+import type { CompanionDirector } from './companion/director'
 import type { CompanionMemory } from './companion/memory'
 import type { CompanionPerception } from './companion/perception'
 import type { CompanionWatch } from './companion/watch'
@@ -20,7 +21,7 @@ import { createBearerCheck } from './auth/credentials'
 import { TURN_IDENTITY_HEADERS } from './companion/turn-identity'
 import { LOOPBACK_HOST, servesChatCompletions } from './config/config'
 import { proxyChatCompletion } from './gateway/chat-completions'
-import { handleCompanionTool, handleOpsMemory, handleOpsPerception, handleOpsWatch } from './gateway/companion-api'
+import { handleCompanionTool, handleOpsDirector, handleOpsMemory, handleOpsPerception, handleOpsWatch } from './gateway/companion-api'
 import { sendError } from './gateway/http'
 import { opsStatus } from './gateway/ops-status'
 import { GatewayRuntime } from './gateway/runtime'
@@ -41,6 +42,7 @@ export interface GatewayCompanion extends TurnHooks {
   memory?: CompanionMemory
   perception?: CompanionPerception
   watch?: CompanionWatch
+  director?: CompanionDirector
 }
 
 export interface GatewayOptions {
@@ -77,7 +79,7 @@ export interface RunningGateway {
  * 2. A request with an `Origin` header must come from `config.allowedOrigins`, even when it has a valid token.
  * 3. `GET /livez` needs no token and reveals nothing but liveness.
  * 4. `/v1/*` needs the inference token. The ops token is rejected there. This includes the companion tools.
- * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory, perception, and watch administration.
+ * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory, perception, watch, and Director administration.
  *
  * Call stack:
  *
@@ -95,7 +97,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   const isOpsToken = createBearerCheck(options.credentials.ops)
   const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, ...options.runtime })
   const allowedOrigins = new Set(config.allowedOrigins)
-  const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, watch: options.companion?.watch, backupDirectory: options.backupDirectory }
+  const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, watch: options.companion?.watch, director: options.companion?.director, backupDirectory: options.backupDirectory }
 
   let allowedHosts = new Set<string>()
 
@@ -162,7 +164,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
         log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
-      if (await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi) || await handleOpsWatch(req, res, path, companionApi)) {
+      if (await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi) || await handleOpsWatch(req, res, path, companionApi) || await handleOpsDirector(req, res, path, companionApi)) {
         log({ method, path, status: res.statusCode, outcome: res.statusCode < 400 ? 'ok' : 'rejected', durationMs: Math.round(performance.now() - startedAt) })
         return
       }

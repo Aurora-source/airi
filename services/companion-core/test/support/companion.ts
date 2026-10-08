@@ -29,7 +29,7 @@ export interface CompanionHarness {
  * `gatewayNow` sets the clock of the router, quota ledger, and health. `watchPorts` replace the watch channel client
  * and media boundaries.
  */
-export async function startCompanionGateway(providerBaseURL: string, raw: Record<string, unknown> = {}, options: { memoryPorts?: MemoryPorts, now?: () => number, gatewayNow?: () => number, channel?: boolean, captureBackend?: ScreenBackend, watchPorts?: CompanionRuntimeOptions['watchPorts'] } = {}): Promise<CompanionHarness> {
+export async function startCompanionGateway(providerBaseURL: string, raw: Record<string, unknown> = {}, options: { memoryPorts?: MemoryPorts, now?: () => number, gatewayNow?: () => number, channel?: boolean, captureBackend?: ScreenBackend, watchPorts?: CompanionRuntimeOptions['watchPorts'], directorPorts?: CompanionRuntimeOptions['directorPorts'] } = {}): Promise<CompanionHarness> {
   const directory = mkdtempSync(join(tmpdir(), 'companion-memory-'))
   const logs: string[] = []
   const reports: string[] = []
@@ -43,7 +43,7 @@ export async function startCompanionGateway(providerBaseURL: string, raw: Record
     ...raw,
     memory: { path: join(directory, 'memory', 'memory.sqlite'), ...(raw.memory as Record<string, unknown> | undefined) },
   })
-  const companion = await CompanionRuntime.open({ config, home: directory, channel: options.channel ?? false, memoryPorts: options.memoryPorts, now: options.now, report: line => reports.push(line), captureBackend: options.captureBackend, watchPorts: options.watchPorts })
+  const companion = await CompanionRuntime.open({ config, home: directory, channel: options.channel ?? false, memoryPorts: options.memoryPorts, now: options.now, report: line => reports.push(line), captureBackend: options.captureBackend, watchPorts: options.watchPorts, directorPorts: options.directorPorts })
   const gateway = await startGateway({
     config,
     credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN },

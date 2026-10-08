@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
+import type { CompanionDirector } from '../companion/director'
 import type { CompanionMemory } from '../companion/memory'
 import type { CompanionPerception, LookResult } from '../companion/perception'
 import type { CompanionWatch } from '../companion/watch'
@@ -11,6 +12,7 @@ import { join } from 'node:path'
 
 import * as v from 'valibot'
 
+import { parseDirectorControls } from '../companion/director'
 import { readRequestBody, RequestBodyTooLargeError, sendError } from './http'
 
 /** Admin and tool bodies are small JSON objects. */
@@ -44,6 +46,7 @@ export interface CompanionApiContext {
   memory?: CompanionMemory
   perception?: CompanionPerception
   watch?: CompanionWatch
+  director?: CompanionDirector
   /** Folder for memory backups. Each backup gets a new file. */
   backupDirectory?: string
 }
@@ -116,6 +119,8 @@ export async function handleOpsMemory(req: IncomingMessage, res: ServerResponse,
       if (!parsed.success)
         return badRequest(res, 'edit needs itemId and valid fields.')
       const item = await memory.ports.edit({ userId, ...parsed.output })
+      if (item)
+        memory.changed()
       reply(item ? 200 : 404, item ? { item } : { error: { code: 'not_found', message: 'No such item.' } })
       return true
     }
@@ -127,6 +132,8 @@ export async function handleOpsMemory(req: IncomingMessage, res: ServerResponse,
       const done = path.endsWith('/forget')
         ? await memory.ports.forget({ userId, itemId: parsed.output.itemId })
         : await memory.ports.delete({ userId, itemId: parsed.output.itemId })
+      if (done)
+        memory.changed()
       reply(done ? 200 : 404, { ok: done })
       return true
     }
@@ -135,6 +142,7 @@ export async function handleOpsMemory(req: IncomingMessage, res: ServerResponse,
       if (!parsed.success)
         return badRequest(res, 'enabled must be a boolean.')
       await memory.ports.setPrivateMode(userId, parsed.output.enabled)
+      memory.changed()
       reply(200, { ok: true, privateMode: parsed.output.enabled })
       return true
     }
@@ -195,6 +203,49 @@ export async function handleOpsPerception(req: IncomingMessage, res: ServerRespo
  * `source` selects one followed player, or returns to automatic selection with `{ "player": null }`.
  * `anilist` binds an AniList id that the user confirmed, with optional completed progress and curated context.
  */
+/**
+ * Serves `/ops/director/*`. The caller has already checked the ops token, so these are authenticated user actions.
+ * Model output, page content, captions, and vision never reach these controls. Returns `false` for an unknown path.
+ */
+export async function handleOpsDirector(req: IncomingMessage, res: ServerResponse, path: string, context: CompanionApiContext): Promise<boolean> {
+  const reply = jsonReply(res)
+  const method = req.method ?? ''
+  const { director } = context
+  if (!path.startsWith('/ops/director/'))
+    return false
+  if (method === 'GET' && path === '/ops/director/status') {
+    reply(200, director ? director.status() : { enabled: false })
+    return true
+  }
+  if (method !== 'POST' || !['/ops/director/configure', '/ops/director/cancel', '/ops/director/activity'].includes(path))
+    return false
+  if (!director) {
+    sendError(res, 503, 'server_error', 'director_disabled', 'The Director is not enabled.')
+    return true
+  }
+  const body = await readJson(req, res)
+  if (body === undefined)
+    return true
+  if (path === '/ops/director/cancel') {
+    director.cancel()
+    reply(200, { ok: true })
+    return true
+  }
+  if (path === '/ops/director/activity') {
+    const parsed = v.safeParse(v.strictObject({ activity: v.picklist(['working', 'idle', 'absent', 'unknown']) }), body)
+    if (!parsed.success)
+      return badRequest(res, 'activity must be working, idle, absent, or unknown.')
+    director.declareActivity(parsed.output.activity)
+    reply(200, { ok: true })
+    return true
+  }
+  const patch = parseDirectorControls(body)
+  if (!patch)
+    return badRequest(res, 'Invalid Director controls.')
+  reply(director.configure(patch) ? 200 : 409, { ok: true, controls: patch })
+  return true
+}
+
 export async function handleOpsWatch(req: IncomingMessage, res: ServerResponse, path: string, context: CompanionApiContext): Promise<boolean> {
   const reply = jsonReply(res)
   const method = req.method ?? ''
