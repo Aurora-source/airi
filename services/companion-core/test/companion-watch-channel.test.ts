@@ -189,4 +189,39 @@ describe('watch over the AIRI server channel', () => {
     expect((await ops('watch/status')).counters.sessionsEnded['channel-lost']).toBeGreaterThanOrEqual(1)
     expect(WATCH_MODULE).toBe('companion-core-watch')
   }, 60_000)
+
+  // The background replaces its client when the settings change. A real Chromium run showed the replaced client's
+  // late connect() failure marking the new connection closed. Node settles that promise in another order, so this test
+  // checks the observable behavior only. eval/watch/live-extension.mts reproduces the browser case.
+  it('keeps sending after a settings change replaced a connecting client', async () => {
+    const port = await freePort()
+    const url = `ws://127.0.0.1:${port}/ws`
+    channel = createServer({ hostname: '127.0.0.1', port })
+    await channel.start()
+    harness = await startCompanionGateway(provider.baseURL, { channel: { url } }, { channel: true })
+    await eventually(ops.bind(null, 'watch/status'), status => status.channelConnected === true)
+
+    // A server that accepts but never answers the handshake, so the first client still waits in connect().
+    const silent = createNetServer(socket => void socket.on('error', () => {}))
+    await new Promise<void>(resolve => silent.listen(0, '127.0.0.1', resolve))
+    const silentPort = (silent.address() as AddressInfo).port
+    const state = createClientState()
+    void ensureClient(state, { ...DEFAULT_SETTINGS, wsUrl: `ws://127.0.0.1:${silentPort}/ws` })
+    await new Promise(resolve => setTimeout(resolve, 200))
+    // What the background does when the settings change.
+    state.client?.close()
+    state.client = null
+    state.connected = false
+    const settings = { ...DEFAULT_SETTINGS, wsUrl: url, sendSparkNotify: false }
+    await ensureClient(state, settings)
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    expect(state.connected).toBe(true)
+    const stamper = new ObservationStamper()
+    const page = { site: 'youtube' as const, url: 'https://www.youtube.com/watch?v=race', videoId: 'race', title: 'Race Episode 1' }
+    handleVideoContext(state, settings, { ...page, isPlaying: true, currentTimeSec: 1 }, { notify: false, stamp: stamper.stamp(page.site, page.url) })
+    expect((await eventually(watchStatus, status => status.status === 'watching')).title.text).toBe('Race Episode 1')
+    disconnectClient(state)
+    silent.close()
+  }, 40_000)
 })
