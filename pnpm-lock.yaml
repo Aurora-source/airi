@@ -5094,6 +5094,9 @@ importers:
       '@proj-airi/model-driver-magic-live2d':
         specifier: workspace:^
         version: link:../model-driver-magic-live2d
+      '@proj-airi/model-driver-visual':
+        specifier: workspace:^
+        version: link:../model-driver-visual
       '@proj-airi/motion-driver-magic':
         specifier: workspace:^
         version: link:../motion-driver-magic

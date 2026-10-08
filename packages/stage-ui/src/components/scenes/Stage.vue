@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Live2DLipSync, Live2DLipSyncOptions } from '@proj-airi/model-driver-lipsync'
 import type { Profile } from '@proj-airi/model-driver-lipsync/shared/wlipsync'
+import type { VisualActivity } from '@proj-airi/model-driver-visual'
 import type { CaptionChannelEvent, PresenceBubbleState } from '@proj-airi/stage-shared'
 import type { VrmInteractionTarget } from '@proj-airi/stage-ui-three'
 
@@ -31,6 +32,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } fr
 import StageRenderError from './stage-render-error.vue'
 
 import { useDuckDb } from '../../composables/use-duck-db'
+import { useStageVisualPresence } from '../../composables/use-stage-visual-presence'
 import { Emotion, EMOTION_EmotionMotionName_value, EMOTION_VRMExpressionName_value, EmotionThinkMotionName } from '../../constants/emotions'
 import { live2dMotionMagicProfiles, useLive2DMotionMagic, useLive2DMotionMagicSettings } from '../../features/motions/live2d'
 import { getSpeechBusContext, speechOutputGetPlaybackState } from '../../services/speech/bus'
@@ -143,6 +145,30 @@ const { audioContext } = useAudioContext()
 const currentAudioSource = ref<AudioBufferSourceNode>()
 const speechOutputControlStore = useSpeechOutputControlStore()
 const { speechMuted } = storeToRefs(speechOutputControlStore)
+const voice = useVoiceStore()
+const { sending: chatSending } = storeToRefs(useChatStore())
+
+// Stage-local activity outranks remote requests: listening while the user speaks, waiting while speech is transcribed,
+// and thinking while a chat request has no speech yet.
+const visualLocalActivity = computed<VisualActivity | undefined>(() => {
+  const input = voice.state
+  if (input?.phase === 'capturing' || (input?.phase === 'pending' && input.waitingFor === 'silence'))
+    return 'listening'
+  if (input?.phase === 'finalizing')
+    return 'waiting'
+  if (chatSending.value && !nowSpeaking.value)
+    return 'thinking'
+  return undefined
+})
+const visualPresence = useStageVisualPresence({
+  scene: vrmViewerRef,
+  enabled: computed(() => stageModelRenderer.value === 'vrm' && !props.paused),
+  modelSrc: stageModelSelectedUrl,
+  modelId: stageModelSelected,
+  speaking: nowSpeaking,
+  localActivity: visualLocalActivity,
+})
+
 const lastVrmInteractionAt = new Map<VrmInteractionTarget, number>()
 const VRM_INTERACTION_COOLDOWN_MS = 450
 
@@ -160,6 +186,8 @@ function onVRMInteract(target: VrmInteractionTarget) {
   if (now - lastTriggeredAt < VRM_INTERACTION_COOLDOWN_MS)
     return
   lastVrmInteractionAt.set(target, now)
+  // A click on the avatar is manual control. Procedural motion yields while its expression shows.
+  visualPresence.noteManualControl()
   vrmViewerRef.value?.setExpression(getVrmInteractionExpression(target), 1)
 }
 
@@ -238,7 +266,6 @@ function resetAssistantSpeechSurface(source: string) {
   }
 }
 
-const { sending: chatSending } = storeToRefs(useChatStore())
 const { presenceOverride } = storeToRefs(useSettingsPresenceBubble())
 
 // `sending` is raised before the request leaves and cleared once the send
@@ -352,7 +379,6 @@ async function playSpecialToken(
 }
 const lipSyncNode = ref<AudioNode>()
 
-const voice = useVoiceStore()
 const speechDestination = audioContext.createGain()
 speechDestination.connect(audioContext.destination)
 const playback = new Playback(new BrowserPlayback(audioContext, {
