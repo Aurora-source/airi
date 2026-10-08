@@ -80,29 +80,38 @@ export async function ensureClient(state: ClientState, settings: ExtensionSettin
     possibleEvents: ['context:update', 'spark:notify', 'spark:emit'],
     autoConnect: false,
     autoReconnect: true,
-    // Runs after the first connect and after every automatic reconnect. Without it, sending stopped after a reconnect.
+    // A replaced client closes later. Each callback checks that its client is current, so an old close cannot stop sending.
+    // onReady runs after the first connect and after every automatic reconnect.
     onReady: () => {
+      if (state.client !== client)
+        return
       state.connected = true
       state.connection = nanoid()
       state.lastError = undefined
     },
     onError: (error) => {
+      if (state.client !== client)
+        return
       state.connected = false
       state.lastError = errorMessageFromValue(error)
     },
     onClose: () => {
-      state.connected = false
+      if (state.client === client)
+        state.connected = false
     },
   })
-
   state.client = client
 
   try {
     await client.connect()
+    if (state.client !== client)
+      return
     state.connected = true
     state.lastError = undefined
   }
   catch (error) {
+    if (state.client !== client)
+      return
     state.connected = false
     state.lastError = errorMessageFromValue(error)
   }
