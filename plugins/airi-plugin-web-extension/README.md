@@ -9,6 +9,8 @@ This is a plugin for the AIRI to understand what you are reading, looking at, or
 - Captures page + video context from YouTube and Bilibili.
 - Extracts subtitles from text tracks or DOM overlays.
 - Sends context updates and optional `spark:notify` events to the character.
+- Stamps each video and subtitle update with its stream, sequence, read time, playback timeline, tab, and server connection. Consumers such as the Companion Core watch use the stamp to drop delayed or replayed updates.
+- Sends an update at once on a seek and on the end of a video. A caption overlay that disappears sends an empty caption marked `cleared`.
 - Exposes a popup to configure WebSocket, toggles, and quick status.
 
 ## Quick start
