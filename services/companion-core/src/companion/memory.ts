@@ -113,6 +113,7 @@ export class CompanionMemory {
   private inflight = 0
   private lastTurnAt = 0
   private consolidating?: Promise<ConsolidationResult | undefined>
+  private readonly changeListeners = new Set<() => void>()
   private timer?: ReturnType<typeof setInterval>
   private batch = 20
   private lastConsolidation?: { at: string, durationMs: number, result?: ConsolidationResult, error?: string }
@@ -340,6 +341,14 @@ export class CompanionMemory {
     const active = this.activeTurn()
     if (!active)
       return { status: 'no-active-character' }
+    const result = await this.ingestCommand(request, active)
+    // A new or promoted claim can supersede an older one, so continuity caches must refresh.
+    if (result.status === 'inserted' || result.status === 'promoted')
+      this.changed()
+    return result
+  }
+
+  private ingestCommand(request: RememberRequest, active: TurnIdentity): Promise<IngestResult> {
     const requestId = `tool:${fingerprint(this.options.userId, active.characterId, active.roundId, request.scope, normalizeText(request.key), normalizeText(request.value), String(request.correction ?? false))}`
     return this.ingest({
       userId: this.options.userId,
@@ -374,6 +383,8 @@ export class CompanionMemory {
       return { status: 'not-shown' }
     const forgotten = await this.ports.forget({ userId: this.options.userId, itemId })
     this.shown.get(active.characterId)?.delete(itemId)
+    if (forgotten)
+      this.changed()
     return { status: forgotten ? 'forgotten' : 'not-found' }
   }
 
@@ -384,6 +395,8 @@ export class CompanionMemory {
       try {
         const result = await this.ports.consolidate(this.batch)
         this.lastConsolidation = { at: new Date(this.now()).toISOString(), durationMs: Math.round(performance.now() - started), result }
+        if (result.consolidated > 0 || result.degraded > 0 || result.discarded > 0)
+          this.changed()
         return result
       }
       catch (error) {
@@ -410,6 +423,27 @@ export class CompanionMemory {
         void this.consolidateNow()
     }, intervalMs)
     this.timer.unref?.()
+  }
+
+  /**
+   * Calls `listener` after memory items changed: a correction, supersession, forget, edit, delete, private mode, or a
+   * consolidation that changed rows. The notice carries no content. Returns the function that unsubscribes.
+   */
+  onChange(listener: () => void): () => void {
+    this.changeListeners.add(listener)
+    return () => this.changeListeners.delete(listener)
+  }
+
+  /** Reports a memory change to listeners. Ops administration calls it after a successful edit, delete, or forget. */
+  changed(): void {
+    for (const listener of this.changeListeners) {
+      try {
+        listener()
+      }
+      catch (error) {
+        this.report(`memory change listener failed: ${errorMessageFrom(error) ?? 'unknown'}`)
+      }
+    }
   }
 
   stopConsolidation(): void {
