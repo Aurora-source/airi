@@ -280,32 +280,74 @@ It is off by default. Screen contents stay private: frames live in memory only a
 
 ## Watch Together
 
-The R6 watch subsystem (`src/watch`, see its README) follows the video that the AIRI browser extension reports.
-It is on by default and needs AIRI's server channel. Captions, transcripts, and audio are never saved or logged.
+The R6 watch subsystem (`src/watch`, see its README) follows the video that the AIRI browser extension reports, and
+optionally mpv, VLC, and a Jellyfin server. It is on by default and needs AIRI's server channel. Captions, transcripts,
+audio, file paths, and credentials are never saved or logged.
 
 | Part | Behavior |
 | --- | --- |
-| Source | The extension's `web:video` and `web:subtitle` context updates on the server channel. Each one carries a stamp from the page: stream, sequence, read time, and playback timeline. Unstamped lane events are refused. |
-| Sessions | One WatchState per selected stream. A new extension connection, an extension exit, a lost channel, or two minutes of staleness ends the session. Late traffic of an ended session is refused. |
+| Sources | The extension's `web:video` and `web:subtitle` context updates on the server channel, and the adapters in `src/companion/sources` (mpv, VLC, Jellyfin). Each source reports players with a connection, a sequence, a read time, and a playback timeline. Unstamped lane events are refused. |
+| Source manager | `MediaSourceManager` groups players that show one playback (exact Jellyfin device and item ids, or the same title, episode, and position), selects one group, and gives one ordered update stream. Library identity beats player tags and file names. Direct player state beats server reports. Player subtitles beat server cues. |
+| Sessions | One WatchState per selected group. Replacement, a manual selection, a player exit, a new extension connection, an extension exit, a lost channel, or two minutes of staleness ends the session. Late traffic of an ended player is refused. |
+| Other devices | A Jellyfin session on another device, or of another user, is never followed by itself. Other users' sessions are dropped. Other devices of the user are listed in Ops and followed only after a selection or configuration. |
 | Ordering | Older sequences, older timelines, reads older than the browser expiry, and producer times more than 2 s ahead are refused. A seek, a media change, or a new video element starts a new timeline. |
 | Dialogue | Only the current caption is kept. A cleared overlay caption makes dialogue unknown. Timed cue ends, a pause, and VAD prove a gap. |
-| Perception | A fresh R5 frame lends visual hints only when a browser is in front and its window title contains the media title. Stale, blocked, or unrelated frames clear the hints. A frame never sets playback, episode, or completion. |
+| Perception | A fresh R5 frame lends visual hints only when the playing app is in front: a browser, mpv, or VLC whose window title contains the media title, or Jellyfin Media Player. Stale, blocked, or unrelated frames clear the hints. A frame never sets playback, episode, or completion. |
 | WATCH block | Fresh state becomes one `user`-role block of at most 1200 bytes, marked as untrusted media data. The budgeter drops NOW first, then WATCH, then memory. |
 | Memory | Start, stop, a confirmed episode end, and shared moments go to R4 as `watch_milestone` events for the active character (`watch.memoryEvents`). R4 decides what stays. Captions, frames, and positions never go. |
-| Completion | Only the media element's `ended` signal, accepted for the current media revision, confirms an episode end. |
+| Completion | Only the media element's `ended` signal or mpv's end of file, accepted for the current media revision, confirms an episode end. VLC, the Jellyfin server, a stopped player, or a position near the end never do. |
 | Reactions | `CompanionWatch.offerReaction` takes an external candidate. Admission needs fresh state, salience, a proven gap of 1.5 s, and the cooldown (`watch.reactionCooldownMs`, 3 minutes). The permit is checked again right before a Spark notification goes to the AIRI stage. User speech revokes it at once. |
 | User speech | AIRI's `input:voice:activity` event, a microphone upload to `/v1/audio/transcriptions`, and a new user turn. |
 | System audio | Off by default (`watch.systemAudio.enabled`). Only on an explicit `watch_listen` call, only while captions are missing, at most 8 s recorded after the call, through AIRI desktop's system output capture. Recognition uses the R3 route with the `watch.systemAudio.alias` alias, in English or Japanese. Fresh captions, user speech, a perception pause or block, a media change, or an extension exit cancel it. |
 | AniList | Off by default (`watch.anilist.enabled`). `POST /ops/watch/anilist` binds a confirmed id and optional completed progress and curated context. The lookup asks for identity, titles, episode count, and duration only. Unknown progress withholds every spoiler-sensitive entry. |
 | Tools | `watch_status` and `watch_listen` (MCP and `POST /v1/companion/tools/<name>`, inference token). |
-| Ops | `GET /ops/watch/status`: media, playback, dialogue state, visual freshness, AniList, spoiler boundary, system audio, last reaction, cooldown, and counters. Ops token only. |
+| Ops | `GET /ops/watch/status`: media (id, site, player, title and its source, season, episode), playback and its source, freshness, dialogue state, source, and language, caption track, visual freshness, AniList, spoiler boundary, system audio, last reaction, cooldown, counters, and `sources` (adapters with connection, last sync, limitations, and error codes, followed players, the active group, the manual choice). `POST /ops/watch/source` with `{ "player": "<key>" }` follows one player, `{ "player": null }` returns to automatic selection. Ops token only. |
 
 ```json
 {
   "aliases": { "companion-stt": { "role": "speech-recognition", "chain": ["groq-whisper-turbo"] } },
-  "watch": { "enabled": true, "systemAudio": { "enabled": false, "alias": "companion-stt", "language": "en" }, "anilist": { "enabled": false } }
+  "watch": {
+    "enabled": true,
+    "systemAudio": { "enabled": false, "alias": "companion-stt", "language": "en" },
+    "anilist": { "enabled": false },
+    "sources": {
+      "jellyfin": { "enabled": false, "url": "https://media.example.com", "tokenRef": "jellyfin-token", "followThisComputer": true, "devices": [], "serverSubtitles": true },
+      "mpv": { "enabled": false, "pipes": [{ "name": "airi-mpv", "player": "mpv" }, { "name": "jmp-airi", "player": "jellyfin-media-player" }] },
+      "vlc": { "enabled": false, "port": 8080, "passwordRef": "vlc-http-password" }
+    }
+  }
 }
 ```
+
+### Desktop players and Jellyfin
+
+`companion-core watch-setup` prints the exact player lines for the configured sources. The Core never writes player
+settings, never starts or controls a player, and never searches the network for servers.
+
+| Source | Reads | Subtitle text | Setup |
+| --- | --- | --- | --- |
+| mpv | JSON IPC pipe `\\.\pipe\<name>`: pause, speed, seek, file, tracks, `sub-text`. Read-only allowlist of `get_property` and `observe_property`. | Yes: the shown text, ASS dialogue without signs, multi-line, secondary line. Bitmap tracks: none. | `input-ipc-server=\\.\pipe\airi-mpv` in `mpv.conf`, or start mpv with that option. |
+| Jellyfin Media Player | Its embedded mpv through the same pipe adapter (`"player": "jellyfin-media-player"`), plus its Jellyfin session. | Yes, through the pipe. Without the pipe: server cues. | User menu > Client Settings > Manual MPV Configuration: `input-ipc-server=\\.\pipe\jmp-airi`. |
+| VLC | `http://127.0.0.1:<port>/requests/status.json` with the HTTP interface password. Never a command parameter. | No. VLC does not report it. Captions count as missing, so system audio can help on request. | `vlc.exe --extraintf=http --http-host=127.0.0.1 --http-port=8080`, password in VLC's Lua HTTP settings, then `companion-core secret-import vlc-http-password --from-env VLC_HTTP_PASSWORD`. Ops shows `http-open-to-network` when VLC listens beyond loopback. |
+| Jellyfin server | `GET /Sessions` of the token's user, every 1.5 s while a session plays and 3 s otherwise. Series, season, episode, item id. Plot fields are never parsed. | Server cues: the cue at one instant of the selected text stream (`startPositionTicks = endPositionTicks = now`), only while no player reports text. | Set `url`, then `companion-core jellyfin-connect` (Quick Connect, no password). Plain http needs a host whose every address is private. |
+| Jellyfin Web | The extension on an origin that the user allowed in its popup. Device id and item id link it to its server session. | Text tracks and Jellyfin's caption element. ASS and PGS draw on a canvas, so server cues fill in. | Extension popup > Jellyfin sites > Allow. |
+
+### Ops API for a frontend
+
+Companion Ops reads `GET /ops/watch/status` and writes `POST /ops/watch/source`, both with the ops token. The `sources`
+object of the status has this shape. Titles are for the Ops user only. No caption, path, URL, or credential is in it.
+
+```json
+{
+  "adapters": [{ "adapter": "mpv", "enabled": true, "connection": "connected", "lastSyncAt": 1791471059733, "players": 1, "limitations": ["ass-styles-unavailable"], "error": "EPIPE", "details": { "pipes": "airi-mpv", "versions": "v0.41.0" } }],
+  "players": [{ "key": "mpv:airi-mpv", "kind": "mpv", "reach": "direct", "eligible": true, "group": "g1", "active": true, "playing": true, "title": "Sousou no Frieren", "episode": 13, "captions": { "form": "text", "language": "ja", "codec": "ass" }, "lastSeenMs": 420 }],
+  "group": { "key": "g1", "session": 1, "members": ["mpv:airi-mpv", "jellyfin:<session>"], "playback": "mpv:airi-mpv", "dialogue": "mpv:airi-mpv", "timeline": 2, "waitingForIdentity": false, "identitySource": "metadata" },
+  "manualSelection": null
+}
+```
+
+`connection` is `connected`, `waiting` (no player or server reachable), `unauthorized` (missing or refused credential),
+or `error` (see `error`). A player with `eligible: false` plays on another device and needs a `POST /ops/watch/source`.
 
 ## When to use it
 

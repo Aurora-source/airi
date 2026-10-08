@@ -16,6 +16,10 @@ Import `@proj-airi/companion-core/watch`.
 - `AniListAdapter` fetches optional identity metadata without requesting plot or future characters.
 - `contextWithinProgress` filters separately verified context against explicit completed progress.
 - `WatchEventPort` exposes selected future memory candidates without persisting them.
+- `MediaSourceManager` groups the players of all sources into one playback, selects one, and restamps one ordered stream.
+- `MediaSourceAdapter`, `PlayerObservation`, and `CueRequest` (`sources.ts`) are the contract for player sources.
+- `mediaTitleOf` reads show, season, and episode from player titles and anime release file names.
+- `assLinesOf`, `dialogueOf`, `subtitleTextOf`, and `languageCodeOf` normalize current subtitle text.
 
 ## Temporal and privacy rules
 
@@ -31,8 +35,9 @@ If R5 blocks perception, safe browser metadata and subtitles still work.
 
 ## Runtime integration
 
-`src/companion/watch.ts` is the host in the Companion Core. It joins AIRI's server channel and owns one WatchState per selected stream.
+`src/companion/watch.ts` is the host in the Companion Core. It joins AIRI's server channel and owns one WatchState per selected group.
 `src/companion/watch-bridge.ts` checks the extension stamp, sessions, and stream selection.
+`src/companion/sources` holds the mpv, VLC, and Jellyfin adapters. They report to the source manager only.
 The Core README section Watch Together lists its behavior, tools, and Ops routes.
 
 ## Host responsibilities
