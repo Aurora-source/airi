@@ -1,4 +1,4 @@
-import type { ContextUpdate } from '@proj-airi/server-sdk'
+import type { ContextUpdate, ExtensionModuleIdentity } from '@proj-airi/server-sdk'
 
 import type { ConnectionObservationStamp, ExtensionSettings, ExtensionStatus, ObservationStamp, PageContextPayload, SubtitlePayload, VideoContextPayload } from '../shared/types'
 
@@ -33,14 +33,17 @@ export function createClientState(): ClientState {
   }
 }
 
-function createIdentity() {
+/**
+ * The module identity that the server channel requires in `extension:module:announce`.
+ * Without `extension.id` the server refuses the announce, and the extension never connects.
+ */
+function createIdentity(): ExtensionModuleIdentity {
   return {
-    kind: 'plugin',
-    plugin: {
+    id: nanoid(),
+    extension: {
       id: PLUGIN_NAME,
       version: typeof packageJSON.version === 'string' ? packageJSON.version : undefined,
     },
-    id: nanoid(),
     labels: {
       runtime: 'web-extension',
     },
