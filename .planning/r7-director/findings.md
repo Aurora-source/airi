@@ -68,3 +68,4 @@
 - Final post-review validation passes 68 Director tests and 777 Core tests, with one existing opt-in desktop test skipped. Root typecheck passes 56 tasks; root lint has zero errors and 651 existing warnings outside R7.
 - The refreshed eight-hour replay processes 3,849 events, including an explicit R6 stop snapshot. It produces 25 reactive answers and 24 admitted visual reactions; idle, absent, quiet, and watch speech remain zero.
 - The independent reviewer read all 28 added files and found no remaining Critical or Important defect after rechecking the four ownership and evidence-lifetime fixes.
+- Implementation commit `a0d21ebf46b0ceb0c8435863cb5c275244fe0cfb` is a direct child of the requested base. The origin branch was pushed and its implementation SHA verified with `git ls-remote`. Production integration remains separate.

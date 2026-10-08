@@ -3,7 +3,10 @@
 Branch: `codex/r7-director-foundation`.
 Requested base: `4c35d4a048b4f06aa490aad69a7dc68da4c38eb8`.
 Worktree: `D:/AI/airi-r7-director`.
-Implementation checks and independent review pass. The standalone foundation is ready for delivery.
+Implementation commit: `a0d21ebf46b0ceb0c8435863cb5c275244fe0cfb`.
+Implementation checks and independent review pass. The standalone foundation is committed and pushed to origin.
+The implementation commit is a direct child of the requested base, and its remote SHA was independently verified.
+No merge or production integration was performed.
 
 ## Delivered subsystem
 
