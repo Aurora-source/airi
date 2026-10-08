@@ -616,6 +616,46 @@ export interface WebSocketEventInputVoiceBase {
 
 export type WebSocketEventInputVoice = WebSocketEventInputVoiceBase & Partial<WithInputSource<'stage-web' | 'stage-tamagotchi' | 'discord'>>
 
+/**
+ * Speech activity of the local user, from the stage's voice input controller.
+ * Modules that speak or record on their own stop at once when `active` is true. User speech always wins.
+ */
+export interface InputVoiceActivityEvent {
+  /** True when a speech input starts. False when it settles. */
+  active: boolean
+  /** Correlates the start and the end of one speech input. */
+  inputId: string
+}
+
+/**
+ * Requests one short recording of the system audio output, for example the sound of a video.
+ * Delivery goes to the one module that registered as consumer. The microphone is never a substitute.
+ */
+export interface AudioSystemOutputCaptureRequestEvent {
+  /** Correlates the request with its cancel and its result. */
+  requestId: string
+  /** Longest segment. Recording starts after the request arrives and never includes earlier audio. */
+  maxDurationMs: number
+  /** Module name that receives the result. */
+  replyTo: string
+}
+
+/** Stops a recording. A provider discards the audio of a cancelled request. */
+export interface AudioSystemOutputCaptureCancelEvent {
+  requestId: string
+}
+
+/** The answer to one capture request. Audio travels only to the requesting module. */
+export interface AudioSystemOutputCaptureResultEvent {
+  requestId: string
+  status: 'captured' | 'failed' | 'cancelled'
+  /** 16 kHz mono 16-bit WAV, base64. Present only when `status` is `captured`. */
+  audio?: { mimeType: 'audio/wav', base64: string }
+  /** Wall-clock milliseconds when recording started and ended. */
+  startedAt?: number
+  endedAt?: number
+}
+
 export type InputEventData = WebSocketEventInputText | WebSocketEventInputTextVoice | WebSocketEventInputVoice
 
 export type InputEventEnvelope
@@ -1284,6 +1324,16 @@ export const outputGenAiChatToolCall = defineProtocolEventa<OutputGenAiChatToolC
 export const outputGenAiChatMessage = defineProtocolEventa<OutputGenAiChatMessageEvent>('output:gen-ai:chat:message')
 export const outputGenAiChatComplete = defineProtocolEventa<OutputGenAiChatCompleteEvent>('output:gen-ai:chat:complete')
 
+export const inputVoiceActivity = defineProtocolEventa<InputVoiceActivityEvent>('input:voice:activity')
+
+export const audioSystemOutputCaptureRequest = defineProtocolEventa<AudioSystemOutputCaptureRequestEvent>('audio:system-output:capture:request', {
+  metadata: { delivery: { mode: 'consumer', selection: 'first', required: true } },
+})
+export const audioSystemOutputCaptureCancel = defineProtocolEventa<AudioSystemOutputCaptureCancelEvent>('audio:system-output:capture:cancel', {
+  metadata: { delivery: { mode: 'consumer', selection: 'first' } },
+})
+export const audioSystemOutputCaptureResult = defineProtocolEventa<AudioSystemOutputCaptureResultEvent>('audio:system-output:capture:result')
+
 export const sparkNotify = defineProtocolEventa<SparkNotifyEvent>('spark:notify')
 export const sparkEmit = defineProtocolEventa<SparkEmitEvent>('spark:emit')
 export const sparkCommand = defineProtocolEventa<SparkCommandEvent>('spark:command')
@@ -1295,6 +1345,8 @@ export const protocolEventMetadataByType = {
   [inputText.id]: inputText.metadata,
   [inputTextVoice.id]: inputTextVoice.metadata,
   [inputVoice.id]: inputVoice.metadata,
+  [audioSystemOutputCaptureRequest.id]: audioSystemOutputCaptureRequest.metadata,
+  [audioSystemOutputCaptureCancel.id]: audioSystemOutputCaptureCancel.metadata,
 } satisfies Partial<Record<keyof ProtocolEvents, ProtocolEventaMetadata | undefined>>
 
 export function getProtocolEventMetadata(eventType: keyof ProtocolEvents | string) {
@@ -1466,6 +1518,11 @@ export interface ProtocolEvents<C = undefined> {
   'input:text': WebSocketEventInputText
   'input:text:voice': WebSocketEventInputTextVoice
   'input:voice': WebSocketEventInputVoice
+  'input:voice:activity': InputVoiceActivityEvent
+
+  'audio:system-output:capture:request': AudioSystemOutputCaptureRequestEvent
+  'audio:system-output:capture:cancel': AudioSystemOutputCaptureCancelEvent
+  'audio:system-output:capture:result': AudioSystemOutputCaptureResultEvent
 
   'output:gen-ai:chat:tool-call': OutputGenAiChatToolCallEvent
   'output:gen-ai:chat:message': OutputGenAiChatMessageEvent
