@@ -23,7 +23,7 @@ export interface GatewayLogEvent {
   /** One `model=reason` entry per model that the preflight skipped before sending. */
   skipped?: string[]
   /** Estimated prompt size by part, in tokens. Counts only. */
-  tokens?: { system: number, conversation: number, tools: number, output: number, total: number }
+  tokens?: { system: number, conversation: number, tools: number, memory?: number, awareness?: number, output: number, total: number }
   stream?: boolean
   /** Milliseconds from request start to the first provider body byte. */
   firstByteMs?: number

@@ -2,9 +2,11 @@ import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
 import type { GatewayCredentials } from './auth/credentials'
+import type { CompanionMemory } from './companion/memory'
 import type { CompanionConfig } from './config/config'
 import type { GatewayLogEvent } from './gateway/http'
 import type { GatewayRuntimeOptions } from './gateway/runtime'
+import type { TurnHooks } from './gateway/turn-hooks'
 
 import process from 'node:process'
 
@@ -13,15 +15,28 @@ import { createServer } from 'node:http'
 import { resolveAudioRoutes } from './audio/audio-config'
 import { proxyTranscription } from './audio/transcriptions'
 import { createBearerCheck } from './auth/credentials'
+import { TURN_IDENTITY_HEADERS } from './companion/turn-identity'
 import { LOOPBACK_HOST, servesChatCompletions } from './config/config'
 import { proxyChatCompletion } from './gateway/chat-completions'
+import { handleCompanionTool, handleOpsMemory } from './gateway/companion-api'
 import { sendError } from './gateway/http'
 import { opsStatus } from './gateway/ops-status'
 import { GatewayRuntime } from './gateway/runtime'
 import { createRedactor } from './logging/redact'
 
-/** Request headers that a browser client can send in a CORS preflight. Anything else fails the preflight. */
-const ALLOWED_REQUEST_HEADERS = new Set(['authorization', 'content-type', 'accept'])
+/** Model tools for the MCP server, under the inference token. */
+const COMPANION_TOOL_PREFIX = '/v1/companion/tools/'
+
+/**
+ * Request headers that a browser client can send in a CORS preflight. Anything else fails the preflight.
+ * The AIRI turn identity headers carry ids only. Memory uses them to scope recall to the right character.
+ */
+const ALLOWED_REQUEST_HEADERS = new Set(['authorization', 'content-type', 'accept', ...TURN_IDENTITY_HEADERS])
+
+/** The companion services next to the gateway. Without them the gateway only routes. */
+export interface GatewayCompanion extends TurnHooks {
+  memory?: CompanionMemory
+}
 
 export interface GatewayOptions {
   config: CompanionConfig
@@ -34,6 +49,10 @@ export interface GatewayOptions {
   writeLog?: (line: string) => void
   /** Capabilities that a probe measured, and a clock. Tests replace the clock. */
   runtime?: Pick<GatewayRuntimeOptions, 'capabilitiesOf' | 'now'>
+  /** Memory and awareness. The caller owns its lifecycle. */
+  companion?: GatewayCompanion
+  /** Folder for memory backups that Ops requests. */
+  backupDirectory?: string
 }
 
 export interface RunningGateway {
@@ -50,8 +69,8 @@ export interface RunningGateway {
  * 1. `Host` must name this loopback listener. This blocks DNS-rebinding pages.
  * 2. A request with an `Origin` header must come from `config.allowedOrigins`, even when it has a valid token.
  * 3. `GET /livez` needs no token and reveals nothing but liveness.
- * 4. `/v1/*` needs the inference token. The ops token is rejected there.
- * 5. `/ops/*` needs the ops token. The inference token is rejected there.
+ * 4. `/v1/*` needs the inference token. The ops token is rejected there. This includes the companion tools.
+ * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory administration.
  *
  * Call stack:
  *
@@ -69,6 +88,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   const isOpsToken = createBearerCheck(options.credentials.ops)
   const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, ...options.runtime })
   const allowedOrigins = new Set(config.allowedOrigins)
+  const companionApi = { memory: options.companion?.memory, backupDirectory: options.backupDirectory }
 
   let allowedHosts = new Set<string>()
 
@@ -135,6 +155,10 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
         log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
+      if (await handleOpsMemory(req, res, path, companionApi)) {
+        log({ method, path, status: res.statusCode, outcome: res.statusCode < 400 ? 'ok' : 'rejected', durationMs: Math.round(performance.now() - startedAt) })
+        return
+      }
       return reject(404, 'not_found', 'Not found.')
     }
 
@@ -164,7 +188,13 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
     }
 
     if (method === 'POST' && path === '/v1/chat/completions') {
-      await proxyChatCompletion(req, res, { runtime, redact, log })
+      await proxyChatCompletion(req, res, { runtime, redact, log, turns: options.companion })
+      return
+    }
+
+    if (method === 'POST' && path.startsWith(COMPANION_TOOL_PREFIX)) {
+      await handleCompanionTool(req, res, path.slice(COMPANION_TOOL_PREFIX.length), companionApi)
+      log({ method, path, status: res.statusCode, outcome: res.statusCode < 400 ? 'ok' : 'rejected', durationMs: Math.round(performance.now() - startedAt) })
       return
     }
 

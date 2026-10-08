@@ -3,10 +3,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { ReadableStreamReadResult } from 'node:stream/web'
 
 import type { WireRequest } from '../budget/wire'
+import type { CapturedReply } from '../companion/reply-capture'
 import type { Candidate } from '../routing/eligibility'
 import type { RouteError } from '../routing/router'
 import type { GatewayLogEvent } from './http'
 import type { GatewayRuntime } from './runtime'
+import type { GatewayTurn, TurnHooks } from './turn-hooks'
 
 import { Buffer as NodeBuffer } from 'node:buffer'
 import { once } from 'node:events'
@@ -14,11 +16,13 @@ import { once } from 'node:events'
 import { errorMessageFrom } from '@moeru/std'
 
 import { promptTokensOf } from '../budget/budgeter'
+import { createReplyCapture } from '../companion/reply-capture'
 import { createGeminiToolCallIndexer, prepareGeminiRequest } from '../providers/gemini-compat'
 import { sendChatCompletion } from '../providers/openai-compatible'
 import { createUsageSniffer } from '../providers/usage-sniffer'
 import { classifyUpstreamFailure, parseRateLimitHeaders } from '../quota/rate-limit'
 import { readRequestBody, RequestBodyTooLargeError, sendError } from './http'
+import { beginTurn } from './turn-hooks'
 
 /** Provider response headers that clients use. Length and encoding headers are not copied, because Node re-frames the body. */
 const FORWARDED_RESPONSE_HEADERS = new Set(['content-type', 'cache-control', 'retry-after', 'x-request-id'])
@@ -29,6 +33,8 @@ interface ChatCompletionContext {
   runtime: GatewayRuntime
   redact: (text: string) => string
   log: (event: GatewayLogEvent) => void
+  /** Memory and awareness. Absent means a plain gateway. */
+  turns?: TurnHooks
 }
 
 /** A failed provider response, kept byte for byte. */
@@ -60,6 +66,10 @@ interface Attempt {
   conversationKey: string
   stickyModelId?: string
   stream: boolean
+  /** Set when a companion turn wants the answer text. */
+  captureReply: boolean
+  /** Set by the attempt that committed. `complete` means the whole answer reached the client. */
+  delivered?: { complete: boolean, reply?: CapturedReply }
 }
 
 /**
@@ -114,15 +124,6 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
     return
   }
 
-  const plan = runtime.router.plan(body)
-  if (!plan.ok) {
-    sendRouteError(res, plan.error)
-    const skipped = plan.error.skipped.map(skip => `${skip.modelId}=${skip.reason}`)
-    context.log({ ...logBase, alias: body.model, status: plan.error.status, outcome: 'rejected', reason: plan.error.code, skipped, stream: body.stream === true, durationMs: elapsed(startedAt) })
-    runtime.recordRoute({ at: new Date().toISOString(), alias: body.model, attempts: [], skipped, status: plan.error.status })
-    return
-  }
-
   // Abort the provider request as soon as the client goes away, whether before or during the response.
   const clientController = new AbortController()
   res.on('close', () => {
@@ -130,11 +131,34 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
       clientController.abort()
   })
 
+  // Memory and awareness come before routing, because every candidate budgets them with its own limits.
+  const turn = await beginTurn(context.turns, { headers: req.headers, body, signal: clientController.signal })
+  let delivered: Attempt['delivered']
+  try {
+    delivered = await routeChatCompletion(body, res, context, clientController.signal, startedAt, turn)
+  }
+  finally {
+    turn?.finish(delivered?.complete && delivered.reply ? { status: 'complete', reply: delivered.reply } : { status: 'incomplete' })
+  }
+}
+
+async function routeChatCompletion(body: WireRequest, res: ServerResponse, context: ChatCompletionContext, clientSignal: AbortSignal, startedAt: number, turn: GatewayTurn | undefined): Promise<Attempt['delivered']> {
+  const logBase = { method: 'POST', path: '/v1/chat/completions' }
+  const { runtime } = context
+  const plan = runtime.router.plan(body, turn?.units)
+  if (!plan.ok) {
+    sendRouteError(res, plan.error)
+    const skipped = plan.error.skipped.map(skip => `${skip.modelId}=${skip.reason}`)
+    context.log({ ...logBase, alias: body.model, status: plan.error.status, outcome: 'rejected', reason: plan.error.code, skipped, stream: body.stream === true, durationMs: elapsed(startedAt) })
+    runtime.recordRoute({ at: new Date().toISOString(), alias: body.model, attempts: [], skipped, status: plan.error.status })
+    return undefined
+  }
+
   const attempt: Attempt = {
     runtime,
     context,
     res,
-    clientSignal: clientController.signal,
+    clientSignal,
     startedAt,
     attempts: [],
     skipped: plan.skipped.map(skip => `${skip.modelId}=${skip.reason}`),
@@ -143,13 +167,14 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
     conversationKey: plan.conversationKey,
     stickyModelId: plan.stickyModelId,
     stream: body.stream === true,
+    captureReply: turn !== undefined,
   }
 
   let lastResponse: CapturedResponse | undefined
   for (const candidate of plan.candidates) {
     const outcome = await attemptCandidate(candidate, attempt)
     if (outcome.kind === 'committed' || outcome.kind === 'client-gone')
-      return
+      return attempt.delivered
     if (outcome.response)
       lastResponse = outcome.response
     if (outcome.kind === 'terminal')
@@ -168,6 +193,7 @@ export async function proxyChatCompletion(req: IncomingMessage, res: ServerRespo
   const status = lastResponse?.status ?? 502
   context.log({ ...logBase, alias: plan.alias, status, outcome: lastResponse ? 'upstream_error' : 'network_error', reason: failed, attempts: attempt.attempts, skipped: attempt.skipped, stream: attempt.stream, durationMs: elapsed(startedAt) })
   runtime.recordRoute({ at: new Date().toISOString(), alias: plan.alias, pinned: plan.pinned, attempts: attempt.attempts, skipped: attempt.skipped, status })
+  return undefined
 }
 
 /**
@@ -267,8 +293,10 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
   const contentType = upstream.headers.get('content-type') ?? ''
   const repairsStream = model.provider.compat === 'gemini' && contentType.includes('text/event-stream')
   const sniffer = createUsageSniffer(contentType)
+  const capture = attempt.captureReply ? createReplyCapture(contentType) : undefined
   const source = repairsStream && upstream.body ? upstream.body.pipeThrough(createGeminiToolCallIndexer()) : upstream.body
-  const reader = source?.pipeThrough(sniffer.stream).getReader()
+  const sniffed = source?.pipeThrough(sniffer.stream)
+  const reader = (capture ? sniffed?.pipeThrough(capture.stream) : sniffed)?.getReader()
 
   let first: ReadableStreamReadResult<Uint8Array> | undefined
   try {
@@ -329,6 +357,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
     res.end()
   }
   catch (error) {
+    attempt.delivered = { complete: false }
     const usage = sniffer.usage()
     if (clientSignal.aborted) {
       runtime.ledger.finish(ticket, { counted: true, inputTokens: usage?.promptTokens, outputTokens: usage?.completionTokens })
@@ -345,6 +374,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
     return { kind: 'committed' }
   }
 
+  attempt.delivered = { complete: true, reply: capture?.reply() }
   const usage = sniffer.usage()
   runtime.ledger.finish(ticket, { counted: true, inputTokens: usage?.promptTokens, outputTokens: usage?.completionTokens })
   if (usage?.promptTokens)
@@ -402,6 +432,8 @@ function tokenCounts(candidate: Candidate): NonNullable<GatewayLogEvent['tokens'
     system: diagnostics.systemTokens,
     conversation: diagnostics.conversationTokens,
     tools: diagnostics.toolSchemaTokens,
+    ...(diagnostics.memoryTokens > 0 ? { memory: diagnostics.memoryTokens } : {}),
+    ...(diagnostics.awarenessTokens > 0 ? { awareness: diagnostics.awarenessTokens } : {}),
     output: diagnostics.estimatedOutputTokens,
     total: promptTokensOf(diagnostics) + diagnostics.estimatedOutputTokens,
   }

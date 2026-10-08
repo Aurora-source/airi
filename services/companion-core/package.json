@@ -20,7 +20,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "catalog:",
     "@moeru/std": "catalog:",
+    "@proj-airi/server-sdk": "workspace:^",
     "valibot": "catalog:"
   },
   "devDependencies": {

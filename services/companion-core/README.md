@@ -141,6 +141,7 @@ Without `compat`, the gateway forwards requests and responses unchanged.
 | Origin | A request with an `Origin` header must match `allowedOrigins` exactly, even with a valid token. |
 | Logs | One metadata line per request. Headers, bodies, prompts, images, and credentials are never logged. Known secrets and key-shaped strings are redacted. |
 | No token | Only `GET /livez`. It returns `{"ok":true}` and nothing else. |
+| Memory | The database folder grants access to the current Windows user only. Memory administration needs the ops token. Memory tools need the inference token. |
 
 ## How to use
 
@@ -226,6 +227,28 @@ Each request keeps audio in memory. Filenames change to `audio.<format>`, while 
 The `audio` section sets the bounds. The defaults are `timeoutMs: 15000`, `maxRequestBytes: 26214400`, and `maxResponseBytes: 1048576`.
 The upload limit includes multipart headers. One deadline covers upload, fallback attempts, and the complete provider response.
 Client cancellation stops upload or the provider request. Logs contain metadata, with no audio, transcript, prompt, or key.
+
+## Memory
+
+The R4 memory subsystem (`src/memory`, see its README) runs next to the gateway in the same process.
+`memory.enabled` is on by default. The database is `memory/companion-memory.sqlite` in the Core home.
+
+| Part | Behavior |
+| --- | --- |
+| Identity | AIRI sends `x-airi-session-id`, `x-airi-round-id`, and `x-airi-character-id` to this gateway. A request without them gets no memory and is not observed. |
+| Recall | Runs once per AIRI round, before routing, with a 150 ms deadline. A miss, timeout, or failure sends the request without memory. |
+| MemoryUnit | One `user`-role block directly before the current turn. The budgeter trims older history first and drops the block whole when only the fixed part fits. |
+| Gateway observer | A fully delivered answer becomes provisional evidence: the user message once per round, the final answer once per turn. Interrupted answers are never observed. |
+| Channel observer | Module `companion-core` on AIRI's server channel (`channel.url`). A persisted turn becomes authoritative evidence. R4 merges it with the provisional evidence into one event. |
+| Consolidation | Idle only: no open chat request and 30 seconds since the last one. Interval `memory.consolidateEveryMs`. |
+| Tools | `companion-core mcp` is a stdio MCP server with `memory_recall`, `memory_remember`, and `memory_forget`. Tools act for the configured user and the character of the newest AIRI turn. |
+| Ops | `/ops/memory/status`, `items`, `search`, `items/edit`, `items/delete`, `items/forget`, `private`, `export`, `backup`, `consolidate`. |
+
+To add the tools to AIRI desktop, add this server to `mcp.json` in AIRI's user data folder. Set `cwd` to this repository:
+
+```json
+{ "mcpServers": { "companion-core": { "command": "pnpm", "args": ["-F", "@proj-airi/companion-core", "cli", "mcp"], "cwd": "D:/AI/airi" } } }
+```
 
 ## When to use it
 

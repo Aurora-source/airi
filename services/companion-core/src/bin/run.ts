@@ -8,7 +8,9 @@ import { errorMessageFrom } from '@moeru/std'
 
 import { INFERENCE_TOKEN_SECRET, loadOrCreateCredentials } from '../auth/credentials'
 import { DpapiSecretStore } from '../auth/secret-store'
-import { configPath, loadConfig, resolveHome, writeStarterConfig } from '../config/config'
+import { CompanionRuntime } from '../companion/runtime'
+import { configPath, loadConfig, LOOPBACK_HOST, resolveHome, writeStarterConfig } from '../config/config'
+import { startCompanionMcpServer } from '../mcp/server'
 import { runProbes } from '../probe/run-probes'
 import { ProbeStore } from '../probe/store'
 import { startGateway } from '../server'
@@ -22,7 +24,8 @@ Commands:
   secret-import <name> --from-env <VAR>   Store the value of environment variable VAR as protected secret <name>.
   probe [model ...] [--deep]              Test each model of the alias chains and store what it supports.
                                           --deep also finds the largest prompt that each model accepts. It costs quota.
-  token                                   Print the inference token. Paste it into the AIRI provider API key field.`
+  token                                   Print the inference token. Paste it into the AIRI provider API key field.
+  mcp                                     Run the memory tools as a stdio MCP server. AIRI starts it from mcp.json.`
 
 /**
  * Command line entry point for the Companion Gateway.
@@ -65,10 +68,14 @@ async function main(argv: string[]): Promise<void> {
         else
           console.warn(`No API key stored for provider "${providerName}" (secret "${provider.keyRef}"). Its requests get 503.`)
       }
-      const gateway = await startGateway({ config, credentials, providerKeys })
-      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'})`)
+      const channelToken = config.channel.tokenRef ? await store.read(config.channel.tokenRef) : undefined
+      // Background failures name the operation and a reason. They never carry memory or screen text.
+      const report = (message: string) => process.stderr.write(`${JSON.stringify({ time: new Date().toISOString(), companion: message })}\n`)
+      const companion = await CompanionRuntime.open({ config, home, channelToken, report })
+      const gateway = await startGateway({ config, credentials, providerKeys, companion, backupDirectory: join(home, 'memory', 'backups') })
+      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'})`)
       const stop = () => {
-        void gateway.close().finally(() => process.exit(0))
+        void gateway.close().then(() => companion.close()).finally(() => process.exit(0))
       }
       process.once('SIGINT', stop)
       process.once('SIGTERM', stop)
@@ -121,6 +128,15 @@ async function main(argv: string[]): Promise<void> {
       if (!token)
         throw new Error('No inference token exists. Run "companion-core init" first.')
       process.stdout.write(`${token}\n`)
+      return
+    }
+    case 'mcp': {
+      // stdout carries the MCP protocol here, so this command prints nothing else to it.
+      const config = await loadConfig()
+      const token = await store.read(INFERENCE_TOKEN_SECRET)
+      if (!token)
+        throw new Error('No inference token exists. Run "companion-core init" first.')
+      await startCompanionMcpServer({ baseURL: `http://${LOOPBACK_HOST}:${config.port}/v1/`, token })
       return
     }
     default:

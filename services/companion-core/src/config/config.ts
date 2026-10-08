@@ -133,6 +133,31 @@ const audioSchema = v.object({
   timeoutMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(20), v.maxValue(120_000)), 15_000),
 })
 
+const memorySchema = v.object({
+  /** Recall, injection, observation, and consolidation. The database stays on disk when this is off. */
+  enabled: v.optional(v.boolean(), true),
+  /** SQLite file. The default is `memory/companion-memory.sqlite` in the Core home. */
+  path: v.optional(v.pipe(v.string(), v.minLength(1))),
+  /** The one local user that owns this memory. No request or tool can name another user. */
+  userId: v.optional(v.pipe(v.string(), v.regex(/^[\w.-]{1,64}$/)), 'local-user'),
+  /** Recall deadline. It includes queue time. A late recall leaves the request without memory. */
+  recallDeadlineMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(10), v.maxValue(1000)), 150),
+  maxItems: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(5)), 5),
+  /** UTF-8 bytes of the memory block, its labels included. */
+  maxBytes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(256), v.maxValue(8000)), 2400),
+  /** Idle consolidation interval. Consolidation never runs inside a chat request. */
+  consolidateEveryMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(10_000)), 300_000),
+  consolidateBatch: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 20),
+})
+
+const channelSchema = v.object({
+  /** Connects to AIRI's server channel, which reports persisted chat turns. Memory uses them as authoritative evidence. */
+  enabled: v.optional(v.boolean(), true),
+  url: v.optional(v.pipe(v.string(), v.regex(/^wss?:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):\d+\//)), 'ws://localhost:6121/ws'),
+  /** Name of the protected secret that holds the server channel token, when AIRI requires one. */
+  tokenRef: v.optional(v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/))),
+})
+
 const PROFILES = ['local', 'cloud', 'cloud-mura-voice', 'hybrid'] as const
 
 const configSchema = v.pipe(
@@ -161,6 +186,8 @@ const configSchema = v.pipe(
     audio: v.optional(audioSchema, {}),
     /** SQLite file for the quota ledger, sticky choices, and probe results. `:memory:` keeps them in memory. */
     store: v.optional(v.object({ path: v.optional(v.string()) }), {}),
+    memory: v.optional(memorySchema, {}),
+    channel: v.optional(channelSchema, {}),
     providers: v.record(v.string(), providerSchema),
     models: v.optional(v.record(v.string(), modelSchema), {}),
     aliases: v.record(v.string(), aliasSchema),
@@ -217,6 +244,8 @@ export type AliasConfig = CompanionConfig['aliases'][string]
 export type Profile = CompanionConfig['profile']
 export type RoutingOptions = CompanionConfig['routing']
 export type AudioLimits = CompanionConfig['audio']
+export type MemoryOptions = CompanionConfig['memory']
+export type ChannelOptions = CompanionConfig['channel']
 
 /** Whether `POST /v1/chat/completions` can route this alias. */
 export function servesChatCompletions(alias: AliasConfig): boolean {
