@@ -69,11 +69,11 @@ async function main(): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, 4000))
   let sent = Date.now()
   await control('command=pl_pause')
-  latencies.pause = await waitFor(() => (last()?.observation.update as { playing?: boolean }).playing === false && last()!.at >= sent, 5000) ? last()!.at - sent : null
+  latencies.pause = await waitFor(() => (last()?.observation.update as { playing?: boolean } | undefined)?.playing === false && last()!.at >= sent, 5000) ? last()!.at - sent : null
   await new Promise(resolve => setTimeout(resolve, 1500))
   sent = Date.now()
   await control('command=pl_pause')
-  latencies.resume = await waitFor(() => (last()?.observation.update as { playing?: boolean }).playing === true && last()!.at >= sent, 5000) ? last()!.at - sent : null
+  latencies.resume = await waitFor(() => (last()?.observation.update as { playing?: boolean } | undefined)?.playing === true && last()!.at >= sent, 5000) ? last()!.at - sent : null
   const timeline = last()!.observation.update.stamp.timeline
   sent = Date.now()
   await control('command=seek&val=18')

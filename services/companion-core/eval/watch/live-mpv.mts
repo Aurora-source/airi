@@ -79,7 +79,7 @@ async function main(): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, 1000))
   sent = Date.now()
   command('set_property', 'pause', false)
-  latencies.resume = await waitFor(() => (lastVideo()?.observation.update as { playing?: boolean }).playing === true && lastVideo()!.at >= sent, 3000) ? lastVideo()!.at - sent : null
+  latencies.resume = await waitFor(() => (lastVideo()?.observation.update as { playing?: boolean } | undefined)?.playing === true && lastVideo()!.at >= sent, 3000) ? lastVideo()!.at - sent : null
 
   const timelineBefore = lastVideo()!.observation.update.stamp.timeline
   sent = Date.now()
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, 3000))
   sent = Date.now()
   command('set_property', 'sid', 2)
-  latencies.trackSwitch = await waitFor(() => (lastVideo()?.observation.update as { captions?: { language?: string } }).captions?.language === 'ja' && lastVideo()!.at >= sent, 3000) ? lastVideo()!.at - sent : null
+  latencies.trackSwitch = await waitFor(() => (lastVideo()?.observation.update as { captions?: { language?: string } } | undefined)?.captions?.language === 'ja' && lastVideo()!.at >= sent, 3000) ? lastVideo()!.at - sent : null
   command('seek', 15.5, 'absolute')
   await new Promise(resolve => setTimeout(resolve, 4000))
   command('set_property', 'sid', 1)
