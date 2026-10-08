@@ -137,11 +137,13 @@ Playwright MCP could not launch because its configured Chrome executable is abse
 
 ## P. Files and commits
 
+Implementation commit: `dc7fb462c3770fe803a5feaa9f9aed6f1ccb0b27` — `feat(visual): add vivid embodied behavior motion`. A documentation closure records the completed validation and delivery.
+
 Runtime changes are scoped to `packages/model-driver-visual/src`: contracts, motion primitives/sampling, catalog, controller, VRM adapter, and optional Live2D frame reads. Tests extend controller/VRM coverage and add `embodied.test.ts`. Gallery/probe and local browser tools provide review controls and stronger corpus checks. README, this report, and the four planning files plus visual-review notes preserve decisions and evidence. No renderer architecture, project instructions, dependencies, lockfile, VRM assets, or integration worktrees were changed.
 
 ## Q. Final SHA
 
-The final pushed SHA is recorded in the local delivery report and the delivery message after commit/push verification.
+The implementation SHA is `dc7fb462c3770fe803a5feaa9f9aed6f1ccb0b27`. The final pushed branch SHA, including the documentation closure, is recorded in `D:\AI\vivid-evidence\FINAL_REPORT.md` after remote verification.
 
 ## R. Integration
 
