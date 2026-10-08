@@ -1,0 +1,70 @@
+{
+  "paidCalls": 0,
+  "mode": "loopback fixtures, not Gemini or physical voice",
+  "cancellation": [
+    {
+      "abortToPeerCloseMs": 7.785000000000025,
+      "peerClosed": true
+    },
+    {
+      "abortToPeerCloseMs": 1.391399999999976,
+      "peerClosed": true
+    },
+    {
+      "abortToPeerCloseMs": 1.1811999999999898,
+      "peerClosed": true
+    }
+  ],
+  "failover": [
+    {
+      "status": 200,
+      "servedBy": "second",
+      "firstByteMs": 8.254199999999969,
+      "attemptGapMs": 2.4821000000000026,
+      "attempts": [
+        "first=server",
+        "second=ok"
+      ]
+    },
+    {
+      "status": 200,
+      "servedBy": "second",
+      "firstByteMs": 4.430899999999838,
+      "attemptGapMs": 1.0980999999997039,
+      "attempts": [
+        "first=server",
+        "second=ok"
+      ]
+    },
+    {
+      "status": 200,
+      "servedBy": "second",
+      "firstByteMs": 3.658400000000256,
+      "attemptGapMs": 0.956199999999626,
+      "attempts": [
+        "first=server",
+        "second=ok"
+      ]
+    }
+  ],
+  "retry": [
+    {
+      "status": 200,
+      "requestedWaitMs": 1250,
+      "measuredSleepMs": 1265.2086,
+      "otherElapsedMs": 1738.7914
+    },
+    {
+      "status": 200,
+      "requestedWaitMs": 1250,
+      "measuredSleepMs": 1250.3559999999998,
+      "otherElapsedMs": 1735.6440000000002
+    },
+    {
+      "status": 200,
+      "requestedWaitMs": 1250,
+      "measuredSleepMs": 1257.5563999999995,
+      "otherElapsedMs": 1743.4436000000005
+    }
+  ]
+}

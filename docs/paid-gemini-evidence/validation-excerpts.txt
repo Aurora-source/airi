@@ -1,0 +1,45 @@
+preflight-tests.txt
+ Test Files  1 passed (1)
+      Tests  52 passed (52)
+
+core-typecheck-final-log.txt
+node.exe : $ tsc --noEmit
+    + CategoryInfo          : NotSpecified: ($ tsc --noEmit:String) [], RemoteException
+
+root-typecheck-final-log.txt
+@proj-airi/stage-pages:typecheck: $ vue-tsc --noEmit
+@proj-airi/ui-server-auth:typecheck: $ vue-tsc --noEmit
+@proj-airi/stage-tamagotchi:typecheck: $ vue-tsc --noEmit
+@proj-airi/stage-pocket:typecheck: $ vue-tsc --noEmit
+@proj-airi/stage-web:typecheck: $ vue-tsc --noEmit
+@proj-airi/companion-core:typecheck: $ tsc --noEmit
+@proj-airi/docs:typecheck: $ vue-tsc --noEmit
+ Tasks:    56 successful, 56 total
+
+changed-lint-final-log.txt
+(completed without diagnostics)
+
+core-regression-final-log.txt
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/persona-runner.test.ts > runScenario > waits out a rate limit and tries again, without counting the wait
+AssertionError: expected 1717 to be less than 1250
+ Test Files  1 failed | 51 passed (52)
+      Tests  1 failed | 876 passed | 1 skipped (878)
+
+base-persona-regression-log.txt
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  test/persona-runner.test.ts > runScenario > waits out a rate limit and tries again, without counting the wait
+AssertionError: expected 1727 to be less than 1250
+ Test Files  1 failed (1)
+      Tests  1 failed | 9 passed (10)
+
+r3-controller-regression-log.txt
+ Test Files  3 passed (3)
+      Tests  28 passed (28)
+
+r3-pipeline-regression-log.txt
+ Test Files  8 passed (8)
+      Tests  73 passed (73)
+
+root-lint-raw-final-log.txt
+✖ 651 problems (0 errors, 651 warnings)

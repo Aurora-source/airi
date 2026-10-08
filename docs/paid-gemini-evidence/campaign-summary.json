@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "aa9179439427ccffc9b10a9730230604bce874de",
+  "baseCommit": "4eabf3daa9d8c8558964ebdb37b242cbf31533f5",
+  "branch": "codex/paid-gemini-benchmarks",
+  "project": {
+    "id": "gen-lang-client-0341576079",
+    "number": "825264326503",
+    "binding": "user-confirmed, not cryptographically established by model listing",
+    "paidTier": "Tier 1, user-confirmed",
+    "quotasIndependentlyVerified": false
+  },
+  "campaignWindowUtc": {
+    "firstRequest": "2026-10-08T18:51:03.024Z",
+    "lastRequest": "2026-10-08T19:49:12.569Z"
+  },
+  "environment": {
+    "node": "26.7.0",
+    "pnpm": "11.24.0",
+    "operatingSystem": "Windows",
+    "network": "one local network/time window, peak-hour behavior unvalidated"
+  },
+  "spending": {
+    "currency": "USD",
+    "estimatedNano": 340722225,
+    "estimatedUsd": 0.340722225,
+    "requests": 473,
+    "ledgerMatchesSamples": true,
+    "unresolvedRequests": 0,
+    "targetCeilingUsd": 4.5,
+    "absolutePlanningLimitUsd": 5,
+    "guardTestsPassed": 52,
+    "simulatedThresholdRejectionValidated": true,
+    "liveCeilingReached": false,
+    "userReportedAiStudioSpend": {
+      "amount": 9.09,
+      "currency": "INR",
+      "timing": "during campaign, before final completion",
+      "reconciled": false
+    },
+    "promotionalCreditsAssumed": false,
+    "billingSettingsChanged": false
+  },
+  "phaseTotals": {
+    "pilot": {
+      "requests": 5,
+      "costNano": 2068000
+    },
+    "warmup": {
+      "requests": 12,
+      "costNano": 5306750
+    },
+    "latency": {
+      "requests": 192,
+      "costNano": 84748500
+    },
+    "optimization": {
+      "requests": 20,
+      "costNano": 6170500
+    },
+    "persona": {
+      "requests": 144,
+      "costNano": 111977150
+    },
+    "context": {
+      "requests": 20,
+      "costNano": 68907725
+    },
+    "capability": {
+      "requests": 33,
+      "costNano": 13519850
+    },
+    "concurrency": {
+      "requests": 12,
+      "costNano": 5454250
+    },
+    "voice-text": {
+      "requests": 15,
+      "costNano": 5686250
+    },
+    "airi-envelope": {
+      "requests": 20,
+      "costNano": 36883250
+    }
+  },
+  "recommendations": {
+    "strongestReviewedCharacter": "gemini-3.8-flash with medium thinking, investigator observation pending human scores",
+    "fastest": "gemini-3.1-flash-lite with minimal thinking",
+    "provisionalDefault": "gemini-3.8-flash with low thinking",
+    "explicitBackup": "gemini-3.1-flash-lite with minimal thinking",
+    "vision": "gemini-3.8-flash with low thinking, synthetic test only",
+    "automaticMixedThinkingFallbackValidated": false
+  },
+  "physicalAudioMeasured": false,
+  "privateUserDataUploaded": false,
+  "productionConfigurationChanged": false,
+  "runtimePerformancePatch": "none. Provider/network latency dominates. Short ACT reminder improved delivery, without a speed gain",
+  "manualAcceptance": [
+    "blinded human character scoring",
+    "Mura voice microphone-to-speaker pipeline, interruption, barge-in and avatar lip sync",
+    "actual project quotas and final billing reconciliation",
+    "second network/time window including peak hours",
+    "Claude integration of client thinking settings and richer paid cost telemetry"
+  ]
+}

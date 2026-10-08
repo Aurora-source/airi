@@ -1,0 +1,204 @@
+{
+  "mode": "offline text replay through upstream chunkTtsInput after strict ACT removal",
+  "physicalAudioMeasured": false,
+  "rows": [
+    {
+      "id": "d03a186e-f4f2-4675-8a1c-41157ff87672",
+      "model": "gemini-3.1-flash-lite",
+      "path": "gateway-paid",
+      "firstTextMs": 1304.6405,
+      "totalMs": 1308.3529,
+      "firstChunkAtMs": 1304.6405,
+      "chunks": [
+        "If we make the tea together,",
+        "I promise to let you have the first sip,",
+        "even if I steal the best biscuit from the tray."
+      ],
+      "parsingCpuMs": 7.905700000000024
+    },
+    {
+      "id": "11d9686f-4527-4f3f-ba74-04fc1d0f50c4",
+      "model": "gemini-3.1-flash-lite",
+      "path": "gateway-paid",
+      "firstTextMs": 711.4897000000003,
+      "totalMs": 845.9471000000001,
+      "firstChunkAtMs": 826.1825000000001,
+      "chunks": [
+        "If you handle the kettle,",
+        "I promise to pick out the perfect tea for us to enjoy while we avoid deciding which anime to binge-watch tonight."
+      ],
+      "parsingCpuMs": 0.15389999999999304
+    },
+    {
+      "id": "276db4b1-e3e4-49cf-a892-cff2cd747f33",
+      "model": "gemini-3.1-flash-lite",
+      "path": "gateway-paid",
+      "firstTextMs": 870.0267000000003,
+      "totalMs": 932.5545000000002,
+      "firstChunkAtMs": 870.0267000000003,
+      "chunks": [
+        "Since it is finally quiet,",
+        "why don't you put the kettle on and let me decide if we are having chamomile or something a bit more adventurous tonight?"
+      ],
+      "parsingCpuMs": 0.13219999999998322
+    },
+    {
+      "id": "ff833093-0b1b-4377-8a8a-3adbfd8dc46c",
+      "model": "gemini-3.1-flash-lite",
+      "path": "gateway-paid",
+      "firstTextMs": 970.9012999999995,
+      "totalMs": 999.5451999999996,
+      "firstChunkAtMs": 999.5451999999996,
+      "chunks": [
+        "I will handle the kettle if you promise to pick the tea blend that matches our cozy mood tonight."
+      ],
+      "parsingCpuMs": 0.13859999999999673
+    },
+    {
+      "id": "15d2f1fb-a7d3-4a3f-9a27-b7ac8e66ed74",
+      "model": "gemini-3.1-flash-lite",
+      "path": "gateway-paid",
+      "firstTextMs": 792.4526999999998,
+      "totalMs": 926.2759999999998,
+      "firstChunkAtMs": 921.6634999999997,
+      "chunks": [
+        "If you handle the kettle,",
+        "I promise to pick out the most comforting tea leaves and maybe even share a biscuit or two."
+      ],
+      "parsingCpuMs": 0.13349999999999795
+    },
+    {
+      "id": "52ffd247-9dbf-4d3d-bb7a-841f1688732c",
+      "model": "gemini-3.5-flash-lite",
+      "path": "gateway-optimized",
+      "firstTextMs": 1237.8733000000002,
+      "totalMs": 1253.2499000000007,
+      "firstChunkAtMs": 1237.8733000000002,
+      "chunks": [
+        "Grab your favorite mug,",
+        "and I'll race you to the kettle—",
+        "loser has to steep the good leaves."
+      ],
+      "parsingCpuMs": 0.10059999999998581
+    },
+    {
+      "id": "167b4a9c-5f0f-4b3a-bcb9-bde731cd868e",
+      "model": "gemini-3.5-flash-lite",
+      "path": "gateway-optimized",
+      "firstTextMs": 827.3155000000006,
+      "totalMs": 922.8203000000003,
+      "firstChunkAtMs": 916.9072999999999,
+      "chunks": [
+        "Grab your favorite mug,",
+        "and I'll time the brew so we don't accidentally get lost talking about anime and forget to drink it."
+      ],
+      "parsingCpuMs": 0.08790000000001896
+    },
+    {
+      "id": "75e5d40b-868b-42ed-a307-7588439a738b",
+      "model": "gemini-3.5-flash-lite",
+      "path": "gateway-optimized",
+      "firstTextMs": 1253.897,
+      "totalMs": 1254.099299999999,
+      "firstChunkAtMs": 1253.897,
+      "chunks": [
+        "Grab your favorite mug and I'll race you to the kettle—",
+        "the loser has to wait patiently for the water to boil!"
+      ],
+      "parsingCpuMs": 0.09499999999999886
+    },
+    {
+      "id": "e984d779-e167-43bf-a017-dd25bd856668",
+      "model": "gemini-3.5-flash-lite",
+      "path": "gateway-optimized",
+      "firstTextMs": 1533.3659000000007,
+      "totalMs": 1533.5614999999998,
+      "firstChunkAtMs": 1533.3659000000007,
+      "chunks": [
+        "Pull up a chair,",
+        "and let's race to see who can brew the coziest cup before the steam disappears."
+      ],
+      "parsingCpuMs": 0.07859999999999445
+    },
+    {
+      "id": "96664625-1b88-4b0f-8b21-68909ea467a5",
+      "model": "gemini-3.5-flash-lite",
+      "path": "gateway-optimized",
+      "firstTextMs": 1038.4431999999997,
+      "totalMs": 1042.9060000000009,
+      "firstChunkAtMs": 1038.4431999999997,
+      "chunks": [
+        "Grab your favorite mug,",
+        "and I'll race you to the kitchen to see who boils the water first!"
+      ],
+      "parsingCpuMs": 0.07110000000000127
+    },
+    {
+      "id": "ebb27aeb-2199-429e-b7a6-3380be921dea",
+      "model": "gemini-3.8-flash",
+      "path": "gateway-paid",
+      "firstTextMs": 2312.6232999999993,
+      "totalMs": 2457.381299999999,
+      "firstChunkAtMs": 2312.6232999999993,
+      "chunks": [
+        "Put the kettle on,",
+        "and I'll make sure we pick the tea that tastes best with stealing a few extra biscuits."
+      ],
+      "parsingCpuMs": 0.07540000000000191
+    },
+    {
+      "id": "1de95352-43a5-445e-881c-12c7e9c6e629",
+      "model": "gemini-3.8-flash",
+      "path": "gateway-paid",
+      "firstTextMs": 1836.0748999999996,
+      "totalMs": 2223.2435000000005,
+      "firstChunkAtMs": 1836.0748999999996,
+      "chunks": [
+        "Go pick out your favorite mug,",
+        "and I will make sure the kettle does not boil dry while we argue over which blend is best."
+      ],
+      "parsingCpuMs": 0.09800000000001319
+    },
+    {
+      "id": "b0d00cec-a9df-4a8a-81f9-2c42fceca29b",
+      "model": "gemini-3.8-flash",
+      "path": "gateway-paid",
+      "firstTextMs": 2245.190599999998,
+      "totalMs": 2318.058000000001,
+      "firstChunkAtMs": 2245.190599999998,
+      "chunks": [
+        "Put the kettle on,",
+        "pick your favorite mug,",
+        "and let me guess which blend you are craving before the water even starts to whistle."
+      ],
+      "parsingCpuMs": 0.11080000000001178
+    },
+    {
+      "id": "a72f0c3f-f7da-4961-b9f7-856d95ba7de4",
+      "model": "gemini-3.8-flash",
+      "path": "gateway-paid",
+      "firstTextMs": 2000.579099999999,
+      "totalMs": 2180.1021,
+      "firstChunkAtMs": 2000.579099999999,
+      "chunks": [
+        "Put the kettle on,",
+        "and I will make sure we do not accidentally brew something that tastes like boiled lawn clippings tonight."
+      ],
+      "parsingCpuMs": 0.0881000000000256
+    },
+    {
+      "id": "9f8605fe-6e05-4e9b-857b-617ad0850484",
+      "model": "gemini-3.8-flash",
+      "path": "gateway-paid",
+      "firstTextMs": 2254.7443999999996,
+      "totalMs": 2258.0443000000014,
+      "firstChunkAtMs": 2254.7443999999996,
+      "chunks": [
+        "Put the kettle on,",
+        "and if you let me pick the mugs,",
+        "I promise not to give you the chipped one this time."
+      ],
+      "parsingCpuMs": 0.09310000000002105
+    }
+  ]
+}

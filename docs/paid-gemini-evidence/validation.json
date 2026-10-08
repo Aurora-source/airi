@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-08T23:38:23.734Z",
+  "sourceCommit": "aa9179439427ccffc9b10a9730230604bce874de",
+  "baseCommit": "4eabf3daa9d8c8558964ebdb37b242cbf31533f5",
+  "node": "26.7.0",
+  "commands": [
+    {
+      "command": "pnpm -F @proj-airi/companion-core gemini-bench preflight D:\\AI\\gemini-benchmark-data",
+      "exitCode": 0,
+      "passed": 52,
+      "paidCalls": 0,
+      "receipt": "preflight.json"
+    },
+    {
+      "command": "pnpm -F @proj-airi/companion-core typecheck",
+      "exitCode": 0
+    },
+    {
+      "command": "pnpm typecheck",
+      "exitCode": 0,
+      "successfulTasks": 56,
+      "totalTasks": 56
+    },
+    {
+      "command": "pnpm exec eslint services/companion-core/eval/gemini services/companion-core/test/gemini-benchmark.test.ts services/companion-core/package.json docs/examples/paid-gemini-models.json docs/examples/paid-gemini-client-settings.json",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "command": "pnpm exec eslint \"docs/paid-gemini-evidence/*.json\"",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "command": "pnpm -F @proj-airi/companion-core exec vitest run --maxWorkers=1 --no-file-parallelism",
+      "exitCode": 1,
+      "testFiles": 52,
+      "passedFiles": 51,
+      "failedFiles": 1,
+      "passed": 876,
+      "failed": 1,
+      "skipped": 1,
+      "total": 878,
+      "failure": "persona-runner.test.ts retry assertion expects 1717 ms < 1250 ms"
+    },
+    {
+      "command": "pnpm -F @proj-airi/core-agent exec vitest run src/voice/controller.test.ts src/voice/output/response.test.ts src/voice/input/end-detection.test.ts",
+      "exitCode": 0,
+      "passed": 28,
+      "testFiles": 3
+    },
+    {
+      "command": "pnpm -F @proj-airi/pipelines-audio test:run",
+      "exitCode": 0,
+      "passed": 73,
+      "testFiles": 8
+    },
+    {
+      "command": "pnpm lint",
+      "exitCode": -1073741819,
+      "result": "initial final run reported zero errors and 651 warnings, then crashed"
+    },
+    {
+      "command": "pnpm.cmd lint",
+      "exitCode": 0,
+      "result": "raw rerun passed",
+      "errors": 0,
+      "warnings": 651
+    },
+    {
+      "command": "pnpm exec tsx <local validation script importing existing parseConfig>",
+      "exitCode": 0,
+      "modelConfigSchemaValid": true,
+      "profile": "cloud",
+      "models": 2,
+      "aliases": 6,
+      "clientJsonParsed": true,
+      "paidCalls": 0
+    },
+    {
+      "command": "pnpm -F @proj-airi/companion-core gemini-bench fixtures D:\\AI\\gemini-benchmark-data",
+      "exitCode": 0,
+      "samplesPerCase": 3,
+      "paidCalls": 0,
+      "result": "actual loopback cancellation, 503 failover, 429 retry"
+    },
+    {
+      "command": "pnpm -F @proj-airi/companion-core gemini-bench report D:\\AI\\gemini-benchmark-data",
+      "exitCode": 0,
+      "samples": 473,
+      "paidCalls": 0
+    },
+    {
+      "command": "ccusage daily --json --since 20261008",
+      "exitCode": 0,
+      "result": "agent-account monitoring only, retained outside repository. Not Gemini API spending"
+    }
+  ],
+  "exactBaseReproduction": {
+    "source": "4eabf3daa9d8c8558964ebdb37b242cbf31533f5",
+    "method": "read-only git archive of committed Companion Core sources, isolated Node 26.7.0 run with the same installed dependencies",
+    "test": "test/persona-runner.test.ts",
+    "passed": 9,
+    "failed": 1,
+    "failure": "same retry assertion expects 1727 ms < 1250 ms",
+    "productionWorktreesModified": false
+  },
+  "failureLocalization": "Temporary loopback Undici diagnostics place the additional retry delay before request headers reach the Gateway. The underlying Node transport cause is unresolved.",
+  "limitations": [
+    "one inherited Core assertion remains failed",
+    "physical voice and UI runtime not validated",
+    "root lint has existing warnings",
+    "no live cancellation or deliberate quota exhaustion",
+    "latest independent review covered financial safeguards and reporting caveats, not human character acceptance"
+  ],
+  "assertionsWeakened": false,
+  "unrelatedProductionSourceChanged": false
+}

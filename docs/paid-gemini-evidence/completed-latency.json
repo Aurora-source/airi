@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-10-08T19:01:44.054Z",
+  "calls": 204,
+  "ledger": {
+    "spentNano": 92123250,
+    "exposureNano": 92123250,
+    "halted": false
+  }
+}
