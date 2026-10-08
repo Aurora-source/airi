@@ -628,6 +628,58 @@ export interface InputVoiceActivityEvent {
 }
 
 /**
+ * Speech output of the character, from the stage's voice output controller.
+ * The stage reports when a response starts and stops owning speech output, and renews an active report every few seconds.
+ * Modules that coordinate their own output use `outputId` to tell their own speech from other speech.
+ */
+export interface OutputVoiceActivityEvent {
+  /** True while the response owns speech output or generation. False when it settles. */
+  active: boolean
+  /** The stage turn id of the response, for example a chat round id or `spark:<notify id>`. */
+  outputId: string
+  /** Chat session of the response. */
+  sessionId?: string
+}
+
+/** Idle intensity and visual activity names of the stage's visual behavior controller. */
+export type OutputVisualActivity = 'idle' | 'listening' | 'thinking' | 'waiting' | 'watching'
+
+/**
+ * Asks the stage's visual behavior controller for one behavior or a base activity.
+ * The stage decides admission: speaking, ACT, explicit motion, and manual control always win.
+ * The request ends after `leaseMs`, or earlier on a cancel with the same `requestId`.
+ */
+export interface OutputVisualRequestEvent {
+  /** Owner token. A cancel removes only the behavior that this request started. */
+  requestId: string
+  /** A catalog behavior id, for example `amused` or `curious`. */
+  behavior?: string
+  /** Base activity while the lease lasts. */
+  activity?: OutputVisualActivity
+  intensity?: 'still' | 'calm' | 'normal' | 'lively'
+  leaseMs: number
+}
+
+/** Ends one visual request. The stage returns only that request's behavior to neutral. */
+export interface OutputVisualCancelEvent {
+  requestId: string
+}
+
+/** The stage's admission result of one visual request. */
+export interface OutputVisualResultEvent {
+  requestId: string
+  result: 'started' | 'blocked' | 'cooldown' | 'unsupported' | 'unknown' | 'disposed'
+}
+
+/** Whether the stage can show visual behavior now. The stage sends it when the value changes. */
+export interface OutputVisualStateEvent {
+  /** A visual behavior controller is attached to a loaded model. */
+  available: boolean
+  /** Speaking, ACT, explicit motion, or manual control owns the model now. */
+  blocked: boolean
+}
+
+/**
  * Requests one short recording of the system audio output, for example the sound of a video.
  * Delivery goes to the one module that registered as consumer. The microphone is never a substitute.
  */
@@ -1325,6 +1377,12 @@ export const outputGenAiChatMessage = defineProtocolEventa<OutputGenAiChatMessag
 export const outputGenAiChatComplete = defineProtocolEventa<OutputGenAiChatCompleteEvent>('output:gen-ai:chat:complete')
 
 export const inputVoiceActivity = defineProtocolEventa<InputVoiceActivityEvent>('input:voice:activity')
+export const outputVoiceActivity = defineProtocolEventa<OutputVoiceActivityEvent>('output:voice:activity')
+
+export const outputVisualRequest = defineProtocolEventa<OutputVisualRequestEvent>('output:visual:request')
+export const outputVisualCancel = defineProtocolEventa<OutputVisualCancelEvent>('output:visual:cancel')
+export const outputVisualResult = defineProtocolEventa<OutputVisualResultEvent>('output:visual:result')
+export const outputVisualState = defineProtocolEventa<OutputVisualStateEvent>('output:visual:state')
 
 export const audioSystemOutputCaptureRequest = defineProtocolEventa<AudioSystemOutputCaptureRequestEvent>('audio:system-output:capture:request', {
   metadata: { delivery: { mode: 'consumer', selection: 'first', required: true } },
@@ -1519,6 +1577,12 @@ export interface ProtocolEvents<C = undefined> {
   'input:text:voice': WebSocketEventInputTextVoice
   'input:voice': WebSocketEventInputVoice
   'input:voice:activity': InputVoiceActivityEvent
+  'output:voice:activity': OutputVoiceActivityEvent
+
+  'output:visual:request': OutputVisualRequestEvent
+  'output:visual:cancel': OutputVisualCancelEvent
+  'output:visual:result': OutputVisualResultEvent
+  'output:visual:state': OutputVisualStateEvent
 
   'audio:system-output:capture:request': AudioSystemOutputCaptureRequestEvent
   'audio:system-output:capture:cancel': AudioSystemOutputCaptureCancelEvent
