@@ -1,0 +1,43 @@
+# Progress
+
+## 2026-10-08
+
+- Read root AGENTS.md and tooling instructions.
+- Applied Superpowers, worktree isolation, Planning with Files, and Context Mode.
+- Created `D:\AI\airi-visual-presence-vivid` on the requested new branch and exact base.
+- Preserved the foundation branch and all integration worktrees.
+- Inspected controller and behavior catalog. Implementation and validation remain pending.
+- Added 12 embodied tests. Ten failed on the foundation because torso and limb movement was absent.
+- Added 14 bone bindings, 20 gesture primitives, nine temporal shapes, staggered sampling, seeded asymmetry, and controls.
+- Green run: 39 tests. Package and gallery typechecks pass.
+- Updated the foundation's head limit assertion to the new 0.22-radian safety limit.
+- Visual review and corpus regression remain pending.
+- Vite initially failed to spawn a Windows helper under sandboxing. The gallery is now serving on port 5200.
+- Playwright MCP could not start because its Chrome executable is missing. The package's Chromium cache is also absent.
+- Installing the existing Playwright package's Chromium runtime for local visual acceptance. This adds no repository dependency.
+- Chromium installed. Capturing all 30 behaviors on the primary avatar through the real gallery and native idle animation.
+- Inspected neutral and posture-shift captures. Torso/shoulder asymmetry is visible with the primary avatar's loose clothing.
+- Independent review found an authored-elbow clamp violation. A failing regression reproduced it. Bounds now constrain only our offsets.
+- All four review findings now have regression tests and fixes. The full visual-driver suite passes 49 tests.
+- Renderer regression passes 28 tests. Package, gallery, and renderer typechecks pass.
+- The initial screenshot timing was invalid: software capture delays missed short behaviors. Those captures are rejected as acceptance evidence.
+- Added a dev-only held timeline that samples the same controller and adapter through real render ticks.
+- Capturing a new complete primary-avatar pass with assertions that each screenshot still owns its requested behavior.
+- Root typecheck and root lint are running.
+- Completed corrected held-timeline primary pass: 30 behaviors, 90 active-pose captures, 30 neutral restorations, zero browser errors.
+- Reviewed sheets 1–2: gaze/head/breath remain restrained; posture redistribution and delayed glances are visible. Up/down includes chest and neck; tiny-smile has a small torso/shoulder lift.
+- Recovery amplitude-change regressions reproduced excessive offset and NaN; both are fixed by shared finite/capability/axis bounds. Driver suite passes 52 tests.
+- Final corrected primary confirmation pass completed: another 90 active-pose captures across all 30 behaviors, zero page errors, and clean neutral restoration.
+- Started four-pass six-model real-render corpus validation. Root typecheck, gallery/renderer typechecks, source lint, and both production/review builds pass.
+- Root lint's one duplicate-heading error was fixed in planning notes; rerun is in progress. Existing root warnings remain outside this feature.
+- Root lint rerun reported zero errors but ended with Windows exit 3221225477. The required raw rerun (`rtk proxy pnpm lint`) completed successfully with exit 0.
+- Primary confirmation sheets 1–6 were all re-reviewed. Corrected arm directions remain safe across the sampled stages.
+- Six-model first runtime run reported neutralPoses=false despite finite transforms and bounded offsets; persisted failing corpus JSON. Instrumenting behavior/bone/base/actual diagnostics to establish whether the adapter or comparison is responsible.
+- Visually reviewed all six corpus sheets (happy, thinking, surprise, stretch). No catastrophic crossing, inverted elbows, or extreme wrists are apparent in those sampled poses.
+- Diagnosed neutral angle false positives from slightly non-unit authored quaternions: components restore exactly. Replaced angle-based neutral comparison with equality and normalized reusable scratch copies for angle metrics.
+- Independent review identified that forced per-sample release masked natural-end restoration. Removed forced release; diagnostics now derive expected incoming mixer bases while retaining prior ownership through the end frame. Restarted runtime-only four-pass corpus using existing valid six-model visual captures.
+- Controls check verifies body OFF/ON and all six native blink/phoneme channels without procedural pose. Performance sampling now waits for a complete active 120-frame bucket.
+- First two natural-end six-model passes passed: 12 model rows, all 30 behaviors each, exact neutral restoration, finite transforms, neutral expressions, safe disposal. Peak per-bone offset 0.527706 rad; peak model extent ratio 1.01964. Two repeat passes and resource checks remain.
+- Final corpus completed four passes and 8,640 advancing rendered samples, all six × all 30 behaviors. Natural-end base restoration, finite transforms, neutral expressions, disposal, ACT/speaking priority, manual cancellation, and unmount all passed; zero browser errors.
+- Same-model renderer geometry/texture counts stayed fixed. Listeners 174→174, nodes 395→395, post-GC heap 13,658,744→14,170,944 bytes, within the regression bound.
+- Final full-bucket controls check passed; mean active pose hook 0.0875–0.1342 ms. Source/docs lint, root lint, root typecheck, gallery typecheck, and final builds pass. Preparing commits and authorized push; no merge.

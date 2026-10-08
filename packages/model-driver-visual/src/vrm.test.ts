@@ -25,6 +25,15 @@ function model(version: '0' | '1' = '0') {
 const frame: VisualFrame = { headPitch: 0.04, headYaw: 0.03, headRoll: 0.02, bodyPitch: 0.01, bodyRoll: 0.005, gazeX: 0, gazeY: 0, breath: 0, expression: 'happy', expressionWeight: 0.3 }
 
 describe('vRM visual adapter ownership', () => {
+  it('retargets canonical pose offsets consistently between VRM0 and VRM1', () => {
+    const zero = model('0')
+    const one = model('1')
+    createVrmVisualAdapter(zero, { modelId: 'zero' }).apply(frame)
+    createVrmVisualAdapter(one, { modelId: 'one' }).apply(frame)
+    const canonical = one.humanoid.getNormalizedBoneNode('head')!.quaternion
+    const retargeted = new Quaternion(-canonical.x, canonical.y, -canonical.z, canonical.w)
+    expect(zero.humanoid.getNormalizedBoneNode('head')!.quaternion.angleTo(retargeted)).toBeLessThan(0.000001)
+  })
   it.each(['0', '1'] as const)('uses normalized semantics for VRM%s without changing mouth or scale', (version) => {
     const vrm = model(version)
     const adapter = createVrmVisualAdapter(vrm, { modelId: version })
