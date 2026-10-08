@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   sendSubtitles: true,
   sendSparkNotify: true,
   enableVision: false,
+  jellyfinOrigins: [],
 }
 
 export const STORAGE_KEY = 'airi:web-extension:settings'

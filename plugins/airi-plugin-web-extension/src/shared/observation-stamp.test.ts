@@ -25,6 +25,17 @@ describe('observationStamper', () => {
     expect(nextPart.timeline).toBe(2)
   })
 
+  it('starts a new timeline when an explicit media name changes on the same page URL', () => {
+    const stamper = new ObservationStamper(() => 0)
+    const url = 'https://media.example.com/web/#/video'
+    stamper.stamp('jellyfin', url, 'jellyfin:t:Episode 1')
+    const same = stamper.stamp('jellyfin', url, 'jellyfin:t:Episode 1')
+    const next = stamper.stamp('jellyfin', url, 'jellyfin:t:Episode 2')
+
+    expect(same.timeline).toBe(0)
+    expect(next.timeline).toBe(1)
+  })
+
   it('gives every observer its own stream', () => {
     expect(new ObservationStamper().stream).not.toBe(new ObservationStamper().stream)
   })

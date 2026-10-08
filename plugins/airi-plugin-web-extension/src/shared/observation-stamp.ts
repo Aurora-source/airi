@@ -25,9 +25,11 @@ export class ObservationStamper {
     this.timeline++
   }
 
-  /** Stamps one observation of the media at `url`. A changed media identity starts a new timeline first. */
-  stamp(site: VideoSite, url: string): ObservationStamp {
-    const media = mediaKey(site, url)
+  /**
+   * Stamps one observation of the media at `url`. A changed media identity starts a new timeline first.
+   * `media` names the media when the URL does not, for example on Jellyfin Web, where every episode plays at one URL.
+   */
+  stamp(site: VideoSite, url: string, media = mediaKey(site, url)): ObservationStamp {
     if (this.media !== undefined && media !== this.media)
       this.timeline++
     this.media = media

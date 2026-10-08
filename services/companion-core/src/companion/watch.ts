@@ -4,7 +4,7 @@ import type { InjectedUnit } from '../budget/budgeter'
 import type { CompanionConfig } from '../config/config'
 import type { IngestResult } from '../memory/ports'
 import type { CaptureSource, CurrentWorld } from '../perception'
-import type { AniListMetadata, AudioResult, BrowserUpdate, CaptionTrack, FreshPerceptionPort, GroupEndReason, ManagerOutput, MediaIdentity, MediaSourceAdapter, PlayerKind, PlayerRef, ProgressContext, ReactionCandidate, ReactionPermit, SourceEvents, SpeechRecognitionPort, SystemAudioPort, WatchEventKind, WatchSnapshot } from '../watch'
+import type { AniListMetadata, AudioResult, BrowserUpdate, CaptionTrack, FreshPerceptionPort, GroupEndReason, ManagerOutput, MediaIdentity, MediaSourceAdapter, PlayerEndReason, PlayerKind, PlayerRef, ProgressContext, ReactionCandidate, ReactionPermit, SourceEvents, SpeechRecognitionPort, SystemAudioPort, WatchEventKind, WatchSnapshot } from '../watch'
 import type { WatchMilestone } from './memory'
 import type { EndedSession, IgnoreReason, LaneEvent } from './watch-bridge'
 import type { WatchExtras } from './watch-context'
@@ -473,11 +473,17 @@ export class CompanionWatch {
       this.counters.ignored[result.reason] = (this.counters.ignored[result.reason] ?? 0) + 1
       return
     }
+    // The page removed its player. The stream ends now, and the page sends the next playback on a new stream.
+    if (result.update.kind === 'video' && result.update.stopped) {
+      this.bridge.end(result.key)
+      this.browserGone([{ key: result.key, reason: 'stopped' }])
+      return
+    }
     this.apply(this.manager.observe({ player: this.browserPlayer(result.key, result.update), update: result.update }))
   }
 
   /** The bridge ended extension streams. Each one is a browser player of the source manager. */
-  private browserGone(ended: readonly EndedSession[] | ReadonlyArray<{ key: string, reason: 'producer-gone' | 'channel-lost' }>): void {
+  private browserGone(ended: ReadonlyArray<EndedSession | { key: string, reason: PlayerEndReason }>): void {
     for (const stream of ended) {
       this.browserLinks.delete(stream.key)
       this.apply(this.manager.gone(`browser:${stream.key}`, stream.reason))

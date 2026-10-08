@@ -219,6 +219,28 @@ describe('local players through the watch runtime', () => {
     expect(request!.position()).toBe(30)
   })
 
+  it('ends a Jellyfin Web watch when the page removes its player, and follows the next playback of the tab', async () => {
+    const memory = new FakeMemory()
+    start({ memory })
+    const page = new FakeExtension(channel, now)
+    page.tab = 7
+    page.sendVideo({ site: 'jellyfin', url: 'https://media.example/web/', videoId: ITEM, title: 'Synthetic Show - S1:E3', isPlaying: true, currentTimeSec: 30 })
+    expect(tool().status).toBe('watching')
+    advance(1000)
+    page.sendVideo({ isPlaying: false, isStopped: true })
+    await flush()
+    expect(tool().status).toBe('idle')
+    expect(status().counters.sessionsEnded.stopped).toBe(1)
+    expect(memory.milestones.map(milestone => milestone.boundary)).toEqual(['watch_start', 'watch_stop'])
+    expect(memory.milestones.some(milestone => milestone.text.startsWith('Finished'))).toBe(false)
+    // The page starts a new stream for the next playback.
+    const next = new FakeExtension(channel, now, 'conn-1', 'stream-2')
+    next.tab = 7
+    advance(1000)
+    next.sendVideo({ site: 'jellyfin', url: 'https://media.example/web/', videoId: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', title: 'Synthetic Show - S1:E4', isPlaying: true, currentTimeSec: 0 })
+    expect(tool().status).toBe('watching')
+  })
+
   it('never follows a session on another device until the user selects it', () => {
     start()
     const tv = jellyfin.player({ key: 'jellyfin:tv', kind: 'jellyfin-client', reach: 'server', eligible: false, links: ['jf-device:tv'] }, { id: `jellyfin:${ITEM}`, site: 'jellyfin', player: 'jellyfin-client' })

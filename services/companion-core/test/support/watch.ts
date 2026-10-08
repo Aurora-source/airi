@@ -69,6 +69,8 @@ export interface VideoFields {
   durationSec?: number
   playbackRate?: number
   isEnded?: boolean
+  /** The page removed its media element: playback stopped. */
+  isStopped?: boolean
   /** Jellyfin ids that a Jellyfin Web page sends. */
   jellyfin?: { deviceId?: string, itemId?: string }
 }
@@ -99,7 +101,7 @@ export class FakeExtension {
   sendVideo(fields: VideoFields = {}, observedAt = this.now()): void {
     this.video = { site: fields.site ?? this.video.site, url: fields.url ?? this.video.url, videoId: fields.videoId ?? this.video.videoId, title: fields.title ?? this.video.title }
     const { site, url, videoId, title } = this.video
-    this.emit('web:video', `User is watching: ${title}`, { site, url, title, videoId, isPlaying: fields.isPlaying, currentTimeSec: fields.currentTimeSec, durationSec: fields.durationSec, playbackRate: fields.playbackRate, isEnded: fields.isEnded, jellyfin: fields.jellyfin }, observedAt)
+    this.emit('web:video', `User is watching: ${title}`, { site, url, title, videoId, isPlaying: fields.isPlaying, currentTimeSec: fields.currentTimeSec, durationSec: fields.durationSec, playbackRate: fields.playbackRate, isEnded: fields.isEnded, isStopped: fields.isStopped, jellyfin: fields.jellyfin }, observedAt)
   }
 
   sendSubtitle(text: string, fields: SubtitleFields = {}, observedAt = this.now()): void {

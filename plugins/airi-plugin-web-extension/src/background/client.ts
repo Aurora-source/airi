@@ -244,7 +244,9 @@ export function handleVideoContext(
       playbackRate: payload.playbackRate,
       isLive: payload.isLive,
       isEnded: payload.isEnded,
+      isStopped: payload.isStopped,
       playerSize: payload.playerSize,
+      jellyfin: payload.jellyfin,
       stamp: connectionStamp(state, options?.stamp),
     },
   })
@@ -271,6 +273,7 @@ export function handleSubtitle(state: ClientState, settings: ExtensionSettings, 
       endMs: payload.endMs,
       isAuto: payload.isAuto,
       cleared: payload.cleared,
+      secondary: payload.secondary,
       stamp: connectionStamp(state, stamp),
     },
   })

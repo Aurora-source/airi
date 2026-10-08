@@ -2,7 +2,34 @@ import type { SubtitleUpdate, VideoUpdate, WatchEventPort } from '../../src/watc
 
 import { describe, expect, it } from 'vitest'
 
+import { normalizeBrowserLane } from '../../src/watch/browser'
 import { WatchState } from '../../src/watch/state'
+
+describe('jellyfin web lanes', () => {
+  const stamp = { session: 1, sequence: 1, observed_at: 1000, timeline: 0 }
+  const meta = { source: 'web-extension', site: 'jellyfin', url: 'https://media.example.com/web/', videoId: '0123456789abcdef0123456789abcdef', title: 'Frieren' }
+
+  it('keeps the validated Jellyfin ids of a page', () => {
+    const update = normalizeBrowserLane({ lane: 'web:video', metadata: { ...meta, isPlaying: true, jellyfin: { deviceId: 'TW96aWxsYQ11', itemId: '0123456789ABCDEF0123456789ABCDEF' } } }, stamp)
+    expect(update).toMatchObject({ kind: 'video', media: { id: 'jellyfin:0123456789abcdef0123456789abcdef', site: 'jellyfin' }, jellyfin: { device: 'TW96aWxsYQ11', item: '0123456789abcdef0123456789abcdef' } })
+  })
+
+  it('drops malformed ids instead of repairing them', () => {
+    const update = normalizeBrowserLane({ lane: 'web:video', metadata: { ...meta, jellyfin: { deviceId: 'bad"id', itemId: 'not-an-id' } } }, stamp)
+    expect(update).toMatchObject({ kind: 'video' })
+    expect((update as { jellyfin?: unknown }).jellyfin).toBeUndefined()
+  })
+
+  it('reads Japanese from kana when a caption names no language', () => {
+    const update = normalizeBrowserLane({ lane: 'web:subtitle', text: 'Subtitle: ‎どこへ行くの？', metadata: { ...meta } }, stamp)
+    expect(update).toMatchObject({ kind: 'subtitle', text: 'どこへ行くの？', language: 'ja' })
+  })
+
+  it('keeps multi-line and secondary captions', () => {
+    const update = normalizeBrowserLane({ lane: 'web:subtitle', text: 'Subtitle: フリーレン様、\n行きましょう。', metadata: { ...meta, secondary: { text: 'Let us go,\nFrieren.', language: 'en' } } }, stamp)
+    expect(update).toMatchObject({ kind: 'subtitle', text: 'フリーレン様、\n行きましょう。', secondary: { text: 'Let us go,\nFrieren.', language: 'en' } })
+  })
+})
 
 /** Updates as a player source composes them: library identity, direct player playback, and player subtitles. */
 function fixture() {

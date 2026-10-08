@@ -78,6 +78,8 @@ export interface VideoUpdate {
   rate?: number
   /** The media element reported `ended` for this source. The host confirms completion only with this signal. */
   ended?: boolean
+  /** The page removed its media element. The player stopped, and the episode is not confirmed finished. */
+  stopped?: boolean
   /** Who reported playback and position. @default 'browser' */
   source?: 'browser' | 'player' | 'server'
   captions?: CaptionTrack

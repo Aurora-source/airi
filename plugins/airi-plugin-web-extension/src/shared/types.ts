@@ -35,6 +35,11 @@ export interface VideoContextPayload {
   isLive?: boolean
   /** The media element fired `ended` for the current source. It never comes from a position near the end. */
   isEnded?: boolean
+  /**
+   * The page removed its media element, so this playback stopped. It never means that the episode finished.
+   * The observer starts a new stream for the next playback.
+   */
+  isStopped?: boolean
   playerSize?: { width: number, height: number }
   jellyfin?: JellyfinPagePayload
 }
@@ -49,6 +54,8 @@ export interface SubtitlePayload {
   startMs?: number
   endMs?: number
   isAuto?: boolean
+  /** A second subtitle shown at the same time, for example the secondary track of Jellyfin Web. */
+  secondary?: { text: string, language?: string }
   /**
    * The on-screen caption disappeared, so `text` is empty.
    * It proves nothing about speech: consumers treat dialogue as unknown, never as silence.
@@ -107,6 +114,8 @@ export interface ExtensionSettings {
   sendSubtitles: boolean
   sendSparkNotify: boolean
   enableVision: boolean
+  /** Origins that the user allowed as Jellyfin Web in the popup, for example `https://media.example.com`. */
+  jellyfinOrigins: string[]
 }
 
 export interface ExtensionStatus {

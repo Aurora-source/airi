@@ -21,6 +21,7 @@ export const usePopupStore = createGlobalState(() => {
     sendSubtitles: true,
     sendSparkNotify: true,
     enableVision: false,
+    jellyfinOrigins: [],
   })
 
   const connected = computed(() => status.value?.connected ?? false)

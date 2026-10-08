@@ -6,6 +6,7 @@ import {
   HeaderPopup,
   PreferenceCapture,
   SettingsConnection,
+  SettingsJellyfinSites,
   VisualizeLiveVision,
 } from './components'
 import { usePopupStore } from './stores'
@@ -40,6 +41,8 @@ onMounted(() => popup.init())
     />
 
     <VisualizeLiveVision :last-video="popup.lastVideo.value" :last-subtitle="popup.lastSubtitle.value" />
+
+    <SettingsJellyfinSites v-model:origins="popup.form.jellyfinOrigins" @apply="popup.applySettings" />
 
     <SettingsConnection
       v-model:ws-url="popup.form.wsUrl"

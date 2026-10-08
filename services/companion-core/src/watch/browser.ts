@@ -1,7 +1,7 @@
 import type { SubtitlePayload, VideoContextPayload } from '../../../../plugins/airi-plugin-web-extension/src/shared/types'
 import type { BrowserStamp, BrowserUpdate, Evidence, JellyfinRef, SubtitleUpdate, VideoUpdate } from './contracts'
 
-import { subtitleTextOf } from './subtitle-text'
+import { languageCodeOf, subtitleTextOf } from './subtitle-text'
 
 function text(input: unknown, limit: number): string {
   return typeof input === 'string' ? input.replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, limit) : ''
@@ -61,6 +61,7 @@ export function normalizeVideo(payload: VideoContextPayload, stamp: BrowserStamp
     duration: nonnegative(payload.durationSec),
     rate: nonnegative(payload.playbackRate),
     ended: payload.isEnded === true ? true : undefined,
+    ...(payload.isStopped === true ? { stopped: true } : {}),
     ...(payload.site === 'jellyfin' && jellyfinRefOf(payload.jellyfin) ? { jellyfin: jellyfinRefOf(payload.jellyfin) } : {}),
   }
 }
@@ -77,7 +78,8 @@ export function normalizeSubtitle(payload: SubtitlePayload, stamp: BrowserStamp)
     return undefined
   // Multi-line captions keep their line breaks. Spaces inside a line collapse.
   const line = subtitleTextOf(typeof payload.text === 'string' ? payload.text : '')
-  return { kind: 'subtitle', stamp: { ...stamp }, media_id, text: line, title: text(payload.title, 160) || undefined, language: text(payload.language, 16) || undefined, start_ms, end_ms, automatic: payload.isAuto === true, cleared: line ? undefined : true }
+  const secondary = line && typeof payload.secondary?.text === 'string' ? subtitleTextOf(payload.secondary.text) : ''
+  return { kind: 'subtitle', stamp: { ...stamp }, media_id, text: line, title: text(payload.title, 160) || undefined, language: text(payload.language, 16) || languageCodeOf(undefined, line), start_ms, end_ms, automatic: payload.isAuto === true, cleared: line ? undefined : true, ...(secondary ? { secondary: { text: secondary, language: text(payload.secondary?.language, 16) || undefined } } : {}) }
 }
 
 /** Parses untrusted server lane data. The bridge authenticates the extension and supplies the trusted stamp. */
@@ -88,10 +90,10 @@ export function normalizeBrowserLane(input: { lane?: string, text?: string, meta
   const site = m.site as VideoContextPayload['site']
   const videoId = typeof m.videoId === 'string' ? m.videoId : undefined
   if (input.lane === 'web:video') {
-    return normalizeVideo({ site, url: m.url, videoId, title: text(m.title, 160), isPlaying: typeof m.isPlaying === 'boolean' ? m.isPlaying : undefined, currentTimeSec: nonnegative(m.currentTimeSec), durationSec: nonnegative(m.durationSec), playbackRate: nonnegative(m.playbackRate), isEnded: m.isEnded === true, jellyfin: m.jellyfin as VideoContextPayload['jellyfin'] }, stamp)
+    return normalizeVideo({ site, url: m.url, videoId, title: text(m.title, 160), isPlaying: typeof m.isPlaying === 'boolean' ? m.isPlaying : undefined, currentTimeSec: nonnegative(m.currentTimeSec), durationSec: nonnegative(m.durationSec), playbackRate: nonnegative(m.playbackRate), isEnded: m.isEnded === true, isStopped: m.isStopped === true, jellyfin: m.jellyfin as VideoContextPayload['jellyfin'] }, stamp)
   }
   if (input.lane === 'web:subtitle' && typeof input.text === 'string' && input.text.startsWith('Subtitle: ')) {
-    return normalizeSubtitle({ site, url: m.url, videoId, title: text(m.title, 160), text: input.text.slice('Subtitle: '.length), language: text(m.language, 16), startMs: nonnegative(m.startMs), endMs: nonnegative(m.endMs), isAuto: m.isAuto === true }, stamp)
+    return normalizeSubtitle({ site, url: m.url, videoId, title: text(m.title, 160), text: input.text.slice('Subtitle: '.length), language: text(m.language, 16), startMs: nonnegative(m.startMs), endMs: nonnegative(m.endMs), isAuto: m.isAuto === true, secondary: m.secondary as SubtitlePayload['secondary'] }, stamp)
   }
   return undefined
 }
