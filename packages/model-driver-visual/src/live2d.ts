@@ -85,7 +85,7 @@ export function createLive2DVisualAdapter(bindings: Live2DVisualBindings): Visua
       for (const p of parameters) {
         const current = bindings.core.getParameterValueByIndex(p.parameter.index)
         p.base = p.owned && current === p.written ? p.base : current
-        p.written = Math.min(p.parameter.max, Math.max(p.parameter.min, p.base + frame[p.axis] * p.binding.unitsPerValue))
+        p.written = Math.min(p.parameter.max, Math.max(p.parameter.min, p.base + (frame[p.axis] ?? 0) * p.binding.unitsPerValue))
         bindings.core.setParameterValueByIndex(p.parameter.index, p.written)
         // Cubism stores Float32 values. Ownership follows the stored value, not the unrounded calculation.
         p.written = bindings.core.getParameterValueByIndex(p.parameter.index)

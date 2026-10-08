@@ -5,6 +5,8 @@ import type { VisualAxis, VisualExpression, VisualFrame, VisualModelAdapter, Vis
 
 import { Euler, Quaternion } from 'three'
 
+import { poseBones } from './motion'
+
 export interface VrmVisualOptions {
   modelId: string
   /** Upstream blink, gaze and idle animation own micro motion by default. */
@@ -15,20 +17,18 @@ export interface VrmVisualOptions {
   /** AIRI's expression frame hook flushes these values after its ACT and blink controllers. */
   deferExpressions?: boolean
 }
-const presetExpressions: readonly VisualExpression[] = ['happy', 'relaxed', 'sad', 'surprised']
+const presetExpressions: readonly VisualExpression[] = ['happy', 'relaxed', 'sad', 'angry', 'surprised']
+function boundedAngle(value: number | undefined, limit: number) {
+  return value !== undefined && Number.isFinite(value) ? Math.max(-limit, Math.min(limit, value)) : 0
+}
 /** The three-vrm loader converts VRM0 presets into VRM1 names. Custom expression semantics require explicit bindings. */
 export function discoverVrmVisualCapabilities(vrm: VRM, options: VrmVisualOptions) {
-  const head = vrm.humanoid?.getNormalizedBoneNode('head') ?? vrm.humanoid?.getNormalizedBoneNode('neck')
-  const body = vrm.humanoid?.getNormalizedBoneNode('spine') ?? vrm.humanoid?.getNormalizedBoneNode('chest')
   const axes = new Set<VisualAxis>()
-  if (head) {
-    axes.add('headPitch')
-    axes.add('headYaw')
-    axes.add('headRoll')
-  }
-  if (body) {
-    axes.add('bodyPitch')
-    axes.add('bodyRoll')
+  for (const bone of poseBones) {
+    if (vrm.humanoid?.getNormalizedBoneNode(bone.name)) {
+      for (const axis of bone.axes)
+        axes.add(axis)
+    }
   }
   const expressions = new Set<VisualExpression>()
   for (const semantic of [...presetExpressions, 'sleepy'] as const) {
@@ -53,17 +53,16 @@ export function createVrmVisualAdapter(vrm: VRM, options: VrmVisualOptions) {
   const capabilities = discoverVrmVisualCapabilities(vrm, options)
   const bones: {
     node: Object3D
-    head: boolean
+    definition: typeof poseBones[number]
     base: Quaternion
     written: Quaternion
     owned: boolean
   }[] = []
-  const head = vrm.humanoid?.getNormalizedBoneNode('head') ?? vrm.humanoid?.getNormalizedBoneNode('neck')
-  const body = vrm.humanoid?.getNormalizedBoneNode('spine') ?? vrm.humanoid?.getNormalizedBoneNode('chest')
-  if (head)
-    bones.push({ node: head, head: true, base: new Quaternion(), written: new Quaternion(), owned: false })
-  if (body && body !== head)
-    bones.push({ node: body, head: false, base: new Quaternion(), written: new Quaternion(), owned: false })
+  for (const definition of poseBones) {
+    const node = vrm.humanoid?.getNormalizedBoneNode(definition.name)
+    if (node)
+      bones.push({ node, definition, base: new Quaternion(), written: new Quaternion(), owned: false })
+  }
   const rotation = new Euler(0, 0, 0, 'YXZ')
   const offset = new Quaternion()
   const expressionValues = new Map<string, {
@@ -106,7 +105,7 @@ export function createVrmVisualAdapter(vrm: VRM, options: VrmVisualOptions) {
       expressionValues.set(name, { base: vrm.expressionManager?.getValue(name) ?? 0, written: 0 })
     }
     const value = expressionValues.get(name)!
-    value.written = Math.max(0, Math.min(0.45, pendingExpressionWeight))
+    value.written = Number.isFinite(pendingExpressionWeight) ? Math.max(0, Math.min(0.45, pendingExpressionWeight)) : 0
     vrm.expressionManager?.setValue(name, value.written)
   }
   return {
@@ -120,8 +119,26 @@ export function createVrmVisualAdapter(vrm: VRM, options: VrmVisualOptions) {
         if (bone.owned && bone.node.quaternion.equals(bone.written))
           bone.node.quaternion.copy(bone.base)
         bone.base.copy(bone.node.quaternion)
-        rotation.set(bone.head ? frame.headPitch : frame.bodyPitch, bone.head ? frame.headYaw : 0, bone.head ? frame.headRoll : frame.bodyRoll, 'YXZ')
+        const { axes, limits, name } = bone.definition
+        const pitch = boundedAngle(frame[axes[0]], limits[0])
+        let yaw = boundedAngle(frame[axes[1]], limits[1])
+        const roll = boundedAngle(frame[axes[2]], limits[2])
+        if (name === 'leftLowerArm' || name === 'rightLowerArm') {
+          rotation.setFromQuaternion(bone.base, 'YXZ')
+          // Elbows hinge forward. An additive return never bends beyond a straight sampled elbow.
+          const sign = name === 'leftLowerArm' ? -1 : 1
+          const baseBend = rotation.y * sign
+          // Unusual authored elbow axes stay under the mixer. Bounds constrain our offset, never its base pose.
+          yaw = baseBend >= 0 && baseBend <= 1.8 ? sign * (Math.max(0, Math.min(1.8, baseBend + yaw * sign)) - baseBend) : 0
+          yaw = Math.max(-limits[1], Math.min(limits[1], yaw))
+        }
+        rotation.set(pitch, yaw, roll, 'YXZ')
         offset.setFromEuler(rotation)
+        // VRM0 faces -Z. Match three-vrm-animation's canonical retargeting before adding to the sampled pose.
+        if (vrm.meta.metaVersion === '0') {
+          offset.x = -offset.x
+          offset.z = -offset.z
+        }
         bone.node.quaternion.multiply(offset)
         bone.written.copy(bone.node.quaternion)
         bone.owned = true

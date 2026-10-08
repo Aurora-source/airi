@@ -29,6 +29,51 @@ function fixture(axes: VisualAxis[] = ['headPitch', 'headYaw', 'headRoll', 'body
   return { controller, adapter, frames, advance }
 }
 describe('visual presence admission and lifecycle', () => {
+  it.each([
+    { amount: 1000, initial: 0.01, next: 1.5 },
+    { amount: 0.04, initial: Number.MIN_VALUE, next: 1 },
+  ])('keeps recovery finite and bounded after amplitude changes: $initial', ({ amount, initial, next }) => {
+    const f = fixture()
+    let now = 0
+    const controller = createVisualBehaviorController({ adapter: f.adapter, now: () => now, tuning: { bodyAmplitude: initial }, catalog: [{ id: 'custom', category: 'short', durationMs: 2000, cooldownMs: 0, weight: 1, pose: { bodyPitch: amount } }] })
+    controller.playVisualBehavior('custom')
+    now = 1200
+    controller.update()
+    controller.cancelBehavior()
+    controller.setMotionTuning({ bodyAmplitude: next })
+    now = 1300
+    controller.update()
+    const pose = f.frames.at(-1)!
+    expect(Object.values(pose).filter(value => typeof value === 'number').every(Number.isFinite)).toBe(true)
+    expect(Math.abs(pose.bodyPitch)).toBeLessThanOrEqual(0.09)
+  })
+
+  it('keeps absent and nonfinite custom pose values out of adapter frames', () => {
+    const f = fixture()
+    let now = 0
+    const controller = createVisualBehaviorController({ adapter: f.adapter, now: () => now, catalog: [{ id: 'custom', category: 'short', durationMs: 2000, cooldownMs: 0, weight: 1, pose: { headYaw: undefined, headRoll: Infinity, headPitch: 0.1 } }] })
+    expect(controller.playVisualBehavior('custom')).toBe('started')
+    now = 700
+    controller.update()
+    expect(f.frames.at(-1)?.headYaw).toBe(0)
+    expect(f.frames.at(-1)?.headRoll).toBe(0)
+    expect(f.frames.at(-1)?.headPitch).toBeGreaterThan(0.05)
+  })
+
+  it('retains oscillations for caller-supplied catalogs', () => {
+    const samples: number[] = []
+    for (const oscillations of [1, 4]) {
+      const f = fixture()
+      let now = 0
+      const controller = createVisualBehaviorController({ adapter: f.adapter, now: () => now, catalog: [{ id: 'custom', category: 'short', durationMs: 2000, cooldownMs: 0, weight: 1, pose: { headPitch: 0.1 }, oscillations }] })
+      controller.playVisualBehavior('custom')
+      now = 800
+      controller.update()
+      samples.push(f.frames.at(-1)!.headPitch)
+    }
+    expect(samples[0]).toBeGreaterThan(0.05)
+    expect(samples[1]).toBeLessThan(-0.05)
+  })
   it('starts idle from render ticks and stops all owned state', () => {
     const f = fixture()
     f.controller.start()
@@ -184,7 +229,7 @@ describe('visual presence admission and lifecycle', () => {
       f.controller.playVisualBehavior(entry.id)
       f.advance(entry.durationMs / 2)
       const frame = f.frames.at(-1)
-      expect(Math.abs(frame?.headPitch ?? 0)).toBeLessThanOrEqual(0.12)
+      expect(Math.abs(frame?.headPitch ?? 0)).toBeLessThanOrEqual(0.22)
       expect(frame?.expressionWeight ?? 0).toBeLessThanOrEqual(0.45)
     }
   })

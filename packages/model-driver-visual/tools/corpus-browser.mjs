@@ -32,7 +32,7 @@ async function main() {
     await page.getByTestId('corpus-files').setInputFiles(files)
     await page.waitForFunction(() => !!window.__airiVisualDemo?.snapshot().loaded, undefined, { timeout: 60000 })
     assert.equal(await page.evaluate(() => window.__airiVisualDemo.snapshot().models), 6)
-    await page.getByRole('button', { name: 'amused', exact: true }).click()
+    await page.locator('[data-behavior="amused"]').click()
     await page.waitForFunction(() => window.__airiVisualDemo.snapshot().behavior === 'amused')
     await page.getByRole('button', { name: 'Native ACT interruption' }).click()
     await page.waitForFunction(() => window.__airiVisualDemo.snapshot().blocked)
@@ -43,13 +43,31 @@ async function main() {
     assert.equal(await page.evaluate(() => window.__airiVisualDemo.play('happy')), 'blocked')
     await page.getByRole('checkbox', { name: 'Speaking owner' }).uncheck()
     await page.waitForFunction(() => !window.__airiVisualDemo.snapshot().blocked)
-    await page.getByRole('button', { name: 'happy', exact: true }).first().click()
+    await page.locator('[data-behavior="happy"]').click()
     await page.waitForFunction(() => window.__airiVisualDemo.expressionValue('happy') > 0.05)
     await page.locator('[data-native-expression="happy"]').click()
     await page.waitForTimeout(2600)
     assert.equal(await page.evaluate(() => window.__airiVisualDemo.expressionValue('happy')), 0, 'Native preview must restore neutral after releasing the visual owner.')
     await page.getByRole('button', { name: 'Run idle for 3 minutes' }).click()
     await page.screenshot({ path: join(evidenceDirectory, 'gallery.png') })
+    const visualSamples = []
+    for (let index = 0; !process.argv.includes('--runtime-only') && index < files.length; index++) {
+      await page.getByRole('combobox', { name: 'Avatar', exact: true }).selectOption(String(index))
+      await page.waitForFunction(name => window.__airiVisualDemo.snapshot().loaded === name, basename(files[index]), { timeout: 60000 })
+      for (const behavior of ['happy', 'thinking', 'surprised', 'stretch']) {
+        await page.evaluate(() => window.__airiVisualDemo.stop())
+        assert.equal(await page.evaluate(({ behavior, progress }) => window.__airiVisualDemo.review(behavior, progress), { behavior, progress: behavior === 'surprised' ? 0.14 : 0.42 }), 'started')
+        await page.getByTestId('avatar-viewport').scrollIntoViewIfNeeded()
+        const before = await page.evaluate(() => window.__airiVisualDemo.snapshot().frameCount)
+        await page.waitForFunction(previous => window.__airiVisualDemo.snapshot().frameCount > previous + 2, before)
+        const screenshot = `model-${index + 1}-${behavior}.png`
+        await page.getByTestId('avatar-viewport').screenshot({ path: join(evidenceDirectory, screenshot) })
+        visualSamples.push({ model: index + 1, behavior, screenshot, snapshot: await page.evaluate(() => window.__airiVisualDemo.snapshot()) })
+      }
+    }
+    if (visualSamples.length)
+      await writeFile(join(evidenceDirectory, 'visual-samples.json'), `${JSON.stringify(visualSamples, null, 2)}\n`)
+    await page.evaluate(() => window.__airiVisualDemo.stop())
     // Keep real WebGL rendering while reducing software rasterization cost for the switching stress test.
     await page.getByTestId('avatar-viewport').evaluate((element) => {
       element.style.height = '128px'
@@ -74,7 +92,11 @@ async function main() {
       assert.equal(row.neutralWeights, true, 'Expressions must be released after exercise.')
       assert.equal(row.disposedSafe, true, 'Disposed controllers must leave the skeleton untouched.')
       assert.equal(row.compatible.length, 30)
-      assert.equal(row.renderedBehaviorFrames, 180)
+      assert.equal(row.renderedBehaviorFrames, 360)
+      assert.equal(row.neutralPoses, true, 'Every affected bone must restore its sampled base.')
+      assert.equal(row.finiteTransforms, true, 'Body motion and springs must remain finite.')
+      assert.ok(row.maxBoneOffset < 0.85)
+      assert.ok(row.extentRatio < 1.5, 'Motion must not create runaway model bounds.')
     }
     for (let i = 0; i < 6; i++)
       assert.deepEqual(result.rows[i].memory, result.rows[i + 6].memory, 'Resources for the same model must stay bounded across passes.')
@@ -89,6 +111,8 @@ async function main() {
       assert.equal(row.neutralWeights, true)
       assert.equal(row.disposedSafe, true)
       assert.equal(row.compatible.length, 30)
+      assert.equal(row.neutralPoses, true)
+      assert.equal(row.finiteTransforms, true)
       const first = result.rows.find(original => original.file === row.file)
       assert.deepEqual(first.memory, row.memory)
     }
