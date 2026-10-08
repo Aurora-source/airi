@@ -26,6 +26,7 @@
     "valibot": "catalog:"
   },
   "devDependencies": {
+    "@proj-airi/server-runtime": "workspace:^",
     "@types/node": "catalog:",
     "@xsai/stream-text": "catalog:",
     "tsx": "catalog:",

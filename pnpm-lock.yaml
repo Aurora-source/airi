@@ -6516,6 +6516,9 @@ importers:
         specifier: 'catalog:'
         version: 1.4.2(typescript@6.0.3)
     devDependencies:
+      '@proj-airi/server-runtime':
+        specifier: workspace:^
+        version: link:../../packages/server-runtime
       '@types/node':
         specifier: 'catalog:'
         version: 26.2.0

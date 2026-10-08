@@ -24,7 +24,7 @@ export interface CompanionHarness {
  * Starts a gateway with a real companion runtime: a memory worker on a temporary SQLite file, and no server channel.
  * `raw` overrides the configuration. The fake provider sits behind alias `companion-chat`.
  */
-export async function startCompanionGateway(providerBaseURL: string, raw: Record<string, unknown> = {}, options: { memoryPorts?: MemoryPorts, now?: () => number } = {}): Promise<CompanionHarness> {
+export async function startCompanionGateway(providerBaseURL: string, raw: Record<string, unknown> = {}, options: { memoryPorts?: MemoryPorts, now?: () => number, channel?: boolean } = {}): Promise<CompanionHarness> {
   const directory = mkdtempSync(join(tmpdir(), 'companion-memory-'))
   const logs: string[] = []
   const reports: string[] = []
@@ -38,7 +38,7 @@ export async function startCompanionGateway(providerBaseURL: string, raw: Record
     ...raw,
     memory: { path: join(directory, 'memory', 'memory.sqlite'), ...(raw.memory as Record<string, unknown> | undefined) },
   })
-  const companion = await CompanionRuntime.open({ config, home: directory, channel: false, memoryPorts: options.memoryPorts, now: options.now, report: line => reports.push(line) })
+  const companion = await CompanionRuntime.open({ config, home: directory, channel: options.channel ?? false, memoryPorts: options.memoryPorts, now: options.now, report: line => reports.push(line) })
   const gateway = await startGateway({
     config,
     credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN },
