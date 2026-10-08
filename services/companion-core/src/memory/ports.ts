@@ -32,7 +32,7 @@ export interface ToolEvidence {
 export interface MemoryObservation {
   userId: string
   characterId: string
-  source: 'gateway' | 'airi' | 'spark' | 'admin'
+  source: 'gateway' | 'airi' | 'spark' | 'admin' | 'watch'
   kind: EventKind
   text: string
   language?: string
@@ -41,6 +41,8 @@ export interface MemoryObservation {
   messageId?: string
   turnId?: string
   sparkId?: string
+  /** Watch milestone identity: one id per watch session and event, assigned by the watch runtime. */
+  watchEventId?: string
   requestId?: string
   completion?: 'complete' | 'incomplete'
   topic?: string

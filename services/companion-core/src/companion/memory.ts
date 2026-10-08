@@ -47,6 +47,15 @@ export interface RememberRequest {
   cardinality?: 'single' | 'set'
 }
 
+/** A watch milestone as the watch runtime offers it. It holds identity text, never captions or frames. */
+export interface WatchMilestone {
+  /** Unique per watch session and event. A replay with the same id changes nothing. */
+  id: string
+  boundary?: 'watch_start' | 'watch_stop'
+  text: string
+  occurredAt: number
+}
+
 /** A recalled item as tools and Ops see it. It holds no provenance internals. */
 export interface RecalledItem {
   id: string
@@ -237,6 +246,28 @@ export class CompanionMemory {
         : { ...base, source: 'airi', kind: 'assistant', turnId: turn.assistantTurnId, text: turn.assistantText, ...tools }))
     }
     return results
+  }
+
+  /**
+   * Offers one watch milestone to R4 for the character and AIRI session of the newest turn.
+   * R4 decides what stays: a start opens a watch-session episode and a stop settles it.
+   * Without an active turn no character owns the moment, so nothing is offered.
+   */
+  async observeWatchMilestone(milestone: WatchMilestone): Promise<IngestResult | { status: 'no-active-character' }> {
+    const active = this.activeTurn()
+    if (!active)
+      return { status: 'no-active-character' }
+    return this.ingest({
+      userId: this.options.userId,
+      characterId: active.characterId,
+      source: 'watch',
+      kind: 'watch_milestone',
+      watchEventId: milestone.id,
+      sessionId: active.sessionId,
+      text: milestone.text,
+      occurredAt: milestone.occurredAt,
+      ...(milestone.boundary ? { boundary: milestone.boundary } : {}),
+    })
   }
 
   /** The AIRI channel is the authoritative observer. Its coverage decides what happens to unmatched gateway evidence. */

@@ -106,6 +106,9 @@ export class SQLiteMemoryStore {
       return { status: 'invalid', reason: 'Missing stable source identity' }
     if (event.source === 'spark' && event.kind !== 'spark_reaction')
       return { status: 'invalid', reason: 'Spark identity requires a Spark reaction' }
+    // A watch event is a milestone of what was watched. It never carries user claims or relationship changes.
+    if (event.source === 'watch' && (event.kind !== 'watch_milestone' || event.claims?.length || event.relationship))
+      return { status: 'invalid', reason: 'Watch identity requires a claim-free watch milestone' }
     for (const claim of event.claims ?? emptyClaims) {
       const userAuthored = event.kind === 'user_text' || event.kind === 'user_voice' || event.source === 'admin'
       if (!normalizeText(claim.key) || !normalizeText(claim.value) || !normalizeText(claim.text))

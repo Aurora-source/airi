@@ -24,7 +24,7 @@ const claim = v.strictObject({
 const observation = v.strictObject({
   userId: id,
   characterId: id,
-  source: v.picklist(['gateway', 'airi', 'spark', 'admin']),
+  source: v.picklist(['gateway', 'airi', 'spark', 'admin', 'watch']),
   kind: v.picklist(['user_text', 'user_voice', 'assistant', 'spark_reaction', 'observation', 'watch_milestone', 'memory_command']),
   text,
   occurredAt: timestamp,
@@ -33,6 +33,7 @@ const observation = v.strictObject({
   messageId: v.optional(id),
   turnId: v.optional(id),
   sparkId: v.optional(id),
+  watchEventId: v.optional(id),
   requestId: v.optional(id),
   completion: v.optional(v.picklist(['complete', 'incomplete'])),
   topic: v.optional(id),

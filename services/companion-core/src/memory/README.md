@@ -88,6 +88,7 @@ Text and value edits record admin evidence and invalidate the old summary's sour
 | Persisted user text or voice | `airi:<sessionId>:msg:<messageId>` |
 | Persisted assistant turn | `airi:<sessionId>:turn:<turnId>` |
 | Spark reaction | `spark:<notifyId>` |
+| Watch milestone | `watch:<watchEventId>` |
 | Explicit memory command | `admin:<requestId>` |
 
 Identifier components use percent encoding.

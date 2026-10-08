@@ -41,6 +41,8 @@ export function canonicalIdentity(event: MemoryObservation): string | null {
   const encode = encodeURIComponent
   if (event.source === 'spark' && event.sparkId)
     return `spark:${encode(event.sparkId)}`
+  if (event.source === 'watch')
+    return event.watchEventId ? `watch:${encode(event.watchEventId)}` : null
   if (event.source === 'gateway')
     return null
   if (event.source === 'admin' && event.requestId)

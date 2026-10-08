@@ -87,6 +87,21 @@ describe('r4 memory replay', () => {
     expect(store.exportUser('user').tables.tool_evidence).toHaveLength(1)
   })
 
+  it('keys watch milestones by watch event ID, opens a watch-session episode, and refuses claims from them', () => {
+    const start = observation({ source: 'watch', kind: 'watch_milestone', watchEventId: 'watch-1:1', messageId: undefined, boundary: 'watch_start', text: 'Started watching "Frieren" on youtube.', claims: [] })
+    expect(store.ingest(start).status).toBe('inserted')
+    expect(store.ingest(start).status).toBe('duplicate')
+    expect(store.ingest({ ...start, watchEventId: undefined }).status).toBe('invalid')
+    expect(store.ingest({ ...start, watchEventId: 'watch-1:2', kind: 'user_text' }).status).toBe('invalid')
+    expect(store.ingest({ ...start, watchEventId: 'watch-1:3', claims: observation().claims }).status).toBe('invalid')
+    expect(store.ingest({ ...start, watchEventId: 'watch-1:4', relationship: { closeness: 1 } }).status).toBe('invalid')
+
+    const data = store.exportUser('user')
+    expect(data.tables.events.map(event => event.canonical_id)).toEqual(['watch:watch-1%3A1'])
+    expect(store.inspect({ userId: 'user', characterId: 'mura', kind: 'episode' }).map(item => item.category)).toEqual(['watch_session'])
+    expect(store.inspect({ userId: 'user', characterId: 'mura', kind: 'fact' })).toHaveLength(0)
+  })
+
   it('discards provisional events with authority coverage and degrades only uncovered evidence', () => {
     store.setAuthorityAvailable('user', 'mura', true)
     store.ingest(observation({ source: 'gateway', requestId: 'covered' }))
