@@ -867,6 +867,13 @@ export const useContextBridgeStore = defineStore('mods:api:context-bridge', () =
             data: {
               ...context.input?.data,
               'message': chat.output,
+              // Observers such as companion memory deduplicate the stored turn by these ids.
+              'turn': {
+                sessionId: context.sessionId,
+                turnId: context.turnId,
+                assistantTurnId: chat.output.generationTranscript?.id ?? chat.output.id,
+                characterId: chatSession.sessionMetas[context.sessionId]?.characterId,
+              },
               // TODO: tool calls should be captured properly
               'toolCalls': [],
               'stage-web': isStageWeb(),

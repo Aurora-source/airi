@@ -14,6 +14,7 @@ import { computed, createApp, nextTick, reactive, ref } from 'vue'
 
 import {
   AIRI_CHAT_APP_SURFACE_HEADER,
+  AIRI_CHAT_CHARACTER_ID_HEADER,
   AIRI_CHAT_ROUND_ID_HEADER,
   AIRI_CHAT_SESSION_ID_HEADER,
 } from '../libs/product-signals/headers'
@@ -1087,6 +1088,30 @@ describe('chat store contract', () => {
       [AIRI_CHAT_SESSION_ID_HEADER]: 'session-1',
       [AIRI_CHAT_ROUND_ID_HEADER]: expect.any(String),
     })
+  })
+
+  it('sends the session, round, and character ids to the Companion Gateway and to no other custom provider', async () => {
+    llmStreamMock.mockImplementation(async (_model: string, _chatProvider: GenerationProvider, _messages: Conversation, options: any) => {
+      await options.onStreamEvent({ type: 'text-delta', text: 'ok' })
+      await options.onStreamEvent({ type: 'finish' })
+    })
+    const gateway: GenerationProvider = {
+      generation: model => ({ protocol: 'chat-completions', config: { model, baseURL: 'http://127.0.0.1:11980/v1/' } }),
+    }
+
+    const store = useChatStore()
+    await store.ingest('hello gateway', { model: 'companion-chat', chatProvider: gateway })
+    await store.ingest('hello elsewhere', { model: 'gpt-test', chatProvider: provider })
+
+    const gatewayHeaders = llmStreamMock.mock.calls[0]?.[3]?.headers
+    expect(gatewayHeaders).toEqual({
+      [AIRI_CHAT_SESSION_ID_HEADER]: 'session-1',
+      [AIRI_CHAT_ROUND_ID_HEADER]: expect.any(String),
+      [AIRI_CHAT_CHARACTER_ID_HEADER]: 'alice',
+    })
+    expect(gatewayHeaders[AIRI_CHAT_ROUND_ID_HEADER]).toBe(llmStreamMock.mock.calls[0]?.[3]?.requestCorrelation.turnId)
+    expect(llmStreamMock.mock.calls[1]?.[3]?.headers).not.toHaveProperty(AIRI_CHAT_SESSION_ID_HEADER)
+    expect(llmStreamMock.mock.calls[1]?.[3]?.headers).not.toHaveProperty(AIRI_CHAT_CHARACTER_ID_HEADER)
   })
 
   it('uses turn_index on message_sent instead of a second-turn alias', async () => {

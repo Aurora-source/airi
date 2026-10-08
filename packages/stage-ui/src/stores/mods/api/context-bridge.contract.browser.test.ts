@@ -224,6 +224,7 @@ vi.mock('../../chat/session-store', () => ({
     },
     getSessionGenerationValue: () => currentGeneration,
     refreshSession: (sessionId: string) => refreshSessionMock(sessionId),
+    sessionMetas: { 'session-1': { characterId: 'card-1' } },
   }),
 }))
 
@@ -316,6 +317,21 @@ describe('context bridge contract', () => {
     disposePinia(pinia)
     vi.restoreAllMocks()
     localStorage.clear()
+  })
+
+  it('reports the stored turn identity with each completed chat turn', async () => {
+    const store = useContextBridgeStore()
+    await store.initialize()
+    const context = { sessionId: 'session-1', turnId: 'user-message-1', message: { role: 'user', content: 'hi', id: 'user-message-1' }, contexts: {}, composedMessage: [] }
+
+    await emitHooks(turnCompleteHooks, { output: { role: 'assistant', content: 'hello', id: 'assistant-1', generationTranscript: { id: 'assistant-turn-1' } }, outputText: 'hello', toolCalls: [] }, context)
+
+    expect(serverSendMock).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'output:gen-ai:chat:complete',
+      data: expect.objectContaining({
+        turn: { sessionId: 'session-1', turnId: 'user-message-1', assistantTurnId: 'assistant-turn-1', characterId: 'card-1' },
+      }),
+    }))
   })
 
   it('records core ingest result for broadcast context updates', async () => {

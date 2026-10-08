@@ -27,9 +27,11 @@ import { extractMessageText, isCloudSyncableMessage } from '../libs/chat-sync'
 import { createChatAnalyticsHooks, getProviderMode } from '../libs/product-signals/events/chat'
 import {
   AIRI_CHAT_APP_SURFACE_HEADER,
+  AIRI_CHAT_CHARACTER_ID_HEADER,
   AIRI_CHAT_ROUND_ID_HEADER,
   AIRI_CHAT_SESSION_ID_HEADER,
 } from '../libs/product-signals/headers'
+import { isCompanionGatewayURL } from '../libs/providers/companion-gateway'
 import { getSpeechBusContext, voiceGenerationEnded } from '../services/speech/bus'
 import { useLLM } from './ai/chat-llm/llm'
 import { resolveLlmTools } from './ai/chat-llm/tool-resolver'
@@ -280,6 +282,19 @@ export const useChatStore = defineStore('chat', () => {
       headers[AIRI_CHAT_SESSION_ID_HEADER] = options.requestCorrelation.conversationId
       headers[AIRI_CHAT_ROUND_ID_HEADER] = options.requestCorrelation.turnId
       headers[AIRI_CHAT_APP_SURFACE_HEADER] = getConversationAnalyticsSurface()
+    }
+    else if (options?.requestCorrelation && isCompanionGatewayURL(chatProvider.generation(model).config.baseURL)) {
+      // NOTICE:
+      // Companion memory needs the persisted session, round, and character ids of each turn.
+      // The OpenAI-compatible provider has no per-provider header setting, so the gateway is matched by its loopback port.
+      // Source: services/companion-core (src/companion/turn-identity.ts).
+      // Removal condition: providers can opt in to request correlation themselves.
+      const characterId = chatSession.sessionMetas[options.requestCorrelation.conversationId]?.characterId
+      if (characterId) {
+        headers[AIRI_CHAT_SESSION_ID_HEADER] = options.requestCorrelation.conversationId
+        headers[AIRI_CHAT_ROUND_ID_HEADER] = options.requestCorrelation.turnId
+        headers[AIRI_CHAT_CHARACTER_ID_HEADER] = characterId
+      }
     }
 
     const hadExistingTurn = !!activeTurnSpan.value

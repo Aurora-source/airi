@@ -1078,10 +1078,23 @@ interface OutputGenAiChatUsage {
   source: 'provider-based' | 'estimate-based'
 }
 
+/** Persisted identity of one completed chat turn. Observers use it to deduplicate the same turn. */
+interface OutputGenAiChatTurnIdentity {
+  sessionId: string
+  /** Id of the committed user message that opened the turn. */
+  turnId: string
+  /** Id of the logical assistant turn, kept across its generation rounds. */
+  assistantTurnId?: string
+  /** AIRI character card that owns the session. */
+  characterId?: string
+}
+
 type OutputGenAiChatCompleteEvent = {
   message: AssistantMessage
   toolCalls: ToolMessage[]
   usage: OutputGenAiChatUsage
+  /** Present when the turn was stored in a chat session. */
+  turn?: OutputGenAiChatTurnIdentity
 } & Partial<WithInputSource<'stage-web' | 'stage-tamagotchi' | 'discord'>> & Partial<WithOutputSource<'gen-ai:chat'>>
 
 interface SparkNotifyEvent {
