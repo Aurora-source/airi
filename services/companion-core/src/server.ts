@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net'
 
 import type { GatewayCredentials } from './auth/credentials'
 import type { CompanionMemory } from './companion/memory'
+import type { CompanionPerception } from './companion/perception'
 import type { CompanionConfig } from './config/config'
 import type { GatewayLogEvent } from './gateway/http'
 import type { GatewayRuntimeOptions } from './gateway/runtime'
@@ -18,7 +19,7 @@ import { createBearerCheck } from './auth/credentials'
 import { TURN_IDENTITY_HEADERS } from './companion/turn-identity'
 import { LOOPBACK_HOST, servesChatCompletions } from './config/config'
 import { proxyChatCompletion } from './gateway/chat-completions'
-import { handleCompanionTool, handleOpsMemory } from './gateway/companion-api'
+import { handleCompanionTool, handleOpsMemory, handleOpsPerception } from './gateway/companion-api'
 import { sendError } from './gateway/http'
 import { opsStatus } from './gateway/ops-status'
 import { GatewayRuntime } from './gateway/runtime'
@@ -36,6 +37,7 @@ const ALLOWED_REQUEST_HEADERS = new Set(['authorization', 'content-type', 'accep
 /** The companion services next to the gateway. Without them the gateway only routes. */
 export interface GatewayCompanion extends TurnHooks {
   memory?: CompanionMemory
+  perception?: CompanionPerception
 }
 
 export interface GatewayOptions {
@@ -49,7 +51,7 @@ export interface GatewayOptions {
   writeLog?: (line: string) => void
   /** Capabilities that a probe measured, and a clock. Tests replace the clock. */
   runtime?: Pick<GatewayRuntimeOptions, 'capabilitiesOf' | 'now'>
-  /** Memory and awareness. The caller owns its lifecycle. */
+  /** Memory and perception. The caller owns their lifecycle. */
   companion?: GatewayCompanion
   /** Folder for memory backups that Ops requests. */
   backupDirectory?: string
@@ -59,6 +61,8 @@ export interface RunningGateway {
   server: Server
   /** Base URL that clients configure, for example `http://127.0.0.1:11980/v1/`. */
   baseURL: string
+  /** Router, quota ledger, and health. Perception attaches to it, so vision shares the chat routing state. */
+  runtime: GatewayRuntime
   close: () => Promise<void>
 }
 
@@ -70,7 +74,7 @@ export interface RunningGateway {
  * 2. A request with an `Origin` header must come from `config.allowedOrigins`, even when it has a valid token.
  * 3. `GET /livez` needs no token and reveals nothing but liveness.
  * 4. `/v1/*` needs the inference token. The ops token is rejected there. This includes the companion tools.
- * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory administration.
+ * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory and perception administration.
  *
  * Call stack:
  *
@@ -88,7 +92,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   const isOpsToken = createBearerCheck(options.credentials.ops)
   const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, ...options.runtime })
   const allowedOrigins = new Set(config.allowedOrigins)
-  const companionApi = { memory: options.companion?.memory, backupDirectory: options.backupDirectory }
+  const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, backupDirectory: options.backupDirectory }
 
   let allowedHosts = new Set<string>()
 
@@ -155,7 +159,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
         log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
-      if (await handleOpsMemory(req, res, path, companionApi)) {
+      if (await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi)) {
         log({ method, path, status: res.statusCode, outcome: res.statusCode < 400 ? 'ok' : 'rejected', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
@@ -215,6 +219,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   return {
     server,
     baseURL: `http://${LOOPBACK_HOST}:${port}/v1/`,
+    runtime,
     close: () => new Promise<void>((resolve, reject) => {
       server.closeAllConnections()
       server.close((error) => {

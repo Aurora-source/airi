@@ -20,7 +20,8 @@ It also forwards audio transcriptions to a speech-recognition provider.
 - Aborts the provider request when AIRI cancels.
 - Keeps provider API keys out of AIRI. AIRI holds only a local gateway token.
 
-It does **not** hold memory, watch the screen, run a Director, or start local services. Those parts come in later phases.
+It also holds long-term memory and, when you turn it on, watches the screen. See [Memory](#memory) and [Perception](#perception).
+It does **not** run a Director or start local services. Those parts come in later phases.
 
 ## Configuration
 
@@ -35,6 +36,8 @@ The file is `%LOCALAPPDATA%\AIRI-Companion\companion-core.json`. Provider and mo
 | `routing` | Sticky time, first-byte timeout, cool-downs, and the token safety margin. |
 | `audio` | Upload, response, and deadline bounds for transcription. |
 | `store` | The SQLite file. It defaults to `companion-core.sqlite` next to the configuration. |
+| `memory`, `channel` | Long-term memory and the AIRI server channel. See [Memory](#memory). |
+| `perception` | Screen capture, privacy lists, and the vision alias. Off by default. See [Perception](#perception). |
 
 ```json
 {
@@ -142,6 +145,7 @@ Without `compat`, the gateway forwards requests and responses unchanged.
 | Logs | One metadata line per request. Headers, bodies, prompts, images, and credentials are never logged. Known secrets and key-shaped strings are redacted. |
 | No token | Only `GET /livez`. It returns `{"ok":true}` and nothing else. |
 | Memory | The database folder grants access to the current Windows user only. Memory administration needs the ops token. Memory tools need the inference token. |
+| Screen | Frames stay in memory and go only to the selected vision model. Window titles, screen text, and image bytes are never logged. The capture helper is Windows PowerShell from its absolute System32 path. |
 
 ## How to use
 
@@ -241,13 +245,37 @@ The R4 memory subsystem (`src/memory`, see its README) runs next to the gateway 
 | Gateway observer | A fully delivered answer becomes provisional evidence: the user message once per round, the final answer once per turn. Interrupted answers are never observed. |
 | Channel observer | Module `companion-core` on AIRI's server channel (`channel.url`). A persisted turn becomes authoritative evidence. R4 merges it with the provisional evidence into one event. |
 | Consolidation | Idle only: no open chat request and 30 seconds since the last one. Interval `memory.consolidateEveryMs`. |
-| Tools | `companion-core mcp` is a stdio MCP server with `memory_recall`, `memory_remember`, and `memory_forget`. Tools act for the configured user and the character of the newest AIRI turn. |
+| Tools | `companion-core mcp` is a stdio MCP server with `memory_recall`, `memory_remember`, `memory_forget`, and `look_now`. Memory tools act for the configured user and the character of the newest AIRI turn. |
 | Ops | `/ops/memory/status`, `items`, `search`, `items/edit`, `items/delete`, `items/forget`, `private`, `export`, `backup`, `consolidate`. |
 
 To add the tools to AIRI desktop, add this server to `mcp.json` in AIRI's user data folder. Set `cwd` to this repository:
 
 ```json
 { "mcpServers": { "companion-core": { "command": "pnpm", "args": ["-F", "@proj-airi/companion-core", "cli", "mcp"], "cwd": "D:/AI/airi" } } }
+```
+
+## Perception
+
+The R5 perception service (`src/perception`, see its README) gives the character a short-lived view of the screen.
+It is off by default. Screen contents stay private: frames live in memory only and are never saved or logged.
+
+| Part | Behavior |
+| --- | --- |
+| Switches | `perception.enabled` starts the capture helper and the `look_now` tool. `perception.ambient` adds periodic capture and automatic vision. Both are off by default. |
+| Capture | One persistent Windows PowerShell helper (`src/companion/windows-capture.cs`) copies the primary display, downscales it to `maxWidth`, and encodes a JPEG in memory. A new resolution or display starts a new source generation. |
+| Privacy | The R5 privacy gate checks each frame after capture, before each upload, and before the state is published. Paused perception, excluded apps and windows, locked or secure desktops, and private or sensitive windows are blocked. An app outside the classified list has unknown safety, so automatic upload is denied. |
+| Change detection | A 64 by 36 luminance grid. A static screen never causes another vision request. `minimumIntervalMs` spaces automatic requests. |
+| Vision | Requests go through the R2B router to the `visionAlias` alias, which needs role `vision`. Profile rules, capability checks, the quota ledger, health, and cool-downs apply. A local model answers only in a `hybrid` profile with `allowLocalFallback`. |
+| NOW block | A fresh observation with confidence 0.5 or more becomes one `user`-role block of at most 1600 bytes, after the memory block. It names the app, never the window title. Expired state is never injected. The budgeter drops it before memory. |
+| `look_now` | MCP tool and `POST /v1/companion/tools/look_now`. `authorize_unknown` allows an unclassified window for this call only. It never overrides a pause or a block. A call within 5 seconds of the last one reuses its result. |
+| Memory | Policy `none`. Perception keeps event metadata in process for Ops: observation id, capture time, confidence, app, character, and session. No screen fact becomes long-term memory by itself. |
+| Ops | `GET /ops/perception/status` and `POST /ops/perception/pause` with `{"paused": true}`. Both need the ops token. |
+
+```json
+{
+  "aliases": { "companion-vision": { "role": "vision", "chain": ["gemini-flash-lite"] } },
+  "perception": { "enabled": true, "ambient": false, "privacy": { "excludedApps": ["keepass"], "classifiedApps": ["myeditor"] } }
+}
 ```
 
 ## When to use it

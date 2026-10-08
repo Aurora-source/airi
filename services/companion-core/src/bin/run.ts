@@ -25,7 +25,7 @@ Commands:
   probe [model ...] [--deep]              Test each model of the alias chains and store what it supports.
                                           --deep also finds the largest prompt that each model accepts. It costs quota.
   token                                   Print the inference token. Paste it into the AIRI provider API key field.
-  mcp                                     Run the memory tools as a stdio MCP server. AIRI starts it from mcp.json.`
+  mcp                                     Run the memory and look_now tools as a stdio MCP server. AIRI starts it from mcp.json.`
 
 /**
  * Command line entry point for the Companion Gateway.
@@ -73,9 +73,16 @@ async function main(argv: string[]): Promise<void> {
       const report = (message: string) => process.stderr.write(`${JSON.stringify({ time: new Date().toISOString(), companion: message })}\n`)
       const companion = await CompanionRuntime.open({ config, home, channelToken, report })
       const gateway = await startGateway({ config, credentials, providerKeys, companion, backupDirectory: join(home, 'memory', 'backups') })
-      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'})`)
+      // Vision routes through the gateway's router, so perception starts only once the gateway exists.
+      companion.attach(gateway.runtime)
+      const perception = !companion.perception ? 'off' : config.perception.ambient ? 'ambient' : 'look_now only'
+      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'}, perception: ${perception})`)
+      // Perception stops first, so no capture or upload outlives the router. Memory closes last, after the final turn.
       const stop = () => {
-        void gateway.close().then(() => companion.close()).finally(() => process.exit(0))
+        void Promise.resolve(companion.perception?.shutdown())
+          .then(() => gateway.close())
+          .then(() => companion.close())
+          .finally(() => process.exit(0))
       }
       process.once('SIGINT', stop)
       process.once('SIGTERM', stop)
