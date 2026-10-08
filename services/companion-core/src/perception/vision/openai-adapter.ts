@@ -2,9 +2,8 @@ import type { ScreenFrame, VisionObservationPort } from '../ports/contracts'
 
 import { Buffer } from 'node:buffer'
 
-import { observationJsonSchema } from '../observations/schema'
 import { PerceptionFailure } from '../ports/failure'
-import { observationPrompt } from './prompt'
+import { visionRequestBody } from './request'
 
 export interface OpenAiVisionConfiguration {
   id: string
@@ -51,18 +50,7 @@ export class OpenAiVisionAdapter implements VisionObservationPort {
       redirect: 'error',
       signal: input.signal,
       headers: { 'content-type': 'application/json', ...(this.configuration.api_key ? { authorization: `Bearer ${this.configuration.api_key}` } : {}) },
-      body: JSON.stringify({
-        model: this.configuration.model,
-        stream: false,
-        max_tokens: 700,
-        messages: [
-          { role: 'system', content: `${observationPrompt}\nSchema: ${JSON.stringify(observationJsonSchema)}` },
-          { role: 'user', content: [{ type: 'image_url', image_url: { url: `data:${input.frame.image.mime_type};base64,${Buffer.from(input.frame.image.bytes).toString('base64')}`, detail: 'low' } }] },
-        ],
-        response_format: this.capabilities.structured_output
-          ? { type: 'json_schema', json_schema: { name: 'screen_observation', strict: true, schema: observationJsonSchema } }
-          : { type: 'json_object' },
-      }),
+      body: JSON.stringify(visionRequestBody(this.configuration.model, input.frame, this.capabilities.structured_output)),
     })
     if (!response.ok) {
       await response.body?.cancel()

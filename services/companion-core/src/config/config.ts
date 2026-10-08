@@ -158,6 +158,43 @@ const channelSchema = v.object({
   tokenRef: v.optional(v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/))),
 })
 
+const appList = v.optional(v.array(v.pipe(v.string(), v.minLength(1), v.maxLength(128))), [])
+
+const perceptionSchema = v.object({
+  /** Creates the screen capture backend and the perception service. `look_now` works only when this is on. */
+  enabled: v.optional(v.boolean(), false),
+  /** Periodic capture and automatic cloud vision. It needs `enabled`. Off by default. */
+  ambient: v.optional(v.boolean(), false),
+  /** A `vision` alias. Its chain, profile rules, quota, and health decide which model observes the screen. */
+  visionAlias: v.optional(v.string(), 'companion-vision'),
+  /** Hybrid profile only: local models of the vision chain can answer after every cloud model failed. */
+  allowLocalFallback: v.optional(v.boolean(), false),
+  captureIntervalMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(500)), 2000),
+  /** How long an observation counts as current, from the moment of capture. */
+  ttlMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1000), v.maxValue(120_000)), 15_000),
+  /** Shortest time between two automatic vision requests. */
+  minimumIntervalMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1000)), 20_000),
+  /** Absent means a static screen is never sent again. */
+  maximumIdleRefreshMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(10_000))),
+  attemptTimeoutMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1000)), 11_000),
+  visionTimeoutMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1000)), 12_000),
+  /** Width of the encoded frame. Downscaling happens on this machine before any upload. */
+  maxWidth: v.optional(v.pipe(v.number(), v.integer(), v.minValue(320), v.maxValue(1920)), 1280),
+  jpegQuality: v.optional(v.pipe(v.number(), v.integer(), v.minValue(30), v.maxValue(95)), 70),
+  privacy: v.optional(v.object({
+    /** Process names that block capture and upload, for example `keepass`. */
+    excludedApps: appList,
+    /** Window title parts that block capture and upload. */
+    excludedWindows: appList,
+    /** Process names that are captured for change detection but never uploaded. */
+    limitedApps: appList,
+    /** Process names that count as known and safe, next to the built-in list. Unknown apps block automatic upload. */
+    classifiedApps: appList,
+    /** Process names that always count as sensitive, next to the built-in list. */
+    sensitiveApps: appList,
+  }), {}),
+})
+
 const PROFILES = ['local', 'cloud', 'cloud-mura-voice', 'hybrid'] as const
 
 const configSchema = v.pipe(
@@ -188,6 +225,7 @@ const configSchema = v.pipe(
     store: v.optional(v.object({ path: v.optional(v.string()) }), {}),
     memory: v.optional(memorySchema, {}),
     channel: v.optional(channelSchema, {}),
+    perception: v.optional(perceptionSchema, {}),
     providers: v.record(v.string(), providerSchema),
     models: v.optional(v.record(v.string(), modelSchema), {}),
     aliases: v.record(v.string(), aliasSchema),
@@ -232,6 +270,10 @@ const configSchema = v.pipe(
         addIssue({ message: `Alias "${aliasName}": the local model "${firstLocal}" must come after every cloud model in a hybrid profile.` })
       }
     }
+    if (config.perception.enabled && config.aliases[config.perception.visionAlias]?.role !== 'vision')
+      addIssue({ message: `Perception needs alias "${config.perception.visionAlias}" with role "vision".` })
+    if (config.perception.ambient && !config.perception.enabled)
+      addIssue({ message: 'perception.ambient needs perception.enabled.' })
   }),
 )
 
@@ -246,6 +288,7 @@ export type RoutingOptions = CompanionConfig['routing']
 export type AudioLimits = CompanionConfig['audio']
 export type MemoryOptions = CompanionConfig['memory']
 export type ChannelOptions = CompanionConfig['channel']
+export type PerceptionConfig = CompanionConfig['perception']
 
 /** Whether `POST /v1/chat/completions` can route this alias. */
 export function servesChatCompletions(alias: AliasConfig): boolean {

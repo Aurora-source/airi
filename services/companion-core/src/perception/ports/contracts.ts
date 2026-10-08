@@ -56,7 +56,11 @@ export interface VisionObservationPort {
   readonly id: string
   readonly locality: 'cloud' | 'local'
   readonly capabilities: { vision: boolean, structured_output: boolean }
-  observe: (input: { frame: ScreenFrame, signal: AbortSignal }) => Promise<unknown>
+  /**
+   * `guard` throws when privacy or ownership changed. An adapter that tries several models itself calls it before
+   * each upload, so a failover never sends a frame that the policy revoked.
+   */
+  observe: (input: { frame: ScreenFrame, signal: AbortSignal, guard?: () => void }) => Promise<unknown>
 }
 
 export type FailureStatus = 'unavailable' | 'blocked-by-privacy' | 'capture-failed' | 'vlm-failed'

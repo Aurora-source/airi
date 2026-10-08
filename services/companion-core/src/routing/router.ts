@@ -62,8 +62,11 @@ export type RoutePlan
 export class Router {
   constructor(private readonly deps: RouterDeps) {}
 
-  /** `injected` holds the gateway's memory and awareness blocks. Each candidate budgets them with its own limits. */
-  plan(body: WireRequest, injected?: readonly InjectedUnit[]): RoutePlan {
+  /**
+   * `injected` holds the gateway's memory and awareness blocks. Each candidate budgets them with its own limits.
+   * `allowLocal: false` skips local models of the chain. Perception uses it unless local fallback was allowed explicitly.
+   */
+  plan(body: WireRequest, injected?: readonly InjectedUnit[], options: { allowLocal?: boolean } = {}): RoutePlan {
     const target = this.resolveTarget(body.model)
     if (!target)
       return failure(404, 'model_not_found', `Model "${body.model}" is not a configured alias or a model of one.`, [])
@@ -89,6 +92,10 @@ export class Router {
     const candidates: Candidate[] = []
     const skipped: Skip[] = []
     for (const model of models) {
+      if (options.allowLocal === false && model.locality === 'local') {
+        skipped.push({ modelId: model.id, reason: 'PROFILE_FORBIDS_LOCAL', category: 'ineligible' })
+        continue
+      }
       const result = evaluateModel(model, body, traits, context)
       if ('candidate' in result)
         candidates.push(result.candidate)

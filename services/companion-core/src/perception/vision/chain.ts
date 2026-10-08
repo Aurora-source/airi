@@ -60,7 +60,7 @@ export class VisionChain {
           const operation = Promise.resolve().then(() => {
             if (attemptSignal.aborted)
               throw new PerceptionFailure('cancelled')
-            return adapter.observe({ frame, signal: attemptSignal })
+            return adapter.observe({ frame, signal: attemptSignal, guard })
           })
           operation.then(() => {
             this.pending--
