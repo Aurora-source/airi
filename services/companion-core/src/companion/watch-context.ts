@@ -37,6 +37,8 @@ export function watchFacts(snapshot: WatchSnapshot, extras: WatchExtras, now: nu
     site: media.site,
     title: media.title && { text: media.title.value, source: media.title.source },
     episode: media.episode && { number: media.episode.value, source: media.episode.source, confidence: media.episode.confidence },
+    /** Strength of the identity evidence, from 0 to 1. It is not certainty. */
+    confidence: snapshot.confidence,
     playback: snapshot.playback?.value ?? 'unknown',
     position: snapshot.position && { seconds: Math.floor(snapshot.position.value), age_s: age(snapshot.position.observed_at) },
     dialogue_state: snapshot.dialogue_active,

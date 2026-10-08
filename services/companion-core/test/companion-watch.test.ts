@@ -159,6 +159,7 @@ describe('watch bridge and state', () => {
     expect(facts.title).toEqual({ text: 'Frieren Episode 3', source: 'browser' })
     expect(facts.episode).toMatchObject({ number: 3, source: 'browser' })
     expect(facts.playback).toBe('playing')
+    expect(facts.confidence).toBe(0.9)
     expect(facts.position).toEqual({ seconds: 10, age_s: 0 })
     expect(facts.dialogue_state).toBe('unknown')
     expect(facts.spoilers).toBe('withheld: completed progress unknown')
