@@ -12,7 +12,7 @@ function fixture() {
   const stamp = () => ({ session: 1, sequence: sequence++, observed_at: now, timeline: 0 })
   const video = (playing = true) => state.ingest(normalizeVideo({ site: 'youtube', url: 'https://youtube.com/watch?v=x', title: 'Sample', videoId: 'x', isPlaying: playing, currentTimeSec: 10 }, stamp())!)
   video()
-  const subtitle = (text: string) => state.ingest(normalizeSubtitle({ site: 'youtube', url: 'https://youtube.com/watch?v=x', videoId: 'x', text }, stamp())!)
+  const subtitle = (text: string, startMs?: number, endMs?: number) => state.ingest(normalizeSubtitle({ site: 'youtube', url: 'https://youtube.com/watch?v=x', videoId: 'x', text, startMs, endMs }, stamp())!)
   const policy = new ReactionPolicy(state, () => now)
   const offer = (key = 'moment', salience = 0.9) => policy.offer({ kind: 'scene-change', observation_key: key, salience, revision: state.current().revision, observed_at: now })
   return { state, policy, offer, video, subtitle, time: (value: number) => {
@@ -23,17 +23,27 @@ function fixture() {
 afterEach(() => vi.useRealTimers())
 
 describe('deterministic sparse reactions', () => {
-  it('suppresses active dialogue and waits for a 1.5 second subtitle gap', () => {
+  it('suppresses active dialogue and waits for a 1.5 second gap after the timed cue end', () => {
     const f = fixture()
-    f.subtitle('Dialogue')
+    // Playback is at 10 s at time 1000, so the cue ending at 11 s ends at time 2000.
+    f.subtitle('Dialogue', 10_000, 11_000)
     f.offer()
     expect(f.policy.take()).toBeUndefined()
-    f.time(2000)
-    f.subtitle('')
     f.time(3400)
     expect(f.policy.take()).toBeUndefined()
     f.time(3500)
     expect(f.policy.take()).toBeDefined()
+  })
+
+  it('keeps dialogue unknown after an overlay caption clears without a cue end', () => {
+    const f = fixture()
+    f.subtitle('Dialogue')
+    f.offer()
+    f.time(2000)
+    f.subtitle('')
+    expect(f.state.current().dialogue_active).toBe('unknown')
+    f.time(4000)
+    expect(f.policy.take()).toBeUndefined()
   })
 
   it('does not mistake missing captions for silence', () => {
@@ -129,7 +139,8 @@ describe('deterministic sparse reactions', () => {
 
   it('revokes an admitted reaction when captions resume or browser disconnects', () => {
     const f = fixture()
-    f.subtitle('')
+    // The cue ended at 10 s, exactly where playback is.
+    f.subtitle('Earlier line', 9000, 10_000)
     f.offer()
     f.time(2500)
     const permit = f.policy.take()!

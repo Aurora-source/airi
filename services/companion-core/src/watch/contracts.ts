@@ -35,6 +35,8 @@ export interface VideoUpdate {
   position?: number
   duration?: number
   rate?: number
+  /** The media element reported `ended` for this source. The host confirms completion only with this signal. */
+  ended?: boolean
 }
 
 export interface SubtitleUpdate {
@@ -47,6 +49,8 @@ export interface SubtitleUpdate {
   start_ms?: number
   end_ms?: number
   automatic: boolean
+  /** An on-screen caption disappeared without a cue end. Dialogue becomes unknown, never a proven gap. */
+  cleared?: boolean
 }
 
 export type BrowserUpdate = VideoUpdate | SubtitleUpdate

@@ -326,6 +326,13 @@ export class WatchState {
   private acceptSubtitle(update: Extract<BrowserUpdate, { kind: 'subtitle' }>): void {
     if (update.title)
       this.subtitle_title = { value: update.title, source: 'subtitle', confidence: 0.8, observed_at: update.stamp.observed_at, valid_until: update.stamp.observed_at + this.options.browser_ttl_ms }
+    // The shown line is gone. Speech can continue without a caption, so a line becomes unknown activity.
+    // A gap that a cue end or VAD already proved stays proven.
+    if (update.cleared) {
+      if (this.dialogue?.source === 'subtitle' || this.dialogue?.source === 'visual')
+        this.dialogue = undefined
+      return
+    }
     if (!update.text) {
       this.dialogue = undefined
       this.gap_since = update.stamp.observed_at

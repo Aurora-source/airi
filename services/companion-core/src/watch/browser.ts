@@ -48,17 +48,22 @@ export function normalizeVideo(payload: VideoContextPayload, stamp: BrowserStamp
     position: nonnegative(payload.currentTimeSec),
     duration: nonnegative(payload.durationSec),
     rate: nonnegative(payload.playbackRate),
+    ended: payload.isEnded === true ? true : undefined,
   }
 }
 
-/** Cue timestamps use media time, not wall time. Empty text is an explicit dialogue gap. */
+/**
+ * Cue timestamps use media time, not wall time.
+ * A browser caption without text is a clear: the overlay disappeared. It never proves a dialogue gap.
+ */
 export function normalizeSubtitle(payload: SubtitlePayload, stamp: BrowserStamp): SubtitleUpdate | undefined {
   const media_id = identity(payload)
   const start_ms = nonnegative(payload.startMs)
   const end_ms = nonnegative(payload.endMs)
   if (!media_id || (start_ms !== undefined && end_ms !== undefined && end_ms <= start_ms))
     return undefined
-  return { kind: 'subtitle', stamp: { ...stamp }, media_id, text: text(payload.text, 320), title: text(payload.title, 160) || undefined, language: text(payload.language, 16) || undefined, start_ms, end_ms, automatic: payload.isAuto === true }
+  const line = text(payload.text, 320)
+  return { kind: 'subtitle', stamp: { ...stamp }, media_id, text: line, title: text(payload.title, 160) || undefined, language: text(payload.language, 16) || undefined, start_ms, end_ms, automatic: payload.isAuto === true, cleared: line ? undefined : true }
 }
 
 /** Parses untrusted server lane data. The bridge authenticates the extension and supplies the trusted stamp. */
@@ -69,7 +74,7 @@ export function normalizeBrowserLane(input: { lane?: string, text?: string, meta
   const site = m.site as VideoContextPayload['site']
   const videoId = typeof m.videoId === 'string' ? m.videoId : undefined
   if (input.lane === 'web:video') {
-    return normalizeVideo({ site, url: m.url, videoId, title: text(m.title, 160), isPlaying: typeof m.isPlaying === 'boolean' ? m.isPlaying : undefined, currentTimeSec: nonnegative(m.currentTimeSec), durationSec: nonnegative(m.durationSec), playbackRate: nonnegative(m.playbackRate) }, stamp)
+    return normalizeVideo({ site, url: m.url, videoId, title: text(m.title, 160), isPlaying: typeof m.isPlaying === 'boolean' ? m.isPlaying : undefined, currentTimeSec: nonnegative(m.currentTimeSec), durationSec: nonnegative(m.durationSec), playbackRate: nonnegative(m.playbackRate), isEnded: m.isEnded === true }, stamp)
   }
   if (input.lane === 'web:subtitle' && typeof input.text === 'string' && input.text.startsWith('Subtitle: ')) {
     return normalizeSubtitle({ site, url: m.url, videoId, title: text(m.title, 160), text: input.text.slice('Subtitle: '.length), language: text(m.language, 16), startMs: nonnegative(m.startMs), endMs: nonnegative(m.endMs), isAuto: m.isAuto === true }, stamp)
