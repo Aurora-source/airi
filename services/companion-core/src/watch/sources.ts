@@ -1,5 +1,25 @@
 import type { BrowserUpdate, PlayerKind } from './contracts'
 
+/** A request for the current cue of the selected subtitle stream from the Jellyfin server. */
+export interface CueRequest {
+  /** Server player whose session named the stream. */
+  player: string
+  item: string
+  media_source: string
+  index: number
+  /** `exact` when a direct player supplies the clock, `estimated` when only the server position is known. */
+  sync: 'exact' | 'estimated'
+  /** Watch session of the request. A new session restarts the cue stream. */
+  session: number
+  /** Group timeline of the request. A cue answered for an older timeline is refused. */
+  timeline: number
+  /** Language of the selected stream, when the server names it. */
+  language?: string
+  playing: boolean
+  /** Media time in seconds, from the newest playback evidence. */
+  position: () => number | undefined
+}
+
 /** One player that an adapter follows, as the source manager sees it. */
 export interface PlayerRef {
   /** Stable while the adapter follows the player, for example `mpv:airi` or `jellyfin:<session>`. */
@@ -77,4 +97,8 @@ export interface MediaSourceAdapter {
   /** Stops polling and closes connections. Pending reads finish without reporting. */
   stop: () => Promise<void>
   status: () => AdapterStatus
+  /** Reads at once, because another source saw media that this one can identify. Polling sources implement it. */
+  wake?: () => void
+  /** Follows the server cue lookup that the active watch session needs, or stops it with `undefined`. */
+  followCues?: (request: CueRequest | undefined) => void
 }

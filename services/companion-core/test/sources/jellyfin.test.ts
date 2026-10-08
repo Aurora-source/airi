@@ -1,6 +1,5 @@
 import type { SubtitleUpdate, VideoUpdate } from '../../src/watch/contracts'
-import type { CueRequest } from '../../src/watch/source-manager'
-import type { PlayerEndReason, PlayerObservation } from '../../src/watch/sources'
+import type { CueRequest, PlayerEndReason, PlayerObservation } from '../../src/watch/sources'
 
 import { afterEach, describe, expect, it } from 'vitest'
 

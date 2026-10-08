@@ -1,6 +1,5 @@
 import type { SubtitleUpdate } from '../../watch/contracts'
-import type { CueRequest } from '../../watch/source-manager'
-import type { PlayerObservation } from '../../watch/sources'
+import type { CueRequest, PlayerObservation } from '../../watch/sources'
 import type { JellyfinClient } from './jellyfin-client'
 
 import * as v from 'valibot'

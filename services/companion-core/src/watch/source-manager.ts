@@ -1,5 +1,5 @@
 import type { BrowserStamp, BrowserUpdate, CaptionTrack, Evidence, JellyfinRef, MediaIdentity, SubtitleUpdate, VideoUpdate } from './contracts'
-import type { PlayerEndReason, PlayerObservation, PlayerRef } from './sources'
+import type { CueRequest, PlayerEndReason, PlayerObservation, PlayerRef } from './sources'
 
 /** Why a group's watch session ended. */
 export type GroupEndReason = PlayerEndReason | 'selected' | 'merged' | 'ineligible'
@@ -12,26 +12,6 @@ export type ManagerOutput
   = | { kind: 'start', key: string, session: number }
     | { kind: 'update', key: string, update: BrowserUpdate }
     | { kind: 'end', key: string, reason: GroupEndReason }
-
-/** A request for the current cue of the selected subtitle stream from the Jellyfin server. */
-export interface CueRequest {
-  /** Server player whose session named the stream. */
-  player: string
-  item: string
-  media_source: string
-  index: number
-  /** `exact` when a direct player supplies the clock, `estimated` when only the server position is known. */
-  sync: 'exact' | 'estimated'
-  /** Watch session of the request. A new session restarts the cue stream. */
-  session: number
-  /** Group timeline of the request. A cue answered for an older timeline is refused. */
-  timeline: number
-  /** Language of the selected stream, when the server names it. */
-  language?: string
-  playing: boolean
-  /** Media time in seconds, from the newest playback evidence. */
-  position: () => number | undefined
-}
 
 /** Ops view of one followed player. Titles are shown to the Ops user only. */
 export interface PlayerSummary {
@@ -158,6 +138,8 @@ function bestEvidence<T>(values: Array<Evidence<T> | undefined>): Evidence<T> | 
  * revokes subtitle, gap, and reaction evidence in WatchState. Read times never go back inside a group.
  */
 export class MediaSourceManager {
+  /** Observations refused for order, connection, or timeline. Ops adds them to the watch rejection count. */
+  refused = 0
   private readonly known = new Map<string, Player>()
   private readonly groups = new Map<string, Group>()
   private readonly retired = new Map<string, number>()
@@ -180,8 +162,10 @@ export class MediaSourceManager {
   observe(observation: PlayerObservation): ManagerOutput[] {
     const out: ManagerOutput[] = []
     const accepted = this.accept(observation)
-    if (!accepted)
+    if (!accepted) {
+      this.refused++
       return out
+    }
     const { player, update } = accepted
     this.place(player, out)
     const startedNow = this.reconcile(out, 'replaced')

@@ -1,5 +1,7 @@
 import type { SubtitlePayload, VideoContextPayload } from '../../../../plugins/airi-plugin-web-extension/src/shared/types'
-import type { BrowserStamp, BrowserUpdate, Evidence, SubtitleUpdate, VideoUpdate } from './contracts'
+import type { BrowserStamp, BrowserUpdate, Evidence, JellyfinRef, SubtitleUpdate, VideoUpdate } from './contracts'
+
+import { subtitleTextOf } from './subtitle-text'
 
 function text(input: unknown, limit: number): string {
   return typeof input === 'string' ? input.replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, limit) : ''
@@ -7,6 +9,16 @@ function text(input: unknown, limit: number): string {
 
 function nonnegative(input: unknown): number | undefined {
   return typeof input === 'number' && Number.isFinite(input) && input >= 0 ? input : undefined
+}
+
+/** Jellyfin ids of a page, when the extension sent valid ones. Anything else is dropped, never repaired. */
+function jellyfinRefOf(input: unknown): JellyfinRef | undefined {
+  if (!input || typeof input !== 'object')
+    return undefined
+  const { deviceId, itemId } = input as { deviceId?: unknown, itemId?: unknown }
+  const device = typeof deviceId === 'string' && /^[\w=+/.-]{1,256}$/.test(deviceId) ? deviceId : undefined
+  const item = typeof itemId === 'string' && /^[0-9a-f]{32}$/i.test(itemId) ? itemId.toLowerCase() : undefined
+  return device || item ? { ...(device ? { device } : {}), ...(item ? { item } : {}) } : undefined
 }
 
 function identity(payload: Pick<VideoContextPayload, 'site' | 'url' | 'videoId'>): string | undefined {
@@ -49,6 +61,7 @@ export function normalizeVideo(payload: VideoContextPayload, stamp: BrowserStamp
     duration: nonnegative(payload.durationSec),
     rate: nonnegative(payload.playbackRate),
     ended: payload.isEnded === true ? true : undefined,
+    ...(payload.site === 'jellyfin' && jellyfinRefOf(payload.jellyfin) ? { jellyfin: jellyfinRefOf(payload.jellyfin) } : {}),
   }
 }
 
@@ -62,19 +75,20 @@ export function normalizeSubtitle(payload: SubtitlePayload, stamp: BrowserStamp)
   const end_ms = nonnegative(payload.endMs)
   if (!media_id || (start_ms !== undefined && end_ms !== undefined && end_ms <= start_ms))
     return undefined
-  const line = text(payload.text, 320)
+  // Multi-line captions keep their line breaks. Spaces inside a line collapse.
+  const line = subtitleTextOf(typeof payload.text === 'string' ? payload.text : '')
   return { kind: 'subtitle', stamp: { ...stamp }, media_id, text: line, title: text(payload.title, 160) || undefined, language: text(payload.language, 16) || undefined, start_ms, end_ms, automatic: payload.isAuto === true, cleared: line ? undefined : true }
 }
 
 /** Parses untrusted server lane data. The bridge authenticates the extension and supplies the trusted stamp. */
 export function normalizeBrowserLane(input: { lane?: string, text?: string, metadata?: Record<string, unknown> }, stamp: BrowserStamp): BrowserUpdate | undefined {
   const m = input.metadata
-  if (!m || m.source !== 'web-extension' || typeof m.url !== 'string' || !['youtube', 'bilibili', 'unknown'].includes(String(m.site)))
+  if (!m || m.source !== 'web-extension' || typeof m.url !== 'string' || !['youtube', 'bilibili', 'jellyfin', 'unknown'].includes(String(m.site)))
     return undefined
   const site = m.site as VideoContextPayload['site']
   const videoId = typeof m.videoId === 'string' ? m.videoId : undefined
   if (input.lane === 'web:video') {
-    return normalizeVideo({ site, url: m.url, videoId, title: text(m.title, 160), isPlaying: typeof m.isPlaying === 'boolean' ? m.isPlaying : undefined, currentTimeSec: nonnegative(m.currentTimeSec), durationSec: nonnegative(m.durationSec), playbackRate: nonnegative(m.playbackRate), isEnded: m.isEnded === true }, stamp)
+    return normalizeVideo({ site, url: m.url, videoId, title: text(m.title, 160), isPlaying: typeof m.isPlaying === 'boolean' ? m.isPlaying : undefined, currentTimeSec: nonnegative(m.currentTimeSec), durationSec: nonnegative(m.durationSec), playbackRate: nonnegative(m.playbackRate), isEnded: m.isEnded === true, jellyfin: m.jellyfin as VideoContextPayload['jellyfin'] }, stamp)
   }
   if (input.lane === 'web:subtitle' && typeof input.text === 'string' && input.text.startsWith('Subtitle: ')) {
     return normalizeSubtitle({ site, url: m.url, videoId, title: text(m.title, 160), text: input.text.slice('Subtitle: '.length), language: text(m.language, 16), startMs: nonnegative(m.startMs), endMs: nonnegative(m.endMs), isAuto: m.isAuto === true }, stamp)

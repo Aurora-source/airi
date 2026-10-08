@@ -1,4 +1,16 @@
-export type VideoSite = 'youtube' | 'bilibili' | 'unknown'
+/** `jellyfin` is a Jellyfin Web origin that the user allowed in the popup. It never comes from a host name guess. */
+export type VideoSite = 'youtube' | 'bilibili' | 'jellyfin' | 'unknown'
+
+/**
+ * Jellyfin ids of the page's playback. AIRI's Core matches them with the server session of the same device.
+ * They are ids only, never URLs or credentials.
+ */
+export interface JellyfinPagePayload {
+  /** The web client's device id from `localStorage._deviceId2`, the same value as the server session `DeviceId`. */
+  deviceId?: string
+  /** Library item id from the stream path of `video.currentSrc`, when the stream is not a blob. */
+  itemId?: string
+}
 
 export interface PageContextPayload {
   site: VideoSite
@@ -24,6 +36,7 @@ export interface VideoContextPayload {
   /** The media element fired `ended` for the current source. It never comes from a position near the end. */
   isEnded?: boolean
   playerSize?: { width: number, height: number }
+  jellyfin?: JellyfinPagePayload
 }
 
 export interface SubtitlePayload {

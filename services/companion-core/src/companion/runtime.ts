@@ -2,6 +2,7 @@ import type { InjectedUnit } from '../budget/budgeter'
 import type { CompanionConfig } from '../config/config'
 import type { GatewayRuntime } from '../gateway/runtime'
 import type { GatewayTurn, TurnHooks } from '../gateway/turn-hooks'
+import type { MediaSourceAdapter } from '../watch'
 import type { MemoryPorts } from './memory'
 import type { ScreenBackend } from './perception'
 import type { CompanionWatchOptions } from './watch'
@@ -39,6 +40,8 @@ export interface CompanionRuntimeOptions {
   captureBackend?: ScreenBackend
   /** Tests replace the watch channel client, system audio capture, recognition, reaction output, and AniList transport. */
   watchPorts?: Pick<CompanionWatchOptions, 'createClient' | 'systemAudio' | 'recognition' | 'reactionOutput' | 'anilistTransport'>
+  /** Desktop player and media server sources that the caller built from configuration and protected secrets. */
+  mediaSources?: readonly MediaSourceAdapter[]
 }
 
 /**
@@ -98,7 +101,7 @@ export class CompanionRuntime implements TurnHooks {
     const perception = openPerception(options, memory)
     // Watch follows the extension through the server channel. Without the channel nothing can reach it.
     const watch = config.watch.enabled && config.channel.enabled && (options.channel !== false || options.watchPorts?.createClient)
-      ? new CompanionWatch({ config, channelToken: options.channelToken, memory, perception, now: options.now, report: options.report, ...options.watchPorts })
+      ? new CompanionWatch({ config, channelToken: options.channelToken, memory, perception, now: options.now, report: options.report, mediaSources: options.mediaSources, ...options.watchPorts })
       : undefined
     return new CompanionRuntime(memory, client, channel, perception, watch, options.now ?? Date.now)
   }

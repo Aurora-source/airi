@@ -30,6 +30,7 @@ const CLASSIFIED_APPS = [
   'mpc-hc64',
   'mpc-be64',
   'mpv',
+  'jellyfinmediaplayer',
   'potplayermini64',
   'stage-tamagotchi',
   'obs64',

@@ -1,6 +1,5 @@
 import type { CaptionTrack, MediaIdentity, PlayerKind, VideoUpdate } from '../../watch/contracts'
-import type { CueRequest } from '../../watch/source-manager'
-import type { AdapterStatus, MediaSourceAdapter, PlayerRef, SourceEvents } from '../../watch/sources'
+import type { AdapterStatus, CueRequest, MediaSourceAdapter, PlayerRef, SourceEvents } from '../../watch/sources'
 import type { JellyfinFailure } from './jellyfin-client'
 import type { HostLookup } from './network'
 

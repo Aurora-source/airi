@@ -60,7 +60,7 @@ export class FakeChannel {
 }
 
 export interface VideoFields {
-  site?: 'youtube' | 'bilibili' | 'unknown'
+  site?: 'youtube' | 'bilibili' | 'jellyfin' | 'unknown'
   url?: string
   videoId?: string
   title?: string
@@ -69,6 +69,8 @@ export interface VideoFields {
   durationSec?: number
   playbackRate?: number
   isEnded?: boolean
+  /** Jellyfin ids that a Jellyfin Web page sends. */
+  jellyfin?: { deviceId?: string, itemId?: string }
 }
 
 export interface SubtitleFields {
@@ -97,7 +99,7 @@ export class FakeExtension {
   sendVideo(fields: VideoFields = {}, observedAt = this.now()): void {
     this.video = { site: fields.site ?? this.video.site, url: fields.url ?? this.video.url, videoId: fields.videoId ?? this.video.videoId, title: fields.title ?? this.video.title }
     const { site, url, videoId, title } = this.video
-    this.emit('web:video', `User is watching: ${title}`, { site, url, title, videoId, isPlaying: fields.isPlaying, currentTimeSec: fields.currentTimeSec, durationSec: fields.durationSec, playbackRate: fields.playbackRate, isEnded: fields.isEnded }, observedAt)
+    this.emit('web:video', `User is watching: ${title}`, { site, url, title, videoId, isPlaying: fields.isPlaying, currentTimeSec: fields.currentTimeSec, durationSec: fields.durationSec, playbackRate: fields.playbackRate, isEnded: fields.isEnded, jellyfin: fields.jellyfin }, observedAt)
   }
 
   sendSubtitle(text: string, fields: SubtitleFields = {}, observedAt = this.now()): void {
