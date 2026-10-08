@@ -272,7 +272,9 @@ export class WatchState {
   private acceptVideo(update: Extract<BrowserUpdate, { kind: 'video' }>): void {
     const previous = this.current()
     const stamp = update.stamp
-    const changed = this.media && (update.media.id !== this.media.id || update.media.episode?.value !== this.media.episode?.value)
+    // A newly known episode number of the same media is enrichment. Only two different known numbers mean a new episode.
+    const episodeChanged = this.media?.episode !== undefined && update.media.episode !== undefined && update.media.episode.value !== this.media.episode.value
+    const changed = this.media && (update.media.id !== this.media.id || episodeChanged)
     const predicted = this.position ? this.position.value + (this.playback?.value === 'playing' ? (stamp.observed_at - this.position.observed_at) * this.rate / 1000 : 0) : undefined
     const seek = update.position !== undefined && predicted !== undefined && Math.abs(update.position - predicted) > 3
     const timelineChanged = this.video_stamp && stamp.timeline !== this.video_stamp.timeline
@@ -299,8 +301,11 @@ export class WatchState {
       this.position = { ...this.position, value: predicted, observed_at: stamp.observed_at }
     }
     this.video_stamp = { ...stamp }
+    // A server repeats what a client reported up to one report interval ago, so its playback evidence is weaker.
+    const source = update.source ?? 'browser'
+    const strength = source === 'server' ? { playback: 0.7, position: 0.6 } : { playback: 0.95, position: source === 'player' ? 0.95 : 0.9 }
     if (update.playing !== undefined) {
-      this.playback = { value: update.playing ? 'playing' : 'paused', source: 'browser', confidence: 0.95, observed_at: stamp.observed_at, valid_until }
+      this.playback = { value: update.playing ? 'playing' : 'paused', source, confidence: strength.playback, observed_at: stamp.observed_at, valid_until }
       if (!update.playing) {
         this.gap_since = stamp.observed_at
       }
@@ -313,7 +318,7 @@ export class WatchState {
       }
     }
     if (update.position !== undefined)
-      this.position = { value: update.position, source: 'browser', confidence: 0.9, observed_at: stamp.observed_at, valid_until }
+      this.position = { value: update.position, source, confidence: strength.position, observed_at: stamp.observed_at, valid_until }
     this.rate = update.rate && update.rate > 0 ? update.rate : this.rate
     if (!previous.media || changed)
       this.publish('started')
@@ -339,9 +344,15 @@ export class WatchState {
       this.gap_until = update.stamp.observed_at + this.options.subtitle_ttl_ms
       return
     }
-    if (this.dialogue?.source === 'subtitle' && this.dialogue.value === update.text && this.dialogue.start_ms === update.start_ms)
+    if (this.dialogue?.source === 'subtitle' && this.dialogue.value === update.text && this.dialogue.start_ms === update.start_ms && this.dialogue.secondary?.text === update.secondary?.text)
       return
-    this.dialogue = { value: update.text, language: update.language, start_ms: update.start_ms, end_ms: update.end_ms, source: 'subtitle', confidence: update.automatic ? 0.65 : 0.85, observed_at: update.stamp.observed_at, valid_until: update.stamp.observed_at + this.options.subtitle_ttl_ms }
+    // Automatic captions can mishear. Estimated timing has real text but a guessed position.
+    let confidence = 0.85
+    if (update.automatic)
+      confidence = 0.65
+    else if (update.sync === 'estimated')
+      confidence = 0.6
+    this.dialogue = { value: update.text, language: update.language, start_ms: update.start_ms, end_ms: update.end_ms, secondary: update.secondary && { ...update.secondary }, source: 'subtitle', confidence, observed_at: update.stamp.observed_at, valid_until: update.stamp.observed_at + this.options.subtitle_ttl_ms }
     this.gap_since = undefined
   }
 

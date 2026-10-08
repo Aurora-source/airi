@@ -9,7 +9,17 @@ export interface BrowserStamp {
   timeline: number
 }
 
-export type Source = 'browser' | 'subtitle' | 'visual' | 'system-audio' | 'metadata'
+/**
+ * Where evidence came from.
+ * - `browser`: the extension read the page media element.
+ * - `player`: a desktop player reported its own state (mpv IPC, VLC HTTP).
+ * - `server`: a media server reported a client's state (Jellyfin sessions). It lags the client.
+ * - `metadata`: library or lookup identity, for example Jellyfin or AniList.
+ */
+export type Source = 'browser' | 'player' | 'server' | 'subtitle' | 'visual' | 'system-audio' | 'metadata'
+
+/** The program that plays the media. Ops and the WATCH block name it. */
+export type PlayerKind = 'browser' | 'jellyfin-web' | 'jellyfin-media-player' | 'jellyfin-client' | 'mpv' | 'vlc'
 
 /** Consumers use provenance and expiry when wording a claim. Confidence is evidence strength, not certainty. */
 export interface Evidence<T> {
@@ -22,9 +32,40 @@ export interface Evidence<T> {
 
 export interface MediaIdentity {
   id: string
-  site: 'youtube' | 'bilibili' | 'unknown'
+  /** Where the media comes from. `local` is a file in a desktop player. */
+  site: 'youtube' | 'bilibili' | 'jellyfin' | 'local' | 'unknown'
+  /** Absent for the browser extension lanes, which name only the site. */
+  player?: PlayerKind
   title?: Evidence<string>
   episode?: Evidence<number>
+  season?: Evidence<number>
+}
+
+/**
+ * The subtitle track that a player shows. It tells whether a missing caption means silence or an unreadable track.
+ * - `text`: the player can report the shown text.
+ * - `image`: bitmap subtitles (PGS, VobSub). Their text is unreadable here.
+ * - `none`: subtitles are off.
+ * - `unknown`: the source does not say.
+ */
+export interface CaptionTrack {
+  form: 'text' | 'image' | 'none' | 'unknown'
+  language?: string
+  codec?: string
+  /** Shown text comes from somewhere other than the selected track, for example a server cue lookup. */
+  secondary?: { form: CaptionTrack['form'], language?: string }
+}
+
+/** Jellyfin facts of the playing media. Correlation uses them. They are ids, never URLs or tokens. */
+export interface JellyfinRef {
+  /** Device id of the playing client, the same value as the server session `DeviceId`. */
+  device?: string
+  /** Library item id, 32 hex characters. */
+  item?: string
+  /** Media source of the playing item. The server cue lookup needs it. */
+  media_source?: string
+  /** Index of the selected subtitle stream in the media source. Absent when subtitles are off. */
+  subtitle_stream?: number
 }
 
 export interface VideoUpdate {
@@ -37,6 +78,10 @@ export interface VideoUpdate {
   rate?: number
   /** The media element reported `ended` for this source. The host confirms completion only with this signal. */
   ended?: boolean
+  /** Who reported playback and position. @default 'browser' */
+  source?: 'browser' | 'player' | 'server'
+  captions?: CaptionTrack
+  jellyfin?: JellyfinRef
 }
 
 export interface SubtitleUpdate {
@@ -51,6 +96,18 @@ export interface SubtitleUpdate {
   automatic: boolean
   /** An on-screen caption disappeared without a cue end. Dialogue becomes unknown, never a proven gap. */
   cleared?: boolean
+  /** A second subtitle track shown at the same time, for example Japanese under English. */
+  secondary?: SecondaryLine
+  /**
+   * `estimated`: cue times were matched against a position that a server reported, not the player clock.
+   * The text is real, its timing is not exact. @default 'exact'
+   */
+  sync?: 'exact' | 'estimated'
+}
+
+export interface SecondaryLine {
+  text: string
+  language?: string
 }
 
 export type BrowserUpdate = VideoUpdate | SubtitleUpdate
@@ -59,6 +116,7 @@ export interface Dialogue extends Evidence<string> {
   language?: string
   start_ms?: number
   end_ms?: number
+  secondary?: SecondaryLine
 }
 
 /** Snapshots contain current bounded text only. No frame, audio, subtitle history or storage handle exists. */
