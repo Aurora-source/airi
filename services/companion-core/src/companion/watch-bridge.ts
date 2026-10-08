@@ -24,6 +24,7 @@ const stampSchema = v.object({
   sequence: counter,
   observedAt: v.pipe(v.number(), v.finite()),
   timeline: counter,
+  tab: v.optional(counter),
 })
 
 const producerSchema = v.object({
@@ -56,7 +57,7 @@ export type IgnoreReason
 /** A session that this event ended, and why. */
 export interface EndedSession {
   key: string
-  reason: 'producer-reconnected' | 'replaced'
+  reason: 'producer-reconnected' | 'navigated' | 'replaced'
 }
 
 export type BridgeResult
@@ -67,6 +68,7 @@ interface Stream {
   key: string
   producer: string
   connection: string
+  tab?: number
   session: number
   lastSeen: number
   /** Playing state of the newest video observation. Undefined until one arrives. */
@@ -81,7 +83,8 @@ interface Stream {
  * authenticated channel peer can pose as the extension. That is the trust level of every AIRI module.
  *
  * Sessions: one session per producer connection and content stream. Local session numbers only grow. A new connection
- * of a producer ends its older sessions, and their keys stay retired, so late traffic from them is refused.
+ * of a producer ends its older sessions, and a new stream in the same tab ends that tab's older stream, for example
+ * after a navigation. Ended keys stay retired, so late traffic from them is refused.
  * Acquisition time is the producer's read time, capped at now. The receive time never makes an event fresh.
  *
  * Selection: the first stream with a valid video is selected. Another stream takes over only when it plays and the
@@ -117,7 +120,7 @@ export class WatchBridge {
       return { result: { kind: 'ignored', reason: 'unstamped' }, ended }
 
     const now = this.options.now()
-    const { connection, stream: streamId, sequence, observedAt, timeline } = stamp.output
+    const { connection, stream: streamId, sequence, observedAt, timeline, tab } = stamp.output
     const producerId = producer.output.id
     const key = `${producerId}|${connection}|${streamId}`
     if (this.retired.has(key))
@@ -133,7 +136,14 @@ export class WatchBridge {
 
     let stream = this.streams.get(key)
     if (!stream) {
-      stream = { key, producer: producerId, connection, session: this.nextSession++, lastSeen: now }
+      // The tab loaded another page. Its old observer is gone and never sends again.
+      if (tab !== undefined) {
+        for (const old of [...this.streams.values()].filter(other => other.producer === producerId && other.connection === connection && other.tab === tab)) {
+          ended.push({ key: old.key, reason: 'navigated' })
+          this.retire(old.key)
+        }
+      }
+      stream = { key, producer: producerId, connection, tab, session: this.nextSession++, lastSeen: now }
       this.streams.set(key, stream)
       this.evict()
     }

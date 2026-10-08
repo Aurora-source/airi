@@ -87,6 +87,8 @@ export interface SubtitleFields {
 export class FakeExtension {
   sequence = 0
   timeline = 0
+  /** Browser tab id that the background adds to the stamp. */
+  tab?: number
   private video: Required<Pick<VideoFields, 'site' | 'url' | 'videoId' | 'title'>> = { site: 'youtube', url: 'https://www.youtube.com/watch?v=frieren3', videoId: 'frieren3', title: 'Frieren Episode 3' }
 
   constructor(private readonly channel: FakeChannel, private readonly now: () => number, public connection = 'conn-1', public stream = 'stream-1', public producer = 'extension-1') {}
@@ -116,7 +118,7 @@ export class FakeExtension {
       lane,
       strategy: 'replace-self',
       text,
-      metadata: { source: 'web-extension', ...metadata, stamp: { connection: stamp.connection ?? this.connection, stream: stamp.stream ?? this.stream, sequence: stamp.sequence, observedAt: stamp.observedAt, timeline: stamp.timeline } },
+      metadata: { source: 'web-extension', ...metadata, stamp: { connection: stamp.connection ?? this.connection, stream: stamp.stream ?? this.stream, sequence: stamp.sequence, observedAt: stamp.observedAt, timeline: stamp.timeline, tab: this.tab } },
     }, { source: { kind: 'plugin', id: this.producer, plugin: { id: WEB_EXTENSION_PLUGIN } }, event: { id: `event-${stamp.sequence}` } })
   }
 

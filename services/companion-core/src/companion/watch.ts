@@ -89,7 +89,7 @@ export interface CompanionWatchOptions {
 }
 
 /** Why a session ended. Ops counts them. */
-export type SessionEndReason = 'replaced' | 'producer-reconnected' | 'producer-gone' | 'channel-lost' | 'stale' | 'shutdown'
+export type SessionEndReason = 'replaced' | 'navigated' | 'producer-reconnected' | 'producer-gone' | 'channel-lost' | 'stale' | 'shutdown'
 
 export type ListenReply
   = | { status: Exclude<AudioResult, 'transcribed'> | 'no-session' | 'disabled', language?: 'en' | 'ja' }

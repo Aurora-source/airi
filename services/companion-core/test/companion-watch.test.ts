@@ -271,6 +271,23 @@ describe('watch bridge and state', () => {
     expect(status().counters.rejected).toBe(2)
   })
 
+  it('lets a new page in the same tab replace the old stream at once', () => {
+    start()
+    extension.tab = 7
+    extension.sendVideo({ isPlaying: true, currentTimeSec: 10 })
+    const first = status().session!.id
+    // The tab navigated: a new content observer starts a new stream there.
+    const next = new FakeExtension(channel, now, 'conn-1', 'stream-2')
+    next.tab = 7
+    next.sendVideo({ title: 'Frieren Episode 4', url: 'https://www.youtube.com/watch?v=frieren4', videoId: 'frieren4', isPlaying: true, currentTimeSec: 0 })
+
+    expect(tool().title.text).toBe('Frieren Episode 4')
+    expect(status().session!.id).not.toBe(first)
+    expect(status().counters.sessionsEnded.navigated).toBe(1)
+    extension.sendSubtitle('From the old page')
+    expect(status().counters.ignored.retired).toBe(1)
+  })
+
   it('selects one stream and lets another take over only when it plays and the selected one does not', () => {
     start()
     const other = new FakeExtension(channel, now, 'conn-1', 'stream-2')
