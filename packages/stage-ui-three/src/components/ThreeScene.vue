@@ -7,12 +7,12 @@
   * - Src of model is obtained from stage-ui via props, which is NOT a part of stage-ui-three package
 */
 
-import type { VRM } from '@pixiv/three-vrm'
 import type { PresenceBubblePalette, PresenceBubbleState } from '@proj-airi/stage-shared'
 import type { TresContext } from '@tresjs/core'
 import type { DirectionalLight, SphericalHarmonics3, Texture, WebGLRenderer, WebGLRenderTarget } from 'three'
 
 import type { VrmInteractionTarget } from '../composables/vrm/interaction'
+import type { VrmFrameRuntimeHook } from '../composables/vrm/runtime-hook'
 import type { SceneBootstrap, ScenePhase, Vec3 } from '../stores/model-store'
 import type { VrmLifecycleReason } from '../trace'
 
@@ -209,10 +209,9 @@ const {
   multisampling,
 } = storeToRefs(modelStore)
 
-type VrmFrameRuntimeHook = (vrm: VRM, delta: number) => void
-
 const modelRef = ref<InstanceType<typeof VRMModel>>()
 const vrmFrameRuntimeHook = shallowRef<VrmFrameRuntimeHook>()
+const vrmExpressionFrameRuntimeHook = shallowRef<VrmFrameRuntimeHook>()
 
 const camera = shallowRef(new PerspectiveCamera())
 const controlsRef = shallowRef<InstanceType<typeof OrbitControls>>()
@@ -818,6 +817,7 @@ const effectProps = {
 
 function applyVrmFrameRuntimeHook() {
   modelRef.value?.setVrmFrameHook(vrmFrameRuntimeHook.value)
+  modelRef.value?.setVrmExpressionFrameHook(vrmExpressionFrameRuntimeHook.value)
 }
 
 watch(() => props.modelSrc, (modelSrc) => {
@@ -989,6 +989,10 @@ defineExpose({
   // without exposing the internal model/material lifecycle hook pipeline.
   setVrmFrameHook: (hook?: VrmFrameRuntimeHook) => {
     vrmFrameRuntimeHook.value = hook
+    applyVrmFrameRuntimeHook()
+  },
+  setVrmExpressionFrameHook: (hook?: VrmFrameRuntimeHook) => {
+    vrmExpressionFrameRuntimeHook.value = hook
     applyVrmFrameRuntimeHook()
   },
   canvasElement: () => {
