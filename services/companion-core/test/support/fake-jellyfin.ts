@@ -28,6 +28,8 @@ export class FakeJellyfin {
   sessions: unknown[] = []
   cues: FakeCue[] = []
   admin = false
+  /** Quick Connect state: off on the server, waiting for the user, or approved by a signed-in user. */
+  quickConnect: 'off' | 'waiting' | 'approved' = 'waiting'
   /** Replaces the answer of every request, for example a redirect or an outage response. */
   override?: (req: IncomingMessage, res: ServerResponse) => boolean
   readonly requests: Array<{ method?: string, url: string, authorization?: string }> = []
@@ -54,6 +56,15 @@ export class FakeJellyfin {
     }
     if (url.pathname === '/System/Info/Public')
       return json(200, { Version: '12.2.0', ServerName: 'test-server', Id: 'server1' })
+    // Quick Connect works without a token: the client names itself, a signed-in user approves the code.
+    if (url.pathname === '/QuickConnect/Enabled')
+      return json(200, this.quickConnect !== 'off')
+    if (url.pathname === '/QuickConnect/Initiate' && req.method === 'POST')
+      return json(200, { Code: '123456', Secret: 'pairing-secret-1' })
+    if (url.pathname === '/QuickConnect/Connect')
+      return json(200, { Authenticated: url.searchParams.get('secret') === 'pairing-secret-1' && this.quickConnect === 'approved' })
+    if (url.pathname === '/Users/AuthenticateWithQuickConnect' && req.method === 'POST')
+      return json(this.quickConnect === 'approved' ? 200 : 401, { AccessToken: TOKEN, User: { Name: 'viewer', Policy: { IsAdministrator: false } } })
     if (!req.headers.authorization?.includes(`Token="${TOKEN}"`))
       return json(401)
     if (url.pathname === '/Users/Me')

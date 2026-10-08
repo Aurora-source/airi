@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import process from 'node:process'
 
+import { lookup } from 'node:dns/promises'
+import { hostname } from 'node:os'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 
@@ -9,6 +11,9 @@ import { errorMessageFrom } from '@moeru/std'
 import { INFERENCE_TOKEN_SECRET, loadOrCreateCredentials } from '../auth/credentials'
 import { DpapiSecretStore } from '../auth/secret-store'
 import { CompanionRuntime } from '../companion/runtime'
+import { createMediaSources, JellyfinClient, serverBase } from '../companion/sources'
+import { quickConnect } from '../companion/sources/jellyfin-connect'
+import { watchSetupLines } from '../companion/sources/setup'
 import { configPath, loadConfig, LOOPBACK_HOST, resolveHome, writeStarterConfig } from '../config/config'
 import { startCompanionMcpServer } from '../mcp/server'
 import { runProbes } from '../probe/run-probes'
@@ -25,7 +30,12 @@ Commands:
   probe [model ...] [--deep]              Test each model of the alias chains and store what it supports.
                                           --deep also finds the largest prompt that each model accepts. It costs quota.
   token                                   Print the inference token. Paste it into the AIRI provider API key field.
-  mcp                                     Run the memory, look_now, and watch tools as a stdio MCP server. AIRI starts it from mcp.json.`
+  mcp                                     Run the memory, look_now, and watch tools as a stdio MCP server. AIRI starts it from mcp.json.
+  jellyfin-connect                        Get a Jellyfin token with Quick Connect and store it. You approve a code in a signed-in Jellyfin app.
+  watch-setup                             Print the player settings that let Watch follow mpv, Jellyfin Media Player, and VLC.`
+
+/** All addresses of a host, for the plain-http private network check. */
+const lookupAll = (host: string) => lookup(host, { all: true })
 
 /**
  * Command line entry point for the Companion Gateway.
@@ -71,7 +81,15 @@ async function main(argv: string[]): Promise<void> {
       const channelToken = config.channel.tokenRef ? await store.read(config.channel.tokenRef) : undefined
       // Background failures name the operation and a reason. They never carry memory or screen text.
       const report = (message: string) => process.stderr.write(`${JSON.stringify({ time: new Date().toISOString(), companion: message })}\n`)
-      const companion = await CompanionRuntime.open({ config, home, channelToken, report })
+      const sources = config.watch.sources
+      const jellyfinToken = sources.jellyfin.enabled ? await store.read(sources.jellyfin.tokenRef) : undefined
+      if (sources.jellyfin.enabled && !jellyfinToken)
+        console.warn(`No Jellyfin token stored (secret "${sources.jellyfin.tokenRef}"). Run "companion-core jellyfin-connect".`)
+      const vlcPassword = sources.vlc.enabled ? await store.read(sources.vlc.passwordRef) : undefined
+      if (sources.vlc.enabled && !vlcPassword)
+        console.warn(`No VLC password stored (secret "${sources.vlc.passwordRef}"). Run "companion-core secret-import ${sources.vlc.passwordRef} --from-env VLC_HTTP_PASSWORD".`)
+      const mediaSources = createMediaSources(sources, { jellyfinToken, vlcPassword }, { now: Date.now, hostname: hostname(), lookup: lookupAll, report })
+      const companion = await CompanionRuntime.open({ config, home, channelToken, report, mediaSources })
       const gateway = await startGateway({ config, credentials, providerKeys, companion, backupDirectory: join(home, 'memory', 'backups') })
       // Vision routes through the gateway's router and watch transcription through its own route, so both attach
       // only once the gateway exists.
@@ -138,6 +156,30 @@ async function main(argv: string[]): Promise<void> {
       if (!token)
         throw new Error('No inference token exists. Run "companion-core init" first.')
       process.stdout.write(`${token}\n`)
+      return
+    }
+    case 'jellyfin-connect': {
+      const config = await loadConfig()
+      const jellyfin = config.watch.sources.jellyfin
+      if (!jellyfin.url)
+        throw new Error('Set watch.sources.jellyfin.url in companion-core.json first.')
+      const client = new JellyfinClient({ base: serverBase(jellyfin.url), hostname: hostname(), lookup: lookupAll })
+      const result = await quickConnect(client, {
+        show: code => console.info(`In a Jellyfin app where you are signed in, open your profile > Quick Connect and enter code ${code}.`),
+        now: Date.now,
+        sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
+      })
+      await store.write(jellyfin.tokenRef, result.token)
+      // Only the user name and the token's rights are printed, never the token.
+      console.info(`Stored the Jellyfin token of "${result.user ?? 'the user'}" as secret "${jellyfin.tokenRef}".`)
+      if (result.admin)
+        console.info('This user is a Jellyfin administrator. Watch keeps only this user\'s sessions, but a non-administrator user gives the token fewer rights.')
+      return
+    }
+    case 'watch-setup': {
+      const config = await loadConfig()
+      for (const line of watchSetupLines(config.watch.sources))
+        console.info(line)
       return
     }
     case 'mcp': {

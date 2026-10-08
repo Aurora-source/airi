@@ -14,6 +14,8 @@ const REQUEST_TIMEOUT_MS = 2000
 const SEEK_THRESHOLD_S = 3
 /** What VLC's HTTP interface cannot say. Ops shows them, and caption coverage falls back to R6 rules. */
 const LIMITATIONS = ['no-subtitle-text', 'no-end-signal', 'whole-second-position'] as const
+/** Addresses that stay on this machine. */
+const LOOPBACK = new Set(['127.0.0.1', '::1'])
 
 export interface VlcAdapterOptions {
   /** Port of VLC's HTTP interface. The adapter only ever asks `127.0.0.1` on this port. */
@@ -38,6 +40,11 @@ export interface VlcAdapterOptions {
   maxRetryMs?: number
   /** Wait after VLC refused the password. The stored password does not change while the Core runs. @default 60000 */
   unauthorizedRetryMs?: number
+  /**
+   * Local addresses that a TCP port listens on. The adapter asks once for VLC's port, because VLC listens on every
+   * interface unless it starts with `--http-host=127.0.0.1`.
+   */
+  listening?: (port: number) => Promise<readonly string[]>
 }
 
 interface Playback {
@@ -86,6 +93,8 @@ export class VlcAdapter implements MediaSourceAdapter {
   private lastSyncAt?: number
   private version?: string
   private subtitleStreams = 0
+  /** Undefined until checked. True when VLC answers on an address other than loopback. */
+  private exposed?: boolean
   private playback?: Playback
   private session = 1
   private sequence = 0
@@ -121,7 +130,7 @@ export class VlcAdapter implements MediaSourceAdapter {
       connection: this.connection,
       lastSyncAt: this.lastSyncAt,
       players: this.playback ? 1 : 0,
-      limitations: [...LIMITATIONS],
+      limitations: [...LIMITATIONS, ...(this.exposed ? ['http-open-to-network'] : [])],
       ...(this.error ? { error: this.error } : {}),
       details: { endpoint: `127.0.0.1:${this.options.port}`, version: this.version, subtitleStreams: this.subtitleStreams },
     }
@@ -179,8 +188,26 @@ export class VlcAdapter implements MediaSourceAdapter {
     this.error = undefined
     this.retryMs = this.options.retryMs ?? 2000
     this.lastSyncAt = this.options.now()
+    if (this.exposed === undefined)
+      void this.checkExposure()
     this.read(status)
     this.schedule(this.playback ? this.options.pollMs ?? 1000 : this.options.idlePollMs ?? 3000)
+  }
+
+  /** Asks once where VLC's port listens. A listener beyond loopback lets other devices reach the password prompt. */
+  private async checkExposure(): Promise<void> {
+    if (!this.options.listening)
+      return
+    this.exposed = false
+    try {
+      const addresses = await this.options.listening(this.options.port)
+      this.exposed = addresses.some(address => !LOOPBACK.has(address))
+    }
+    catch {
+      return
+    }
+    if (this.exposed)
+      this.options.report?.(`vlc ${this.options.port}: HTTP interface listens beyond 127.0.0.1. Start VLC with --http-host=127.0.0.1.`)
   }
 
   /** Applies one status. Stopped VLC ends the player. A new file or a position jump starts a new timeline. */

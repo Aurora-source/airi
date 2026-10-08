@@ -6,7 +6,11 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
+import { errorMessageFrom } from '@moeru/std'
+
 import * as v from 'valibot'
+
+import { serverBase } from '../companion/sources/network'
 
 /** The gateway holds provider keys, so it never listens outside this loopback address. */
 export const LOOPBACK_HOST = '127.0.0.1'
@@ -220,6 +224,40 @@ const watchSchema = v.object({
     /** Looks up identity, title variants, episode count, and duration for an AniList id that the user confirmed. */
     enabled: v.optional(v.boolean(), false),
   }), {}),
+  /** Desktop players and media servers next to the browser extension. Each source is off until the user enables it. */
+  sources: v.optional(v.object({
+    jellyfin: v.optional(v.object({
+      enabled: v.optional(v.boolean(), false),
+      /**
+       * The server that the user chose, for example `https://media.example.com` or `http://192.168.1.20:8096`.
+       * Plain http needs a host whose every address is private. The Core never searches the network for servers.
+       */
+      url: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(512))),
+      /** Name of the protected secret that holds the access token. `companion-core jellyfin-connect` stores it. */
+      tokenRef: v.optional(v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/)), 'jellyfin-token'),
+      /** Follows Jellyfin Media Player sessions whose device name is this computer's name. */
+      followThisComputer: v.optional(v.boolean(), true),
+      /** Device ids or names to follow besides this computer, for example a TV. Other devices need an Ops selection. */
+      devices: v.optional(v.array(v.pipe(v.string(), v.minLength(1), v.maxLength(128))), []),
+      /** Looks up the current cue of a text subtitle stream when the player reports no subtitle text. */
+      serverSubtitles: v.optional(v.boolean(), true),
+    }), {}),
+    mpv: v.optional(v.object({
+      enabled: v.optional(v.boolean(), false),
+      /** Pipes of `input-ipc-server=\\.\pipe\<name>`. `jellyfin-media-player` marks the pipe of Jellyfin Media Player. */
+      pipes: v.optional(v.array(v.object({
+        name: v.pipe(v.string(), v.regex(/^[\w.-]{1,64}$/)),
+        player: v.optional(v.picklist(['mpv', 'jellyfin-media-player']), 'mpv'),
+      })), [{ name: 'airi-mpv', player: 'mpv' }]),
+    }), {}),
+    vlc: v.optional(v.object({
+      enabled: v.optional(v.boolean(), false),
+      /** Port of VLC's HTTP interface on 127.0.0.1. */
+      port: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(65535)), 8080),
+      /** Name of the protected secret that holds the HTTP interface password. */
+      passwordRef: v.optional(v.pipe(v.string(), v.regex(/^[a-z0-9-]+$/)), 'vlc-http-password'),
+    }), {}),
+  }), {}),
 })
 
 const PROFILES = ['local', 'cloud', 'cloud-mura-voice', 'hybrid'] as const
@@ -304,6 +342,15 @@ const configSchema = v.pipe(
       addIssue({ message: 'perception.ambient needs perception.enabled.' })
     if (config.watch.systemAudio.enabled && config.aliases[config.watch.systemAudio.alias]?.role !== 'speech-recognition')
       addIssue({ message: `watch.systemAudio needs alias "${config.watch.systemAudio.alias}" with role "speech-recognition".` })
+    const jellyfin = config.watch.sources.jellyfin
+    if (jellyfin.enabled) {
+      try {
+        serverBase(jellyfin.url ?? '')
+      }
+      catch (error) {
+        addIssue({ message: `watch.sources.jellyfin.url: ${errorMessageFrom(error) ?? 'invalid'}` })
+      }
+    }
   }),
 )
 
@@ -320,6 +367,7 @@ export type MemoryOptions = CompanionConfig['memory']
 export type ChannelOptions = CompanionConfig['channel']
 export type PerceptionConfig = CompanionConfig['perception']
 export type WatchConfig = CompanionConfig['watch']
+export type MediaSourcesConfig = CompanionConfig['watch']['sources']
 
 /** Whether `POST /v1/chat/completions` can route this alias. */
 export function servesChatCompletions(alias: AliasConfig): boolean {

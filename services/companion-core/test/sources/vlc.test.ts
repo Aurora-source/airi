@@ -162,6 +162,23 @@ describe('vlc adapter', () => {
     expect(f.observations).toHaveLength(0)
   })
 
+  it('warns once when the HTTP interface listens beyond loopback', async () => {
+    vlc = new FakeVlc()
+    const port = await vlc.listen()
+    vlc.status = playing()
+    const reports: string[] = []
+    const asked: number[] = []
+    adapter = new VlcAdapter({ port, password: PASSWORD, now: Date.now, pollMs: 20, idlePollMs: 20, report: message => reports.push(message), listening: async (asked_port) => {
+      asked.push(asked_port)
+      return ['0.0.0.0', '::']
+    } })
+    adapter.start({ observe: () => {}, gone: () => {} })
+    await until(() => adapter!.status().limitations.includes('http-open-to-network'))
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(asked).toEqual([port])
+    expect(reports).toEqual([`vlc ${port}: HTTP interface listens beyond 127.0.0.1. Start VLC with --http-host=127.0.0.1.`])
+  })
+
   it('needs a stored password and a valid port', () => {
     expect(() => new VlcAdapter({ port: 0, password: PASSWORD, now: Date.now })).toThrow(/port/i)
     const missing = new VlcAdapter({ port: 8080, password: undefined, now: Date.now })

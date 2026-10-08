@@ -191,7 +191,8 @@ export async function handleOpsPerception(req: IncomingMessage, res: ServerRespo
 
 /**
  * Serves `/ops/watch/*`. The caller has already checked the ops token. Returns `false` for an unknown path.
- * Status holds states, counters, and the current title, never caption text or audio.
+ * Status holds states, counters, sources, and the current title, never caption text, audio, paths, or credentials.
+ * `source` selects one followed player, or returns to automatic selection with `{ "player": null }`.
  * `anilist` binds an AniList id that the user confirmed, with optional completed progress and curated context.
  */
 export async function handleOpsWatch(req: IncomingMessage, res: ServerResponse, path: string, context: CompanionApiContext): Promise<boolean> {
@@ -202,6 +203,22 @@ export async function handleOpsWatch(req: IncomingMessage, res: ServerResponse, 
     return false
   if (method === 'GET' && path === '/ops/watch/status') {
     reply(200, watch ? watch.status() : { enabled: false })
+    return true
+  }
+  if (method === 'POST' && path === '/ops/watch/source') {
+    if (!watch) {
+      sendError(res, 503, 'server_error', 'watch_disabled', 'Watch is not enabled.')
+      return true
+    }
+    const body = await readJson(req, res)
+    if (body === undefined)
+      return true
+    // `player` is a key from `sources.players` of the status. `null` returns to automatic selection.
+    const parsed = v.safeParse(v.strictObject({ player: v.nullable(v.pipe(v.string(), v.minLength(1), v.maxLength(200))) }), body)
+    if (!parsed.success)
+      return badRequest(res, `Invalid source selection: ${v.summarize(parsed.issues)}`)
+    const result = watch.selectSource(parsed.output.player ?? undefined)
+    reply(result === 'unknown-player' ? 404 : 200, { status: result })
     return true
   }
   if (method !== 'POST' || path !== '/ops/watch/anilist')
