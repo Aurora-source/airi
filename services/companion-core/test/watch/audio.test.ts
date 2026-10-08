@@ -180,7 +180,7 @@ describe('r3 gateway capability adapter', () => {
       const form = init?.body as FormData
       expect(form.get('model')).toBe('companion-stt')
       expect(form.get('language')).toBe('ja')
-      expect(init?.headers).toEqual({ authorization: 'Bearer test-token' })
+      expect(init?.headers).toEqual({ 'authorization': 'Bearer test-token', 'x-companion-audio-source': 'system-output' })
       return Response.json({ text: '一緒に見よう。' })
     })
     const adapter = new GatewaySpeechRecognition({ ...config, token: 'test-token', transport })

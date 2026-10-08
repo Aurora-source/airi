@@ -1,6 +1,7 @@
 import type { RunningGateway } from '../../src'
 import type { MemoryPorts } from '../../src/companion/memory'
 import type { ScreenBackend } from '../../src/companion/perception'
+import type { CompanionRuntimeOptions } from '../../src/companion/runtime'
 import type { TurnIdentity } from '../../src/companion/turn-identity'
 
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -25,9 +26,10 @@ export interface CompanionHarness {
  * Starts a gateway with a real companion runtime: a memory worker on a temporary SQLite file, and no server channel.
  * `raw` overrides the configuration. The fake provider sits behind alias `companion-chat`.
  * With `perception.enabled` in `raw`, `captureBackend` replaces the screen, and perception attaches like `serve` does.
- * `gatewayNow` sets the clock of the router, quota ledger, and health.
+ * `gatewayNow` sets the clock of the router, quota ledger, and health. `watchPorts` replace the watch channel client
+ * and media boundaries.
  */
-export async function startCompanionGateway(providerBaseURL: string, raw: Record<string, unknown> = {}, options: { memoryPorts?: MemoryPorts, now?: () => number, gatewayNow?: () => number, channel?: boolean, captureBackend?: ScreenBackend } = {}): Promise<CompanionHarness> {
+export async function startCompanionGateway(providerBaseURL: string, raw: Record<string, unknown> = {}, options: { memoryPorts?: MemoryPorts, now?: () => number, gatewayNow?: () => number, channel?: boolean, captureBackend?: ScreenBackend, watchPorts?: CompanionRuntimeOptions['watchPorts'] } = {}): Promise<CompanionHarness> {
   const directory = mkdtempSync(join(tmpdir(), 'companion-memory-'))
   const logs: string[] = []
   const reports: string[] = []
@@ -41,7 +43,7 @@ export async function startCompanionGateway(providerBaseURL: string, raw: Record
     ...raw,
     memory: { path: join(directory, 'memory', 'memory.sqlite'), ...(raw.memory as Record<string, unknown> | undefined) },
   })
-  const companion = await CompanionRuntime.open({ config, home: directory, channel: options.channel ?? false, memoryPorts: options.memoryPorts, now: options.now, report: line => reports.push(line), captureBackend: options.captureBackend })
+  const companion = await CompanionRuntime.open({ config, home: directory, channel: options.channel ?? false, memoryPorts: options.memoryPorts, now: options.now, report: line => reports.push(line), captureBackend: options.captureBackend, watchPorts: options.watchPorts })
   const gateway = await startGateway({
     config,
     credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN },
@@ -51,7 +53,7 @@ export async function startCompanionGateway(providerBaseURL: string, raw: Record
     backupDirectory: join(directory, 'backups'),
     runtime: options.gatewayNow ? { now: options.gatewayNow } : undefined,
   })
-  companion.attach(gateway.runtime)
+  companion.attach(gateway.runtime, { baseURL: gateway.baseURL, token: TEST_INFERENCE_TOKEN })
   return {
     gateway,
     companion,
@@ -59,6 +61,7 @@ export async function startCompanionGateway(providerBaseURL: string, raw: Record
     reports,
     directory,
     close: async () => {
+      await companion.watch?.shutdown()
       await companion.perception?.shutdown()
       await gateway.close()
       await companion.close()

@@ -195,6 +195,33 @@ const perceptionSchema = v.object({
   }), {}),
 })
 
+const watchSchema = v.object({
+  /**
+   * Follows the video that the AIRI browser extension reports on the server channel: identity, playback, and captions.
+   * It adds the WATCH block to chat requests and the `watch_status` tool. It uses `channel.url`.
+   */
+  enabled: v.optional(v.boolean(), true),
+  /** Sends watch start, stop, a confirmed episode end, and shared moments to memory. Memory decides what it keeps. */
+  memoryEvents: v.optional(v.boolean(), true),
+  /** Shortest time between two admitted reactions. */
+  reactionCooldownMs: v.optional(v.pipe(v.number(), v.integer(), v.minValue(10_000)), 180_000),
+  systemAudio: v.optional(v.object({
+    /**
+     * Transcribes one short system-output segment on an explicit request, only while captions are missing.
+     * AIRI desktop captures the segment. The microphone is never used.
+     */
+    enabled: v.optional(v.boolean(), false),
+    /** A `speech-recognition` alias. The R3 transcription route uses its chain. */
+    alias: v.optional(v.string(), 'companion-stt'),
+    /** Recognition language when no caption language is known. */
+    language: v.optional(v.picklist(['en', 'ja']), 'en'),
+  }), {}),
+  anilist: v.optional(v.object({
+    /** Looks up identity, title variants, episode count, and duration for an AniList id that the user confirmed. */
+    enabled: v.optional(v.boolean(), false),
+  }), {}),
+})
+
 const PROFILES = ['local', 'cloud', 'cloud-mura-voice', 'hybrid'] as const
 
 const configSchema = v.pipe(
@@ -226,6 +253,7 @@ const configSchema = v.pipe(
     memory: v.optional(memorySchema, {}),
     channel: v.optional(channelSchema, {}),
     perception: v.optional(perceptionSchema, {}),
+    watch: v.optional(watchSchema, {}),
     providers: v.record(v.string(), providerSchema),
     models: v.optional(v.record(v.string(), modelSchema), {}),
     aliases: v.record(v.string(), aliasSchema),
@@ -274,6 +302,8 @@ const configSchema = v.pipe(
       addIssue({ message: `Perception needs alias "${config.perception.visionAlias}" with role "vision".` })
     if (config.perception.ambient && !config.perception.enabled)
       addIssue({ message: 'perception.ambient needs perception.enabled.' })
+    if (config.watch.systemAudio.enabled && config.aliases[config.watch.systemAudio.alias]?.role !== 'speech-recognition')
+      addIssue({ message: `watch.systemAudio needs alias "${config.watch.systemAudio.alias}" with role "speech-recognition".` })
   }),
 )
 
@@ -289,6 +319,7 @@ export type AudioLimits = CompanionConfig['audio']
 export type MemoryOptions = CompanionConfig['memory']
 export type ChannelOptions = CompanionConfig['channel']
 export type PerceptionConfig = CompanionConfig['perception']
+export type WatchConfig = CompanionConfig['watch']
 
 /** Whether `POST /v1/chat/completions` can route this alias. */
 export function servesChatCompletions(alias: AliasConfig): boolean {

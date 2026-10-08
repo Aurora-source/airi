@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net'
 import type { GatewayCredentials } from './auth/credentials'
 import type { CompanionMemory } from './companion/memory'
 import type { CompanionPerception } from './companion/perception'
+import type { CompanionWatch } from './companion/watch'
 import type { CompanionConfig } from './config/config'
 import type { GatewayLogEvent } from './gateway/http'
 import type { GatewayRuntimeOptions } from './gateway/runtime'
@@ -19,11 +20,12 @@ import { createBearerCheck } from './auth/credentials'
 import { TURN_IDENTITY_HEADERS } from './companion/turn-identity'
 import { LOOPBACK_HOST, servesChatCompletions } from './config/config'
 import { proxyChatCompletion } from './gateway/chat-completions'
-import { handleCompanionTool, handleOpsMemory, handleOpsPerception } from './gateway/companion-api'
+import { handleCompanionTool, handleOpsMemory, handleOpsPerception, handleOpsWatch } from './gateway/companion-api'
 import { sendError } from './gateway/http'
 import { opsStatus } from './gateway/ops-status'
 import { GatewayRuntime } from './gateway/runtime'
 import { createRedactor } from './logging/redact'
+import { SYSTEM_OUTPUT_AUDIO_HEADER } from './watch'
 
 /** Model tools for the MCP server, under the inference token. */
 const COMPANION_TOOL_PREFIX = '/v1/companion/tools/'
@@ -38,6 +40,7 @@ const ALLOWED_REQUEST_HEADERS = new Set(['authorization', 'content-type', 'accep
 export interface GatewayCompanion extends TurnHooks {
   memory?: CompanionMemory
   perception?: CompanionPerception
+  watch?: CompanionWatch
 }
 
 export interface GatewayOptions {
@@ -51,7 +54,7 @@ export interface GatewayOptions {
   writeLog?: (line: string) => void
   /** Capabilities that a probe measured, and a clock. Tests replace the clock. */
   runtime?: Pick<GatewayRuntimeOptions, 'capabilitiesOf' | 'now'>
-  /** Memory and perception. The caller owns their lifecycle. */
+  /** Memory, perception, and watch. The caller owns their lifecycle. */
   companion?: GatewayCompanion
   /** Folder for memory backups that Ops requests. */
   backupDirectory?: string
@@ -74,7 +77,7 @@ export interface RunningGateway {
  * 2. A request with an `Origin` header must come from `config.allowedOrigins`, even when it has a valid token.
  * 3. `GET /livez` needs no token and reveals nothing but liveness.
  * 4. `/v1/*` needs the inference token. The ops token is rejected there. This includes the companion tools.
- * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory and perception administration.
+ * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory, perception, and watch administration.
  *
  * Call stack:
  *
@@ -92,7 +95,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   const isOpsToken = createBearerCheck(options.credentials.ops)
   const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, ...options.runtime })
   const allowedOrigins = new Set(config.allowedOrigins)
-  const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, backupDirectory: options.backupDirectory }
+  const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, watch: options.companion?.watch, backupDirectory: options.backupDirectory }
 
   let allowedHosts = new Set<string>()
 
@@ -159,7 +162,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
         log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
-      if (await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi)) {
+      if (await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi) || await handleOpsWatch(req, res, path, companionApi)) {
         log({ method, path, status: res.statusCode, outcome: res.statusCode < 400 ? 'ok' : 'rejected', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
@@ -187,6 +190,10 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
     if (method === 'POST' && path === '/v1/audio/transcriptions') {
       if (!audioRoutes)
         return reject(503, 'audio_not_configured', 'Audio transcription is not configured.')
+      // A microphone upload means the user spoke, so watch stops pending reactions and audio work. Watch's own
+      // system-output uploads carry a marker and never count.
+      if (req.headers[SYSTEM_OUTPUT_AUDIO_HEADER] !== 'system-output')
+        options.companion?.watch?.userSpeech()
       await proxyTranscription(req, res, { routes: audioRoutes, providerKeys: options.providerKeys, redact, log, transport: options.audioFetch })
       return
     }

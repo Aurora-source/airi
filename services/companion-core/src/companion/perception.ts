@@ -74,6 +74,7 @@ export class CompanionPerception {
   private service?: PerceptionService
   private lastManualAt = Number.NEGATIVE_INFINITY
   private readonly events: PerceptionEventRecord[] = []
+  private readonly listeners = new Set<() => void>()
   private eventCount = 0
   private closed = false
 
@@ -93,6 +94,20 @@ export class CompanionPerception {
 
   get attached(): boolean {
     return this.service !== undefined
+  }
+
+  /** Whether the user paused perception. A paused gate blocks capture and upload. */
+  get paused(): boolean {
+    return this.gate.paused
+  }
+
+  /**
+   * Calls `listener` after every published world state and every pause change. Watch uses it to clear visual hints and
+   * stop system audio at once. A throwing listener cannot stop perception.
+   */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
   }
 
   /** Builds vision on the gateway's router. Every vision request then shares its profile, quota ledger, and health. */
@@ -146,6 +161,7 @@ export class CompanionPerception {
   setPaused(paused: boolean): void {
     this.policy = { ...this.policy, paused }
     this.gate.update(this.policy)
+    this.notify()
   }
 
   /** Numbers and states only. It holds no screen text, app name, or window title. */
@@ -176,6 +192,7 @@ export class CompanionPerception {
     if (this.closed)
       return
     this.closed = true
+    this.listeners.clear()
     if (this.service)
       await this.service.shutdown()
     else
@@ -200,5 +217,15 @@ export class CompanionPerception {
     this.events.push(record)
     if (this.events.length > MAX_EVENT_RECORDS)
       this.events.shift()
+    this.notify()
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) {
+      try {
+        listener()
+      }
+      catch { /* A consumer cannot stop perception. */ }
+    }
   }
 }

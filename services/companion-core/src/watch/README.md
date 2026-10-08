@@ -29,6 +29,12 @@ No logger, filesystem writer, memory database, raw frame or subtitle history exi
 Raw system-output buffers are erased after recognition and after cancelled late captures.
 If R5 blocks perception, safe browser metadata and subtitles still work.
 
+## Runtime integration
+
+`src/companion/watch.ts` is the host in the Companion Core. It joins AIRI's server channel and owns one WatchState per selected stream.
+`src/companion/watch-bridge.ts` checks the extension stamp, sessions, and stream selection.
+The Core README section Watch Together lists its behavior, tools, and Ops routes.
+
 ## Host responsibilities
 
 The host supplies system-output capture, permission signals, fresh perception, extension transport and output cancellation.

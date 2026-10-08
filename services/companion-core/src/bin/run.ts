@@ -25,7 +25,7 @@ Commands:
   probe [model ...] [--deep]              Test each model of the alias chains and store what it supports.
                                           --deep also finds the largest prompt that each model accepts. It costs quota.
   token                                   Print the inference token. Paste it into the AIRI provider API key field.
-  mcp                                     Run the memory and look_now tools as a stdio MCP server. AIRI starts it from mcp.json.`
+  mcp                                     Run the memory, look_now, and watch tools as a stdio MCP server. AIRI starts it from mcp.json.`
 
 /**
  * Command line entry point for the Companion Gateway.
@@ -73,13 +73,16 @@ async function main(argv: string[]): Promise<void> {
       const report = (message: string) => process.stderr.write(`${JSON.stringify({ time: new Date().toISOString(), companion: message })}\n`)
       const companion = await CompanionRuntime.open({ config, home, channelToken, report })
       const gateway = await startGateway({ config, credentials, providerKeys, companion, backupDirectory: join(home, 'memory', 'backups') })
-      // Vision routes through the gateway's router, so perception starts only once the gateway exists.
-      companion.attach(gateway.runtime)
+      // Vision routes through the gateway's router and watch transcription through its own route, so both attach
+      // only once the gateway exists.
+      companion.attach(gateway.runtime, { baseURL: gateway.baseURL, token: credentials.inference })
       const perception = !companion.perception ? 'off' : config.perception.ambient ? 'ambient' : 'look_now only'
-      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'}, perception: ${perception})`)
-      // Perception stops first, so no capture or upload outlives the router. Memory closes last, after the final turn.
+      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'}, perception: ${perception}, watch: ${companion.watch ? 'on' : 'off'})`)
+      // Watch and perception stop first, so no recording, capture, or upload outlives the router.
+      // Memory closes last, after the final turn.
       const stop = () => {
-        void Promise.resolve(companion.perception?.shutdown())
+        void Promise.resolve(companion.watch?.shutdown())
+          .then(() => companion.perception?.shutdown())
           .then(() => gateway.close())
           .then(() => companion.close())
           .finally(() => process.exit(0))

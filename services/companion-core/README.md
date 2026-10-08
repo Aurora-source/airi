@@ -278,6 +278,35 @@ It is off by default. Screen contents stay private: frames live in memory only a
 }
 ```
 
+## Watch Together
+
+The R6 watch subsystem (`src/watch`, see its README) follows the video that the AIRI browser extension reports.
+It is on by default and needs AIRI's server channel. Captions, transcripts, and audio are never saved or logged.
+
+| Part | Behavior |
+| --- | --- |
+| Source | The extension's `web:video` and `web:subtitle` context updates on the server channel. Each one carries a stamp from the page: stream, sequence, read time, and playback timeline. Unstamped lane events are refused. |
+| Sessions | One WatchState per selected stream. A new extension connection, an extension exit, a lost channel, or two minutes of staleness ends the session. Late traffic of an ended session is refused. |
+| Ordering | Older sequences, older timelines, reads older than the browser expiry, and producer times more than 2 s ahead are refused. A seek, a media change, or a new video element starts a new timeline. |
+| Dialogue | Only the current caption is kept. A cleared overlay caption makes dialogue unknown. Timed cue ends, a pause, and VAD prove a gap. |
+| Perception | A fresh R5 frame lends visual hints only when a browser is in front and its window title contains the media title. Stale, blocked, or unrelated frames clear the hints. A frame never sets playback, episode, or completion. |
+| WATCH block | Fresh state becomes one `user`-role block of at most 1200 bytes, marked as untrusted media data. The budgeter drops NOW first, then WATCH, then memory. |
+| Memory | Start, stop, a confirmed episode end, and shared moments go to R4 as `watch_milestone` events for the active character (`watch.memoryEvents`). R4 decides what stays. Captions, frames, and positions never go. |
+| Completion | Only the media element's `ended` signal, accepted for the current media revision, confirms an episode end. |
+| Reactions | `CompanionWatch.offerReaction` takes an external candidate. Admission needs fresh state, salience, a proven gap of 1.5 s, and the cooldown (`watch.reactionCooldownMs`, 3 minutes). The permit is checked again right before a Spark notification goes to the AIRI stage. User speech revokes it at once. |
+| User speech | AIRI's `input:voice:activity` event, a microphone upload to `/v1/audio/transcriptions`, and a new user turn. |
+| System audio | Off by default (`watch.systemAudio.enabled`). Only on an explicit `watch_listen` call, only while captions are missing, at most 8 s recorded after the call, through AIRI desktop's system output capture. Recognition uses the R3 route with the `watch.systemAudio.alias` alias, in English or Japanese. Fresh captions, user speech, a perception pause or block, a media change, or an extension exit cancel it. |
+| AniList | Off by default (`watch.anilist.enabled`). `POST /ops/watch/anilist` binds a confirmed id and optional completed progress and curated context. The lookup asks for identity, titles, episode count, and duration only. Unknown progress withholds every spoiler-sensitive entry. |
+| Tools | `watch_status` and `watch_listen` (MCP and `POST /v1/companion/tools/<name>`, inference token). |
+| Ops | `GET /ops/watch/status`: media, playback, dialogue state, visual freshness, AniList, spoiler boundary, system audio, last reaction, cooldown, and counters. Ops token only. |
+
+```json
+{
+  "aliases": { "companion-stt": { "role": "speech-recognition", "chain": ["groq-whisper-turbo"] } },
+  "watch": { "enabled": true, "systemAudio": { "enabled": false, "alias": "companion-stt", "language": "en" }, "anilist": { "enabled": false } }
+}
+```
+
 ## When to use it
 
 - You want AIRI to use cloud models without storing provider keys in AIRI.

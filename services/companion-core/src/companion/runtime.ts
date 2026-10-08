@@ -4,6 +4,7 @@ import type { GatewayRuntime } from '../gateway/runtime'
 import type { GatewayTurn, TurnHooks } from '../gateway/turn-hooks'
 import type { MemoryPorts } from './memory'
 import type { ScreenBackend } from './perception'
+import type { CompanionWatchOptions } from './watch'
 
 import process from 'node:process'
 
@@ -16,7 +17,9 @@ import { CompanionMemory } from './memory'
 import { CompanionPerception } from './perception'
 import { createPrivateDirectory } from './private-directory'
 import { turnIdentityOf } from './turn-identity'
+import { CompanionWatch } from './watch'
 import { WindowsScreenCaptureBackend } from './windows-capture'
+import { isToolContinuation } from './wire-text'
 
 export interface CompanionRuntimeOptions {
   config: CompanionConfig
@@ -34,21 +37,24 @@ export interface CompanionRuntimeOptions {
   channel?: boolean
   /** Tests replace the screen capture backend. @default the Windows capture helper on Windows, none elsewhere */
   captureBackend?: ScreenBackend
+  /** Tests replace the watch channel client, system audio capture, recognition, reaction output, and AniList transport. */
+  watchPorts?: Pick<CompanionWatchOptions, 'createClient' | 'systemAudio' | 'recognition' | 'reactionOutput' | 'anilistTransport'>
 }
 
 /**
- * Owns the companion services next to the gateway: memory, the AIRI server channel observer, and screen perception.
- * It implements the gateway's turn hooks. Open it before the gateway listens and attach it after.
- * Shut perception down before the gateway closes, and close the rest after the gateway closed.
+ * Owns the companion services next to the gateway: memory, the AIRI server channel observer, screen perception, and
+ * Watch Together. It implements the gateway's turn hooks. Open it before the gateway listens and attach it after.
+ * Shut watch and perception down before the gateway closes, and close the rest after the gateway closed.
  *
  * Call stack:
  *
  * main (../bin/run)
  *   -> {@link CompanionRuntime.open}
  *     -> MemoryClient.ready / CompanionMemory.startConsolidation / ChannelObserver.start / CompanionPerception
- *   -> {@link CompanionRuntime.attach} -> CompanionPerception.attach
+ *     -> CompanionWatch
+ *   -> {@link CompanionRuntime.attach} -> CompanionPerception.attach / CompanionWatch.attach
  * proxyChatCompletion (../gateway/chat-completions)
- *   -> {@link CompanionRuntime.begin} -> CompanionMemory.begin / awarenessUnit
+ *   -> {@link CompanionRuntime.begin} -> CompanionMemory.begin / CompanionWatch.unit / awarenessUnit
  */
 export class CompanionRuntime implements TurnHooks {
   private closed = false
@@ -58,6 +64,7 @@ export class CompanionRuntime implements TurnHooks {
     private readonly client: MemoryClient | undefined,
     private readonly channel: ChannelObserver | undefined,
     readonly perception: CompanionPerception | undefined,
+    readonly watch: CompanionWatch | undefined,
     private readonly now: () => number,
   ) {}
 
@@ -89,28 +96,43 @@ export class CompanionRuntime implements TurnHooks {
       : undefined
     channel?.start()
     const perception = openPerception(options, memory)
-    return new CompanionRuntime(memory, client, channel, perception, options.now ?? Date.now)
-  }
-
-  /** Connects perception to the gateway's router. Call it once the gateway listens. */
-  attach(runtime: GatewayRuntime): void {
-    this.perception?.attach(runtime)
+    // Watch follows the extension through the server channel. Without the channel nothing can reach it.
+    const watch = config.watch.enabled && config.channel.enabled && (options.channel !== false || options.watchPorts?.createClient)
+      ? new CompanionWatch({ config, channelToken: options.channelToken, memory, perception, now: options.now, report: options.report, ...options.watchPorts })
+      : undefined
+    return new CompanionRuntime(memory, client, channel, perception, watch, options.now ?? Date.now)
   }
 
   /**
-   * Builds the memory and NOW blocks of one AIRI chat request. A request without AIRI's turn identity gets nothing.
-   * NOW is read when the request arrives, so a tool round of a long turn never sees an expired screen state.
+   * Connects perception to the gateway's router and watch transcription to the gateway's own route.
+   * Call it once the gateway listens.
+   */
+  attach(runtime: GatewayRuntime, gateway?: { baseURL: string, token: string }): void {
+    this.perception?.attach(runtime)
+    if (gateway)
+      this.watch?.attach(gateway)
+  }
+
+  /**
+   * Builds the memory, WATCH, and NOW blocks of one AIRI chat request. A request without AIRI's turn identity gets
+   * nothing. WATCH and NOW are read when the request arrives, so a tool round of a long turn never sees expired state.
+   * A new user turn counts as user speech for watch, so no reaction talks over it.
    */
   async begin(request: Parameters<TurnHooks['begin']>[0]): Promise<GatewayTurn | undefined> {
     if (this.closed)
       return undefined
     const identity = turnIdentityOf(request.headers)
-    if (!identity || (!this.memory && !this.perception))
+    if (!identity || (!this.memory && !this.perception && !this.watch))
       return undefined
+    if (this.watch && !isToolContinuation(request.body))
+      this.watch.userSpeech()
     const units: InjectedUnit[] = []
     const memoryTurn = await this.memory?.begin(identity, request.body)
     if (memoryTurn?.unit)
       units.push(memoryTurn.unit)
+    const watch = this.watch?.unit()
+    if (watch)
+      units.push(watch)
     const awareness = this.perception && awarenessUnit(this.perception.current(), this.now())
     if (awareness)
       units.push(awareness)
@@ -121,6 +143,7 @@ export class CompanionRuntime implements TurnHooks {
     if (this.closed)
       return
     this.closed = true
+    await this.watch?.shutdown()
     await this.perception?.shutdown()
     this.channel?.close()
     this.memory?.stopConsolidation()

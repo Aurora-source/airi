@@ -2,6 +2,12 @@ import type { CompanionConfig } from '../config/config'
 import type { SpeechRecognitionPort } from './contracts'
 
 /**
+ * Marks a transcription upload of system output. The gateway counts every other upload as user speech, which revokes
+ * pending reactions. Only this in-process adapter sets it.
+ */
+export const SYSTEM_OUTPUT_AUDIO_HEADER = 'x-companion-audio-source'
+
+/**
  * Calls R3's existing gateway audio capability with a configured speech-recognition alias.
  * The gateway retains provider selection, compute profile, quota, failover and credentials.
  * R6 adds no provider protocol, microphone controller or general STT routing system.
@@ -30,7 +36,7 @@ export class GatewaySpeechRecognition implements SpeechRecognitionPort {
       method: 'POST',
       body: form,
       signal: input.signal,
-      headers: this.config.token ? { authorization: `Bearer ${this.config.token}` } : {},
+      headers: { [SYSTEM_OUTPUT_AUDIO_HEADER]: 'system-output', ...(this.config.token ? { authorization: `Bearer ${this.config.token}` } : {}) },
     })
     input.signal.throwIfAborted()
     if (!response.ok || !response.body) {

@@ -434,7 +434,7 @@ describe('mCP memory tools', () => {
     provider.setHandler(answers('ok'))
     const mcp = await connect()
 
-    expect((await mcp.client.listTools()).tools.map(tool => tool.name)).toEqual(['memory_recall', 'memory_remember', 'memory_forget', 'look_now'])
+    expect((await mcp.client.listTools()).tools.map(tool => tool.name)).toEqual(['memory_recall', 'memory_remember', 'memory_forget', 'look_now', 'watch_status', 'watch_listen'])
     expect((await mcp.call('memory_recall', { query: 'birthday' })).isError).toBe(true)
 
     await chat(identity('r1'), [CARD, user('My birthday is on March 3rd.')])
