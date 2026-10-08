@@ -12,6 +12,7 @@ import { onScopeDispose, shallowRef, watch } from 'vue'
 import { useVoiceController } from '../composables/audio/voice-controller'
 import { traceSpeechOutput } from '../composables/speech-output-trace'
 import { useVoiceDrafts } from '../composables/voice-drafts'
+import { announceVoiceActivity } from '../libs/voice/voice-activity-announcer'
 import { createVoiceActivityPlugin } from '../libs/voice/voice-activity-plugin'
 import { getSpeechBusContext, voiceGenerationEnded, voiceGetTurns, voiceInputCommand, voiceInterrupt, voiceRequestSnapshot, voiceRequestTurns, voiceSnapshotChanged, voiceSpeechCommand, voiceTurnsChanged } from '../services/speech/bus'
 import { SileroVad } from '../workers/vad/silero-vad'
@@ -19,6 +20,7 @@ import { useLlmStreamingControlStore } from './ai/chat-llm/streaming-control'
 import { useAudioContext, useSpeakingStore } from './audio'
 import { useChatStore } from './chat'
 import { useChatSessionStore } from './chat/session-store'
+import { useModsServerChannelStore } from './mods/api/channel-server'
 import { useHearingStore } from './modules/hearing'
 import { useSettingsAudioDevice } from './settings/audio-device'
 import { useVoiceMessagesStore } from './voice-messages'
@@ -32,6 +34,7 @@ export const useVoiceStore = defineStore('voice', () => {
   const voiceMessages = useVoiceMessagesStore()
   const speaking = useSpeakingStore()
   const streamingControl = useLlmStreamingControlStore()
+  const serverChannel = useModsServerChannelStore()
   const { stream: microphoneStream, enabled: microphoneEnabled, error: microphoneError } = storeToRefs(devices)
   const { drafts, frontDraftId, acceptSpeech, sendDraft, discardDraft, editDraft, selectDraft } = useVoiceDrafts(report)
   const activeTurns = shallowRef<readonly TurnRef[]>([])
@@ -72,6 +75,13 @@ export const useVoiceStore = defineStore('voice', () => {
 
   controller.onInput((attempt) => {
     presentedInput = { requestId: attempt.id, attempt }
+  })
+
+  // Modules on the server channel stop their own speech or recording while the user speaks.
+  // A disconnected channel drops the signal, because a queued start sent after a reconnect would be stale.
+  announceVoiceActivity(controller, (activity) => {
+    if (serverChannel.connected)
+      serverChannel.send({ type: 'input:voice:activity', data: activity })
   })
 
   function publishSnapshot() {
