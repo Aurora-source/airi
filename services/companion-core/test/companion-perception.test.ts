@@ -459,3 +459,31 @@ describe('budget with memory and NOW (scenario I)', () => {
     expect(nowBlock(messages)).toBeDefined()
   })
 })
+
+describe('perception endpoints: authorization', () => {
+  it('serves perception administration only with the ops token, and look_now only with the inference token', async () => {
+    const screen = await start()
+    const base = harness!.gateway.baseURL
+    const opsHeaders = { 'authorization': `Bearer ${TEST_OPS_TOKEN}`, 'content-type': 'application/json' }
+
+    expect((await fetch(new URL('../ops/perception/status', base))).status).toBe(401)
+    expect((await fetch(new URL('../ops/perception/status', base), { headers: authHeaders() })).status).toBe(401)
+    expect((await fetch(new URL('../ops/perception/pause', base), { method: 'POST', headers: authHeaders(), body: '{"paused":true}' })).status).toBe(401)
+    expect((await fetch(new URL('companion/tools/look_now', base), { method: 'POST', body: '{}' })).status).toBe(401)
+    expect((await fetch(new URL('companion/tools/look_now', base), { method: 'POST', headers: opsHeaders, body: '{}' })).status).toBe(401)
+    expect((await fetch(new URL('companion/tools/look_now', base), { method: 'POST', headers: authHeaders(), body: '{"authorize_unknown":"yes"}' })).status).toBe(400)
+
+    expect(screen.captures).toBe(0)
+    expect(visionRequests()).toHaveLength(0)
+    expect((await ops<{ paused: boolean }>('perception/status')).paused).toBe(false)
+  })
+
+  it('answers 503 for look_now and reports perception off when it is not enabled', async () => {
+    await start({ perception: { enabled: false } })
+
+    const response = await fetch(new URL('companion/tools/look_now', harness!.gateway.baseURL), { method: 'POST', headers: authHeaders(), body: '{}' })
+    expect(response.status).toBe(503)
+    expect(await ops('perception/status')).toEqual({ enabled: false })
+    expect(harness!.companion.perception).toBeUndefined()
+  })
+})

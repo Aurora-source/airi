@@ -84,6 +84,8 @@ interface Helper {
   ready: Promise<void>
   /** Correlation key is the request id. A reply without a pending entry belongs to a cancelled capture. */
   pending: Map<number, { resolve: (reply: Reply) => void, reject: (error: unknown) => void }>
+  /** Set when the process exited. A capture that held this helper across the exit fails at once. */
+  exited: boolean
 }
 
 /**
@@ -121,7 +123,7 @@ export class WindowsScreenCaptureBackend implements CaptureBackend {
     this.sourceListener = listener
   }
 
-  /** Starts the helper ahead of the first capture. Compiling the helper takes about two seconds. */
+  /** Starts the helper ahead of the first capture. Compiling the helper takes up to about two seconds. */
   start(): void {
     if (!this.closed && !this.helper && this.now() >= this.startBlockedUntil)
       this.helper = this.launch()
@@ -135,6 +137,9 @@ export class WindowsScreenCaptureBackend implements CaptureBackend {
     if (!helper)
       throw new PerceptionFailure('invalid-capture')
     await abortable(helper.ready, signal)
+    // The helper can exit while this capture waits for readiness. Its pending map was already failed then.
+    if (helper.exited || this.closed)
+      throw new PerceptionFailure(this.closed ? 'source-lost' : 'invalid-capture')
     const id = ++this.nextId
     const sentAt = this.now()
     const reply = await new Promise<Reply>((resolve, reject) => {
@@ -234,7 +239,7 @@ export class WindowsScreenCaptureBackend implements CaptureBackend {
     })
     // A capture that is waiting for readiness gets the rejection. Without a waiter it must not become unhandled.
     ready.catch(() => {})
-    const helper: Helper = { child, ready, pending }
+    const helper: Helper = { child, ready, pending, exited: false }
     let isReady = false
     const readyTimer = setTimeout(() => {
       if (!isReady)
@@ -298,6 +303,7 @@ export class WindowsScreenCaptureBackend implements CaptureBackend {
     child.stdin.on('error', () => {})
 
     const onEnd = () => {
+      helper.exited = true
       clearTimeout(readyTimer)
       if (!isReady) {
         this.startBlockedUntil = this.now() + (this.options.restartDelayMs ?? 30_000)
