@@ -560,7 +560,9 @@ Automatic selection and forced capability probes retain separate meanings and de
 
 Source and generated evidence are separate commits on `codex/paid-gemini-benchmarks`.
 The source commit is `aa9179439427ccffc9b10a9730230604bce874de`.
-The evidence manifest records the source commit. Resolve the final evidence commit with `git rev-parse HEAD`.
+The evidence commit is `aa636cae14640cb7d0b9f28d1521b5def38a6e79`.
+The branch was pushed and its remote HEAD verified. Final publication notes follow these commits.
+The evidence manifest records the source commit. Resolve the final branch commit with `git rev-parse HEAD`.
 No integration branch, visual-presence branch, Director branch, or production configuration was modified.
 
 Use the exact [small reproduction procedure](../services/companion-core/eval/gemini/README.md).

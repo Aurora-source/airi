@@ -13,7 +13,7 @@
 - Larger paid context retained synthetic anchors lost by the fixture baseline. Normal prompt budgets remain unchanged in production.
 - Generated explicit monthly scenarios, routing examples, the blinded worksheet, and the A–R report.
 - Independent financial review found no remaining blocker. Reporting caveats were addressed. A later review turn ended at the agent account limit.
-- Source and evidence still require separate commits and the authorized push.
+- Source and evidence were committed separately. The authorized branch push succeeded and remote HEAD matched.
 - Core typecheck and root typecheck passed. Changed-source lint passed in the previous focused run.
 - Broader Core tests reproduced an inherited retry-timing assertion. The exact base also fails that assertion under Node 26.7.0.
 - The first parallel broad run had a worker exit. Serial runs removed that exit and retained the inherited assertion failure.
@@ -22,6 +22,17 @@
 - Root lint first crashed after zero errors and 651 warnings. A raw rerun passed with the same warning count.
 - ccusage monitoring completed. Agent-account usage remains separate from the Gemini campaign ledger. The account summary stays outside the repository.
 - No production configuration, credential store, billing setting, avatar asset, Director integration, or other worktree was changed.
+
+## Publication evidence
+
+- Source commit: `aa9179439427ccffc9b10a9730230604bce874de`.
+- Evidence commit: `aa636cae14640cb7d0b9f28d1521b5def38a6e79`.
+- Remote branch was created without a merge or force push. The exact base remains `4eabf3daa9d8c8558964ebdb37b242cbf31533f5`.
+- The source worktree remains at its original HEAD with its pre-existing VS Code package change.
+- All report links resolve. Evidence checksums match. Source matches the 52-test receipt. Credential scans found zero literal matches.
+- The repository ignore pattern excludes result files. Explicitly staged the required `results.json` without changing ignore rules.
+- Signature values are redacted in committed copies. Synthetic raw replies and reported usage remain intact.
+- Remaining production acceptance: human dialogue scoring, physical voice timing, exact paid quotas, final billing reconciliation, and Claude integration.
 
 ## 2026-10-08 19:20 UTC measured workloads
 

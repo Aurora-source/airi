@@ -26,7 +26,7 @@ Measure paid Gemini quality, latency, reliability, and cost through direct and e
 4. [x] Measure context, character, tools, vision, concurrency, cancellation, and instrumentable voice stages.
 5. [x] Test a measured ACT reminder change. Provider latency dominates. No speculative runtime optimization was added.
 6. [x] Write report, machine evidence, blind worksheet, routing example, monthly model, and reproduction commands.
-7. [ ] Run required checks, review, commit, push, and verify remote HEAD.
+7. [x] Run required checks, review, commit, push, and verify remote HEAD.
 
 ## Review focus
 
@@ -38,8 +38,16 @@ Measure paid Gemini quality, latency, reliability, and cost through direct and e
 
 ## Next step
 
-Finish validation, separate source and evidence commits, push the authorized branch, and verify remote HEAD.
 Paid measurements are closed. The ledger contains 473 settled requests, USD 0.340722225, and no unresolved reservations.
+Source and evidence were committed separately and pushed. Remote HEAD matched the local evidence commit.
+Claude can review the report, score the blinded dialogues, and complete physical voice acceptance before production integration.
+
+## Publication
+
+- Source: `aa9179439427ccffc9b10a9730230604bce874de`.
+- Evidence: `aa636cae14640cb7d0b9f28d1521b5def38a6e79`.
+- Branch: `origin/codex/paid-gemini-benchmarks`.
+- Final publication notes remain on the same branch. Resolve their commit with `git rev-parse HEAD`.
 
 ## Errors
 
