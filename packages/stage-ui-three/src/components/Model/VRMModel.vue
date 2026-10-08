@@ -26,6 +26,7 @@ import type {
   VrmMaterialHookContext,
 } from '../../composables/vrm/hooks'
 import type { VrmInteractionColliderSet } from '../../composables/vrm/interaction'
+import type { VrmFrameRuntimeHook } from '../../composables/vrm/runtime-hook'
 import type { SceneBootstrap, TrackingMode, Vec3 } from '../../stores/model-store'
 import type { VrmLifecycleReason } from '../../trace'
 import type { ManagedVrmInstance } from './vrm-instance-cache'
@@ -195,8 +196,9 @@ const vrmAnimationMixer = ref<AnimationMixer>()
 const { onBeforeRender, stop, start } = useLoop()
 
 const vrmHooks: readonly VrmHook[] = resolveInternalVrmHooks()
-type VrmFrameRuntimeHook = (vrm: VRM, delta: number) => void
 const vrmFrameRuntimeHook = shallowRef<VrmFrameRuntimeHook>()
+const vrmExpressionFrameRuntimeHook = shallowRef<VrmFrameRuntimeHook>()
+const vrmRuntimeContext = { modelSrc: '', actActive: false, lipSyncActive: false }
 let disposeBeforeRenderLoop: (() => void | undefined) | undefined
 
 // material type with optional update function for per-frame update, used for three-vrm's MToon material and custom shader materials with IBL injection
@@ -333,6 +335,7 @@ function applyModelTransform(group: Group) {
 }
 
 function applyManagedVrmInstance(instance: ManagedVrmInstance) {
+  vrmRuntimeContext.modelSrc = instance.modelSrc
   // A reload creates a new group while the saved transform can stay unchanged.
   // Apply it during every commit because the value watchers will not run again.
   applyModelTransform(instance.group)
@@ -408,7 +411,9 @@ function runVrmFrameHooks(context: VrmFrameHookContext) {
 
 function runVrmFrameRuntimeHook(vrm: VRM, delta: number) {
   try {
-    vrmFrameRuntimeHook.value?.(vrm, delta)
+    vrmRuntimeContext.actActive = vrmEmote.value?.currentEmotion.value !== null && vrmEmote.value?.currentEmotion.value !== undefined
+    vrmRuntimeContext.lipSyncActive = !!currentAudioSource.value || vrmLipSync.isLipSyncActive.value
+    vrmFrameRuntimeHook.value?.(vrm, delta, vrmRuntimeContext)
   }
   catch (error) {
     console.error(error)
@@ -511,6 +516,17 @@ function bindManagedVrmInstanceRenderLoop() {
       vrmEmote.value?.update(delta, { skipVisemes: isLipSyncActive })
     })
     const expressionMs = measureFrameStep(tracingEnabled, () => {
+      if (activeVrm && vrmExpressionFrameRuntimeHook.value) {
+        vrmRuntimeContext.actActive = vrmEmote.value?.currentEmotion.value !== null && vrmEmote.value?.currentEmotion.value !== undefined
+        vrmRuntimeContext.lipSyncActive = !!currentAudioSource.value || isLipSyncActive
+        try {
+          vrmExpressionFrameRuntimeHook.value(activeVrm, delta, vrmRuntimeContext)
+        }
+        catch (error) {
+          console.error(error)
+          emit('error', error)
+        }
+      }
       activeVrm?.expressionManager?.update()
     })
     const nodeConstraintMs = measureFrameStep(tracingEnabled, () => {
@@ -1112,6 +1128,9 @@ defineExpose({
   // stage-ui-three's own model/material lifecycle extensions.
   setVrmFrameHook(hook?: VrmFrameRuntimeHook) {
     vrmFrameRuntimeHook.value = hook
+  },
+  setVrmExpressionFrameHook(hook?: VrmFrameRuntimeHook) {
+    vrmExpressionFrameRuntimeHook.value = hook
   },
   scene: computed(() => vrm.value?.scene),
   lookAtUpdate(target: Vec3) {

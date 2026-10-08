@@ -18,6 +18,7 @@ export default defineConfig({
       'packages/input-gamepad-vueuse',
       'packages/input-playstation-dualsense-5',
       'packages/model-driver-lipsync',
+      'packages/model-driver-visual',
       'packages/better-ws',
       'packages/plugin-sdk',
       'packages/plugin-sdk-tamagotchi',
