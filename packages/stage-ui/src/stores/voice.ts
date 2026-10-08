@@ -12,6 +12,7 @@ import { onScopeDispose, shallowRef, watch } from 'vue'
 import { useVoiceController } from '../composables/audio/voice-controller'
 import { traceSpeechOutput } from '../composables/speech-output-trace'
 import { useVoiceDrafts } from '../composables/voice-drafts'
+import { SpeechOutputAnnouncer } from '../libs/voice/speech-output-announcer'
 import { announceVoiceActivity } from '../libs/voice/voice-activity-announcer'
 import { createVoiceActivityPlugin } from '../libs/voice/voice-activity-plugin'
 import { getSpeechBusContext, voiceGenerationEnded, voiceGetTurns, voiceInputCommand, voiceInterrupt, voiceRequestSnapshot, voiceRequestTurns, voiceSnapshotChanged, voiceSpeechCommand, voiceTurnsChanged } from '../services/speech/bus'
@@ -47,6 +48,12 @@ export const useVoiceStore = defineStore('voice', () => {
   let detectorOptions: Pick<VoiceActivityOptions, 'detectWakeWord' | 'acceptSpeech'> = {}
   const inputRequests = new Map<string, SpeechInputAttempt>()
   let presentedInput: { requestId: string, attempt: SpeechInputAttempt } | undefined
+  // Modules on the server channel tell their own speech from other speech by the turn id. A disconnected channel
+  // drops reports, and the next renewal restores an active one.
+  const speechOutput = new SpeechOutputAnnouncer((activity) => {
+    if (serverChannel.connected)
+      serverChannel.send({ type: 'output:voice:activity', data: activity })
+  })
 
   const { controller, state, snapshot: transcript, error } = useVoiceController({
     transcriber: () => hearing.createTranscriber(),
@@ -54,7 +61,15 @@ export const useVoiceStore = defineStore('voice', () => {
       if (!output)
         throw new Error('Voice output host is not connected')
 
-      const trace = traceSpeechOutput(turn, output(turn), async audio => audioContext.audioContext.decodeAudioData(await audio.arrayBuffer()))
+      const hostOutput = output(turn)
+      const announced: SpeechOutput = {
+        ...hostOutput,
+        onPlaybackStart: (clip) => {
+          speechOutput.started(turn)
+          hostOutput.onPlaybackStart?.(clip)
+        },
+      }
+      const trace = traceSpeechOutput(turn, announced, async audio => audioContext.audioContext.decodeAudioData(await audio.arrayBuffer()))
       speechTraces.set(turnKey(turn), trace)
       return trace.output
     },
@@ -129,6 +144,7 @@ export const useVoiceStore = defineStore('voice', () => {
 
   function updateActiveTurns() {
     activeTurns.value = [...responses.values()].filter(entry => !entry.response.closed).map(entry => entry.response.turn)
+    speechOutput.settled(activeTurns.value)
     if (output)
       getSpeechBusContext().emit(voiceTurnsChanged, activeTurns.value.map(turn => ({ ...turn })))
   }
@@ -380,6 +396,7 @@ export const useVoiceStore = defineStore('voice', () => {
 
   onScopeDispose(() => {
     void stopListening()
+    speechOutput.dispose()
   })
 
   return { controller, state, transcript, error, drafts, activeTurns, beginInput, beginManual, endInput, cancelInput, sendDraft, discardDraft, startResponse, getSpeech, finishResponse, interrupt, connectOutput, startListening, stopListening, resolveWakeTarget }
