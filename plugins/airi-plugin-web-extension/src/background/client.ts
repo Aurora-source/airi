@@ -1,6 +1,6 @@
 import type { ContextUpdate } from '@proj-airi/server-sdk'
 
-import type { ExtensionSettings, ExtensionStatus, PageContextPayload, SubtitlePayload, VideoContextPayload } from '../shared/types'
+import type { ConnectionObservationStamp, ExtensionSettings, ExtensionStatus, ObservationStamp, PageContextPayload, SubtitlePayload, VideoContextPayload } from '../shared/types'
 
 import { Client, ContextUpdateStrategy } from '@proj-airi/server-sdk'
 import { nanoid } from 'nanoid'
@@ -14,6 +14,11 @@ const PLUGIN_NAME = 'proj-airi:plugin-web-extension'
 export interface ClientState {
   client: Client | null
   connected: boolean
+  /**
+   * Random id of the current server connection. It changes on every reconnect, so a consumer can end the session of the
+   * old connection and reject its late messages.
+   */
+  connection?: string
   lastError?: string
   lastPage?: PageContextPayload
   lastVideo?: VideoContextPayload
@@ -72,6 +77,12 @@ export async function ensureClient(state: ClientState, settings: ExtensionSettin
     possibleEvents: ['context:update', 'spark:notify', 'spark:emit'],
     autoConnect: false,
     autoReconnect: true,
+    // Runs after the first connect and after every automatic reconnect. Without it, sending stopped after a reconnect.
+    onReady: () => {
+      state.connected = true
+      state.connection = nanoid()
+      state.lastError = undefined
+    },
     onError: (error) => {
       state.connected = false
       state.lastError = errorMessageFromValue(error)
@@ -101,6 +112,12 @@ export function disconnectClient(state: ClientState) {
   state.client.close()
   state.client = null
   state.connected = false
+  state.connection = undefined
+}
+
+/** Adds the current connection to an observation stamp. Without a connection nothing can be sent anyway. */
+function connectionStamp(state: ClientState, stamp: ObservationStamp | undefined): ConnectionObservationStamp | undefined {
+  return stamp && state.connection ? { ...stamp, connection: state.connection } : undefined
 }
 
 function sendContextUpdate(state: ClientState, update: Omit<ContextUpdate, 'id' | 'contextId'> & Partial<Pick<ContextUpdate, 'id' | 'contextId'>>) {
@@ -162,7 +179,7 @@ export function handleVideoContext(
   state: ClientState,
   settings: ExtensionSettings,
   payload: VideoContextPayload,
-  options?: { notify?: boolean },
+  options?: { notify?: boolean, stamp?: ObservationStamp },
 ) {
   state.lastVideo = payload
 
@@ -214,12 +231,14 @@ export function handleVideoContext(
       isPlaying: payload.isPlaying,
       playbackRate: payload.playbackRate,
       isLive: payload.isLive,
+      isEnded: payload.isEnded,
       playerSize: payload.playerSize,
+      stamp: connectionStamp(state, options?.stamp),
     },
   })
 }
 
-export function handleSubtitle(state: ClientState, settings: ExtensionSettings, payload: SubtitlePayload) {
+export function handleSubtitle(state: ClientState, settings: ExtensionSettings, payload: SubtitlePayload, stamp?: ObservationStamp) {
   state.lastSubtitle = payload
 
   if (!settings.enabled || !settings.sendSubtitles)
@@ -239,6 +258,8 @@ export function handleSubtitle(state: ClientState, settings: ExtensionSettings, 
       startMs: payload.startMs,
       endMs: payload.endMs,
       isAuto: payload.isAuto,
+      cleared: payload.cleared,
+      stamp: connectionStamp(state, stamp),
     },
   })
 }

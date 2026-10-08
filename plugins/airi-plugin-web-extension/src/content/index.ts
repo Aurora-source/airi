@@ -1,5 +1,6 @@
-import type { BackgroundToContentMessage, ContentToBackgroundMessage, PageContextPayload, SubtitlePayload, VideoContextPayload, VideoSite, VisionFramePayload } from '../shared/types'
+import type { BackgroundToContentMessage, ContentToBackgroundMessage, ObservationStamp, PageContextPayload, SubtitlePayload, VideoContextPayload, VideoSite, VisionFramePayload } from '../shared/types'
 
+import { ObservationStamper } from '../shared/observation-stamp'
 import { detectSiteFromUrl, extractVideoId, normalizeText } from '../shared/sites'
 
 const VIDEO_PROGRESS_INTERVAL = 15000
@@ -7,15 +8,30 @@ const TITLE_POLL_INTERVAL = 2000
 const SUBTITLE_DEDUPE_WINDOW = 2000
 
 const lastPayloadByType = new Map<string, string>()
+const stamper = new ObservationStamper()
 
-function safeSend(message: ContentToBackgroundMessage) {
+/** A message as built from the page. {@link safeSend} adds the stamp of video and subtitle messages. */
+type UnstampedMessage<M = ContentToBackgroundMessage> = M extends { stamp: ObservationStamp } ? Omit<M, 'stamp'> : M
+
+/**
+ * Sends one message unless its payload equals the last payload of its type.
+ * `force` sends an equal payload too. The progress tick uses it, so a paused video still reports a fresh observation.
+ */
+function safeSend(message: UnstampedMessage, force = false) {
   const serialized = JSON.stringify(message.payload)
   const lastSerialized = lastPayloadByType.get(message.type)
-  if (serialized === lastSerialized)
+  if (!force && serialized === lastSerialized)
     return
 
   lastPayloadByType.set(message.type, serialized)
-  void browser.runtime.sendMessage(message).catch(() => {})
+  let stamped: ContentToBackgroundMessage
+  if (message.type === 'content:video')
+    stamped = { ...message, stamp: stamper.stamp(message.payload.site, message.payload.url) }
+  else if (message.type === 'content:subtitle')
+    stamped = { ...message, stamp: stamper.stamp(message.payload.site, message.payload.url) }
+  else
+    stamped = message
+  void browser.runtime.sendMessage(stamped).catch(() => {})
 }
 
 function buildPageContext(site: VideoSite): PageContextPayload {
@@ -49,6 +65,7 @@ function buildVideoContext(site: VideoSite, video: HTMLVideoElement, includeProg
     durationSec,
     currentTimeSec,
     isPlaying: !video.paused && !video.ended,
+    isEnded: video.ended,
     isMuted: video.muted,
     volume: Number.isFinite(video.volume) ? Number(video.volume.toFixed(2)) : undefined,
     playbackRate: Number.isFinite(video.playbackRate) ? Number(video.playbackRate.toFixed(2)) : undefined,
@@ -161,10 +178,22 @@ function observeSubtitleDom(site: VideoSite, onSubtitle: (payload: SubtitlePaylo
   const read = () => {
     const nodes = Array.from(document.querySelectorAll(selector))
     const text = normalizeText(nodes.map(node => node.textContent).join(' '))
-    if (!text || text === lastText)
+    if (text === lastText)
       return
 
     lastText = text
+    // An overlay caption has no cue end. Its disappearance only says that no caption shows now.
+    if (!text) {
+      onSubtitle({
+        site,
+        url: location.href,
+        title: normalizeText(findVideoTitle(site)) || undefined,
+        videoId: extractVideoId(site, location.href),
+        text: '',
+        cleared: true,
+      })
+      return
+    }
     onSubtitle({
       site,
       url: location.href,
@@ -224,11 +253,11 @@ function observeVideo(site: VideoSite) {
   let stopDomSubtitles: (() => void) | null = null
   let listenersAttached = false
 
-  const sendVideo = (includeProgress: boolean) => {
+  const sendVideo = (includeProgress: boolean, force = false) => {
     if (!video)
       return
 
-    safeSend({ type: 'content:video', payload: buildVideoContext(site, video, includeProgress) })
+    safeSend({ type: 'content:video', payload: buildVideoContext(site, video, includeProgress) }, force)
   }
 
   const sendPage = () => {
@@ -237,17 +266,38 @@ function observeVideo(site: VideoSite) {
 
   const onPlayback = () => sendVideo(true)
 
+  // A seek starts a new timeline at once, so captions and gaps from before the jump cannot pass as current.
+  const onSeeked = () => {
+    stamper.restartTimeline()
+    sendVideo(true, true)
+  }
+
+  const mediaListeners: Array<[keyof HTMLMediaElementEventMap, () => void]> = [
+    ['play', onPlayback],
+    ['pause', onPlayback],
+    ['loadedmetadata', onPlayback],
+    ['ended', onPlayback],
+    ['seeked', onSeeked],
+  ]
+
+  const detachListeners = () => {
+    if (!video || !listenersAttached)
+      return
+
+    for (const [type, listener] of mediaListeners)
+      video.removeEventListener(type, listener)
+    listenersAttached = false
+  }
+
   const attach = () => {
     const found = document.querySelector('video') as HTMLVideoElement | null
     if (!found || found === video)
       return
 
-    if (video && listenersAttached) {
-      video.removeEventListener('play', onPlayback)
-      video.removeEventListener('pause', onPlayback)
-      video.removeEventListener('loadedmetadata', onPlayback)
-      listenersAttached = false
-    }
+    detachListeners()
+    // Another element plays other media, or the same media from another position.
+    if (video)
+      stamper.restartTimeline()
 
     video = found
     stopTracks?.()
@@ -265,7 +315,7 @@ function observeVideo(site: VideoSite) {
   const progressInterval = window.setInterval(() => {
     if (!video)
       return
-    sendVideo(true)
+    sendVideo(true, true)
   }, VIDEO_PROGRESS_INTERVAL)
 
   const titleInterval = window.setInterval(() => {
@@ -277,12 +327,7 @@ function observeVideo(site: VideoSite) {
     window.clearInterval(interval)
     window.clearInterval(progressInterval)
     window.clearInterval(titleInterval)
-    if (video) {
-      video.removeEventListener('play', onPlayback)
-      video.removeEventListener('pause', onPlayback)
-      video.removeEventListener('loadedmetadata', onPlayback)
-      listenersAttached = false
-    }
+    detachListeners()
     stopTracks?.()
     stopDomSubtitles?.()
   }
@@ -293,9 +338,8 @@ function observeVideo(site: VideoSite) {
     if (listenersAttached)
       return
 
-    video.addEventListener('play', onPlayback)
-    video.addEventListener('pause', onPlayback)
-    video.addEventListener('loadedmetadata', onPlayback)
+    for (const [type, listener] of mediaListeners)
+      video.addEventListener(type, listener)
     listenersAttached = true
   }
 

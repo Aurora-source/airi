@@ -96,7 +96,7 @@ function handleContentMessage(message: ContentToBackgroundMessage) {
         ...message.payload,
         site: message.payload.site === 'unknown' ? detectSiteFromUrl(message.payload.url) : message.payload.site,
       }
-      handleVideoContext(state, settings, payload, { notify: shouldNotifyVideo(payload) })
+      handleVideoContext(state, settings, payload, { notify: shouldNotifyVideo(payload), stamp: message.stamp })
       emitStatus()
       break
     }
@@ -105,7 +105,7 @@ function handleContentMessage(message: ContentToBackgroundMessage) {
         ...message.payload,
         site: message.payload.site === 'unknown' ? detectSiteFromUrl(message.payload.url) : message.payload.site,
       }
-      handleSubtitle(state, settings, payload)
+      handleSubtitle(state, settings, payload, message.stamp)
       emitStatus()
       break
     }
