@@ -66,6 +66,7 @@ import { initializeElectronAuthCallbackBridge } from './bridges/electron-auth-ca
 import { initializeIOTraceRecordingBridge } from './bridges/io-trace-recording'
 import { initializeStageThreeRuntimeTraceBridge } from './bridges/stage-three-runtime-trace'
 import { useLanguage } from './composables/use-language'
+import { useSystemOutputCapture } from './composables/use-system-output-capture'
 import { useServerChannelSettingsStore } from './stores/settings/server-channel'
 import { useStageWindowLifecycleStore } from './stores/stage-window-lifecycle'
 import {
@@ -180,6 +181,10 @@ function createFullStageRuntime() {
   const syncArtistryConfig = useElectronEventaInvoke(artistrySyncConfig)
   const usesGodotStage = initialRoutePath === '/' || initialRoutePath.startsWith('/settings')
   const isWidgetsWindow = initialRoutePath === '/widgets'
+
+  // Only the main stage window records system output for the Companion Core watch, after the user allowed it.
+  if (initialRoutePath === '/')
+    useSystemOutputCapture()
 
   function syncGodotStageRenderer(state: { state: 'stopped' | 'starting' | 'running' | 'stopping' | 'error' }) {
     if (state.state === 'running') {
