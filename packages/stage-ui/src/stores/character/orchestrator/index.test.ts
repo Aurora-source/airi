@@ -354,4 +354,36 @@ describe('store character-orchestrator', () => {
     expect(String(renderedMessages?.[1])).toContain('base.prompt.emotion')
     expect(String(renderedMessages?.[1])).toContain('base.prompt.emoji')
   })
+
+  it('drops a queued spark:notify whose ttlMs passed before it could run, and runs one without a lifetime', async () => {
+    vi.useFakeTimers()
+    try {
+      const mockStream = vi.fn(async () => {})
+      mockedStore(useLLM, pinia).stream = mockStream
+      const store = useCharacterOrchestratorStore(pinia)
+      const notify = (ttlMs?: number): WebSocketEventOf<'spark:notify'> => ({
+        type: 'spark:notify',
+        source: 'companion-core-watch',
+        data: { id: nanoid(), eventId: nanoid(), kind: 'ping', urgency: 'immediate', headline: 'Watch moment', destinations: ['character'], ttlMs },
+      })
+
+      // Busy with another reaction, so both notifications wait in the queue.
+      store.processing = true
+      await store.handleSparkNotify(notify(3000))
+      await store.handleSparkNotify(notify())
+      expect(store.scheduledNotifies).toHaveLength(2)
+      store.processing = false
+
+      vi.advanceTimersByTime(4000)
+      store.startTicker()
+      await vi.advanceTimersByTimeAsync(4000)
+      store.stopTicker()
+
+      expect(store.scheduledNotifies).toHaveLength(0)
+      expect(mockStream).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
 })

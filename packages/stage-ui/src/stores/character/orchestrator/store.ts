@@ -224,6 +224,12 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
     const [next] = scheduledNotifies.value.splice(nextIndex, 1)
     removePending(next.event.data.id)
 
+    // A notification with a lifetime expires with the evidence that caused it. A late reaction would talk past it.
+    // A missing or non-positive `ttlMs` means no lifetime.
+    const ttlMs = next.event.data.ttlMs
+    if (typeof ttlMs === 'number' && ttlMs > 0 && now - next.enqueuedAt > ttlMs)
+      return
+
     try {
       await processSparkNotify(next.event, next.control)
     }
