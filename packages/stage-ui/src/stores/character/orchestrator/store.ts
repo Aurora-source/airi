@@ -88,6 +88,27 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
     return now + baseDelay + (attempts * attentionConfig.value.requeueDelayMs)
   }
 
+  /**
+   * Reports the state of a notification whose producer asked for an acknowledgement.
+   * `done` follows only a finished spoken reaction, so the producer never counts a dropped one as delivered.
+   */
+  function acknowledge(event: WebSocketEventOf<'spark:notify'>, state: WebSocketEvents['spark:emit']['state'], note?: string) {
+    if (!event.data.requiresAck)
+      return
+    modsServerChannelStore.send({ type: 'spark:emit', data: { id: event.data.id, eventId: event.data.eventId, state, note, destinations: [] } })
+  }
+
+  async function acknowledgeReaction(event: WebSocketEventOf<'spark:notify'>) {
+    const id = event.data.id
+    const reacted = characterStore.reactions.some(item => item.sourceEventId === id && item.message.trim())
+    if (!reacted || characterStore.isSparkNotifyReactionRevoked(id)) {
+      acknowledge(event, 'dropped', reacted ? 'revoked' : 'no reaction')
+      return
+    }
+    const status = await characterStore.waitForSparkNotifyReactionSpeech(id)
+    acknowledge(event, status === 'finished' && !characterStore.isSparkNotifyReactionRevoked(id) ? 'done' : 'dropped', status)
+  }
+
   function removePending(eventId: string) {
     pendingNotifies.value = pendingNotifies.value.filter(item => item.data.id !== eventId)
   }
@@ -121,11 +142,17 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
     const model = activeModel.value
     if (!providerId || !model) {
       console.warn('Spark notify ignored: missing active provider or model')
+      acknowledge(event, 'blocked', 'no chat model')
+      return undefined
+    }
+    if (characterStore.isSparkNotifyReactionRevoked(event.data.id)) {
+      acknowledge(event, 'dropped', 'revoked')
       return undefined
     }
 
     const provider = await consciousnessStore.getChatProviderInstance(providerId)
     processing.value = true
+    acknowledge(event, 'working')
 
     try {
       const result = await sparkNotifyAgent.handle({
@@ -139,6 +166,9 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
         runtimePrompt: runtimePrompt.value,
         control,
       })
+      // Playback continues after generation, so the acknowledgement waits on its own.
+      if (event.data.requiresAck)
+        void acknowledgeReaction(event)
       if (!result.commands.length)
         return result
 
@@ -150,6 +180,10 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
       }
 
       return result
+    }
+    catch (error) {
+      acknowledge(event, 'blocked', 'reaction failed')
+      throw error
     }
     finally {
       processing.value = false
@@ -227,14 +261,17 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
     // A notification with a lifetime expires with the evidence that caused it. A late reaction would talk past it.
     // A missing or non-positive `ttlMs` means no lifetime.
     const ttlMs = next.event.data.ttlMs
-    if (typeof ttlMs === 'number' && ttlMs > 0 && now - next.enqueuedAt > ttlMs)
+    if (typeof ttlMs === 'number' && ttlMs > 0 && now - next.enqueuedAt > ttlMs) {
+      acknowledge(next.event, 'expired')
       return
+    }
 
     try {
       await processSparkNotify(next.event, next.control)
     }
     catch (error) {
-      if (next.attempts + 1 < next.maxAttempts) {
+      // A producer that asked for an acknowledgement owns retries and deadlines, so it gets no second attempt here.
+      if (!next.event.data.requiresAck && next.attempts + 1 < next.maxAttempts) {
         scheduledNotifies.value = [...scheduledNotifies.value, {
           ...next,
           attempts: next.attempts + 1,
@@ -265,8 +302,18 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
     tickTimer = undefined
   }
 
-  async function handleSparkEmit(_: WebSocketBaseEvent<'spark:emit', WebSocketEvents['spark:emit']>) {
-    // Currently no-op
+  /**
+   * A producer revoked its own notification with `dropped` or `expired`. The queued notification leaves, and a
+   * reaction that already speaks stops. Other states are progress reports and change nothing here.
+   */
+  async function handleSparkEmit(event: WebSocketBaseEvent<'spark:emit', WebSocketEvents['spark:emit']>) {
+    const { id, state } = event.data
+    if (state !== 'dropped' && state !== 'expired')
+      return undefined
+
+    scheduledNotifies.value = scheduledNotifies.value.filter(item => item.event.data.id !== id)
+    removePending(id)
+    characterStore.cancelSparkNotifyReaction(id, 'Revoked by its producer')
     return undefined
   }
 

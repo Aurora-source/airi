@@ -386,4 +386,87 @@ describe('store character-orchestrator', () => {
       vi.useRealTimers()
     }
   })
+
+  function ackNotify(overrides: Partial<WebSocketEventOf<'spark:notify'>['data']> = {}): WebSocketEventOf<'spark:notify'> {
+    return {
+      type: 'spark:notify',
+      source: 'companion-core-director',
+      data: { id: nanoid(), eventId: nanoid(), kind: 'ping', urgency: 'immediate', headline: 'Watch moment', destinations: ['character'], requiresAck: true, ttlMs: 5000, ...overrides },
+    }
+  }
+
+  function acks() {
+    return sendSparkCommandMock.mock.calls.map(([event]) => event).filter(event => event.type === 'spark:emit').map(event => event.data.state)
+  }
+
+  it('acknowledges a requested notify as done only after its spoken reaction finished', async () => {
+    mockedStore(useLLM, pinia).stream = vi.fn(async (_model: string, _provider: unknown, _messages: unknown, options: any) => {
+      await options?.onStreamEvent?.({ type: 'text-delta', text: 'What a scene.' } satisfies StreamEvent)
+      await options?.onStreamEvent?.({ type: 'finish' } satisfies StreamEvent)
+    })
+    const character = mockedStore(useCharacterStore, pinia)
+    character.onSparkNotifyReactionStreamEvent = vi.fn()
+    character.onSparkNotifyReactionStreamEnd = vi.fn()
+    let finishSpeech: (status: 'finished' | 'interrupted') => void = () => {}
+    character.waitForSparkNotifyReactionSpeech = vi.fn(() => new Promise(resolve => finishSpeech = resolve))
+    const store = useCharacterOrchestratorStore(pinia)
+    const event = ackNotify()
+    character.reactions.push({ id: 'reaction-1', message: 'What a scene.', createdAt: Date.now(), sourceEventId: event.data.id })
+
+    await store.handleSparkNotify(event)
+    expect(acks()).toEqual(['working'])
+    finishSpeech('finished')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(acks()).toEqual(['working', 'done'])
+  })
+
+  it('reports dropped when the reaction speech was interrupted or no reaction came', async () => {
+    mockedStore(useLLM, pinia).stream = vi.fn(async () => {})
+    const character = mockedStore(useCharacterStore, pinia)
+    character.waitForSparkNotifyReactionSpeech = vi.fn(async () => 'interrupted' as const)
+    const store = useCharacterOrchestratorStore(pinia)
+
+    await store.handleSparkNotify(ackNotify())
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(acks()).toEqual(['working', 'dropped'])
+
+    const spoken = ackNotify()
+    character.reactions.push({ id: 'reaction-2', message: 'Oh!', createdAt: Date.now(), sourceEventId: spoken.data.id })
+    await store.handleSparkNotify(spoken)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(acks()).toEqual(['working', 'dropped', 'working', 'dropped'])
+  })
+
+  it('removes a queued notify that its producer revoked, stops its speech, and expires late ones', async () => {
+    vi.useFakeTimers()
+    try {
+      const mockStream = vi.fn(async () => {})
+      mockedStore(useLLM, pinia).stream = mockStream
+      const character = mockedStore(useCharacterStore, pinia)
+      character.cancelSparkNotifyReaction = vi.fn()
+      const store = useCharacterOrchestratorStore(pinia)
+      store.processing = true
+      const revoked = ackNotify()
+      const late = ackNotify({ ttlMs: 1000 })
+      await store.handleSparkNotify(revoked)
+      await store.handleSparkNotify(late)
+      expect(store.scheduledNotifies).toHaveLength(2)
+
+      await store.handleSparkEmit({ type: 'spark:emit', data: { id: revoked.data.id, state: 'dropped', destinations: [] }, metadata: { source: { kind: 'plugin', id: 'companion-core-director', plugin: { id: 'companion-core-director' } }, event: { id: nanoid() } } })
+      expect(store.scheduledNotifies).toHaveLength(1)
+      expect(character.cancelSparkNotifyReaction).toHaveBeenCalledWith(revoked.data.id, 'Revoked by its producer')
+
+      store.processing = false
+      vi.advanceTimersByTime(2000)
+      store.startTicker()
+      await vi.advanceTimersByTimeAsync(2500)
+      store.stopTicker()
+      expect(store.scheduledNotifies).toHaveLength(0)
+      expect(mockStream).not.toHaveBeenCalled()
+      expect(acks()).toEqual(['expired'])
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
 })

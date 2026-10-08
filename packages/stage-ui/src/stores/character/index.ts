@@ -27,6 +27,17 @@ interface StreamingReactionState {
 }
 
 const MAX_REACTIONS = 200
+/** Completion records and revoked ids kept for acknowledgements. Older ones leave first. */
+const MAX_REACTION_RECORDS = 32
+
+/** How the speech of one reaction ended, from its speech host. `none` means the reaction had no speech. */
+export type SparkNotifyReactionSpeechStatus = 'finished' | 'cancelled' | 'interrupted' | 'failed' | 'closed' | 'accepted' | 'none'
+
+function remember<K, V>(map: Map<K, V>, key: K, value: V) {
+  map.set(key, value)
+  if (map.size > MAX_REACTION_RECORDS)
+    map.delete(map.keys().next().value!)
+}
 type ParserFactory = typeof useLlmmarkerParser
 let parserFactory: ParserFactory = useLlmmarkerParser
 
@@ -41,6 +52,8 @@ export const useCharacterStore = defineStore('character', () => {
 
   const reactions = ref<CharacterSparkNotifyReaction[]>([])
   const streamingReactions = ref<Map<string, StreamingReactionState>>(new Map())
+  const reactionSpeech = new Map<string, Promise<SparkNotifyReactionSpeechStatus>>()
+  const revokedReactions = new Map<string, true>()
   const sessions = useChatSessionStore()
 
   async function emitTextOutput(text: string) {
@@ -65,6 +78,9 @@ export const useCharacterStore = defineStore('character', () => {
   }
 
   function onSparkNotifyReactionStreamEvent(sparkEventId: string, chunk: string, options?: { metadata?: Record<string, unknown> }) {
+    if (revokedReactions.has(sparkEventId))
+      return
+
     if (!streamingReactions.value.has(sparkEventId)) {
       const newReaction = reactive({
         id: nanoid(),
@@ -97,17 +113,40 @@ export const useCharacterStore = defineStore('character', () => {
 
   function onSparkNotifyReactionStreamEnd(sparkEventId: string, fullText: string, options?: { metadata?: Record<string, unknown> }) {
     const state = streamingReactions.value.get(sparkEventId)
-    if (!state)
+    if (!state || revokedReactions.has(sparkEventId))
       return
 
     state.reaction.message = fullText
     recordSparkNotifyReaction(sparkEventId, fullText, { metadata: options?.metadata })
 
-    void state.parser.end().then(async () => {
+    const done = state.parser.end().then(async () => {
       await state.speech.end()
       streamingReactions.value.delete(sparkEventId)
-      await state.speech.finish()
-    }).catch(error => console.error('Notification speech failed', error))
+      return (await state.speech.finish()).status
+    }).catch((error): SparkNotifyReactionSpeechStatus => {
+      console.error('Notification speech failed', error)
+      return 'failed'
+    })
+    remember(reactionSpeech, sparkEventId, done)
+  }
+
+  /** How the speech of one reaction ended. A reaction without speech resolves `none`. */
+  function waitForSparkNotifyReactionSpeech(sparkEventId: string): Promise<SparkNotifyReactionSpeechStatus> {
+    return reactionSpeech.get(sparkEventId) ?? Promise.resolve('none')
+  }
+
+  /** Stops one reaction that its producer revoked. Later stream chunks of that reaction stay silent. */
+  function cancelSparkNotifyReaction(sparkEventId: string, reason: string) {
+    remember(revokedReactions, sparkEventId, true)
+    const state = streamingReactions.value.get(sparkEventId)
+    if (!state)
+      return
+    streamingReactions.value.delete(sparkEventId)
+    void state.speech.cancel(reason).catch(error => console.error('Notification speech cancel failed', error))
+  }
+
+  function isSparkNotifyReactionRevoked(sparkEventId: string) {
+    return revokedReactions.has(sparkEventId)
   }
 
   function recordSparkNotifyReaction(sparkEventId: string, message: string, options?: { metadata?: Record<string, unknown> }) {
@@ -138,6 +177,9 @@ export const useCharacterStore = defineStore('character', () => {
     recordSparkNotifyReaction,
     onSparkNotifyReactionStreamEvent,
     onSparkNotifyReactionStreamEnd,
+    waitForSparkNotifyReactionSpeech,
+    cancelSparkNotifyReaction,
+    isSparkNotifyReactionRevoked,
     clearReactions,
 
     emitTextOutput,
