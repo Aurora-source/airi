@@ -36,7 +36,7 @@ const TICK_MS = 1000
 const MAX_EVENT_RECORDS = 16
 
 /** AIRI stage modules that turn a Spark notification into speech. */
-const STAGE_MODULES = ['proj-airi:stage-tamagotchi', 'proj-airi:stage-web']
+export const STAGE_MODULES = ['proj-airi:stage-tamagotchi', 'proj-airi:stage-web']
 
 /** Browser processes whose foreground window can show the selected video. */
 const BROWSER_APPS = new Set(['msedge', 'chrome', 'firefox', 'brave', 'opera', 'vivaldi', 'chromium', 'arc', 'zen', 'librewolf', 'waterfox'])
@@ -101,6 +101,16 @@ export interface CompanionWatchOptions {
 
 /** Why a session ended. Ops counts them. */
 export type SessionEndReason = GroupEndReason | 'shutdown'
+
+/**
+ * One change of the selected session, for in-process consumers such as the Director host.
+ * The snapshot is the typed WatchState view. A session end delivers its final `cancelled` snapshot.
+ */
+export interface WatchChange {
+  snapshot: WatchSnapshot
+  /** A watch event of this change, for example `paused` or `finished-episode`. Kinds and times only. */
+  event?: { kind: WatchEventKind, at: number }
+}
 
 export type ListenReply
   = | { status: Exclude<AudioResult, 'transcribed'> | 'no-session' | 'disabled', language?: 'en' | 'ja' }
@@ -191,6 +201,7 @@ export class CompanionWatch {
   private speechPulseUntil = 0
   private speechTimer?: ReturnType<typeof setTimeout>
   private readonly events: { kind: WatchEventKind, at: number }[] = []
+  private readonly listeners = new Set<(change: WatchChange) => void>()
   private readonly counters = {
     accepted: 0,
     rejected: 0,
@@ -344,6 +355,33 @@ export class CompanionWatch {
     const offered = session.reactions.offer({ ...candidate, revision: candidate.revision ?? session.state.current().revision, observed_at: candidate.observed_at ?? this.now() })
     this.admit(session)
     return offered
+  }
+
+  /** The typed current snapshot of the selected session, or `undefined` without a session. Read-only. */
+  snapshot(): WatchSnapshot | undefined {
+    const session = this.session
+    if (!session)
+      return undefined
+    this.fuse(session)
+    return session.state.current()
+  }
+
+  /**
+   * Calls `listener` after every state change of the selected session, and once with the final snapshot when the
+   * session ends. Listeners run synchronously, so they must stay cheap. Returns the function that unsubscribes.
+   */
+  subscribe(listener: (change: WatchChange) => void): () => void {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
+  /**
+   * Whether `permit` is the exact permit that the active session is delivering now, by its own ReactionPolicy.
+   * Read-only for callers: a permit object that the policy did not issue is never valid.
+   */
+  validPermit(permit: ReactionPermit): boolean {
+    const session = this.session
+    return session !== undefined && session.delivering === permit && session.reactions.valid(permit)
   }
 
   /** Records a shared moment or an explicit user opinion as a watch milestone. */
@@ -581,6 +619,8 @@ export class CompanionWatch {
       : undefined
     session = { key, id: randomUUID(), startedAt: this.now(), state, reactions, audio, eventNo: 0, lastAcceptedAt: this.now() }
     this.session = session
+    // Cancel notifies once more before it clears listeners, so subscribers also get the final snapshot.
+    state.subscribe(() => this.changed(state))
     this.counters.sessionsStarted++
     this.applySpeech()
     return session
@@ -773,10 +813,26 @@ export class CompanionWatch {
     }
   }
 
+  /** Gives listeners the typed snapshot of `state`, with the watch event of this change when there is one. */
+  private changed(state: WatchState, event?: WatchChange['event']): void {
+    if (this.listeners.size === 0)
+      return
+    const change: WatchChange = { snapshot: state.current(), event }
+    for (const listener of this.listeners) {
+      try {
+        listener(change)
+      }
+      catch (error) {
+        this.report(`watch listener failed: ${errorMessageFrom(error) ?? 'unknown'}`)
+      }
+    }
+  }
+
   private onWatchEvent(session: Session, event: { kind: WatchEventKind, media: MediaIdentity, at: number, detail?: string }): void {
     this.events.push({ kind: event.kind, at: event.at })
     if (this.events.length > MAX_EVENT_RECORDS)
       this.events.shift()
+    this.changed(session.state, { kind: event.kind, at: event.at })
     const memory = this.options.memory
     if (!memory || !this.options.config.watch.memoryEvents || !MEMORY_KINDS.has(event.kind))
       return
