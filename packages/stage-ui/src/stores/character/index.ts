@@ -2,7 +2,7 @@ import type { SpeechClient } from '../../services/speech/speech-client'
 
 import { nanoid } from 'nanoid'
 import { defineStore, storeToRefs } from 'pinia'
-import { computed, reactive, ref } from 'vue'
+import { computed, markRaw, reactive, ref } from 'vue'
 
 import { useLlmmarkerParser } from '../../composables/llm-marker-parser'
 import { SpeechClient as Speech } from '../../services/speech/speech-client'
@@ -90,7 +90,8 @@ export const useCharacterStore = defineStore('character', () => {
         metadata: options?.metadata,
       }) satisfies CharacterSparkNotifyReaction
 
-      const speech = new Speech({ sessionId: sessions.activeSessionId, turnId: `spark:${sparkEventId}` }, 'notification')
+      // The reactive map below would proxy this client. A proxied request cannot cross the speech bus BroadcastChannel.
+      const speech = markRaw(new Speech({ sessionId: sessions.activeSessionId, turnId: `spark:${sparkEventId}` }, 'notification'))
 
       const parser = parserFactory({
         onLiteral: async (literal) => {
