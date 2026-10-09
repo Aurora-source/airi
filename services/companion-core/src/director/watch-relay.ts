@@ -102,6 +102,15 @@ export class WatchReactionRelay implements WatchReactionPort {
     }
   }
 
+  /** Whether `permit` answers this relay's waiting offer. Read-only: R6 still validates the permit itself. */
+  owns(permit: ReactionPermit): boolean {
+    const handoff = this.handoff
+    return !!handoff && !handoff.settled && !handoff.delivering
+      && permit.candidate.observation_key === handoff.input.candidate.observation_key
+      && permit.candidate.revision === handoff.input.candidate.revision
+      && permit.candidate.observed_at === handoff.input.candidate.observed_at
+  }
+
   status(): { pending: number, delivering: number } {
     return { pending: this.handoff && !this.handoff.settled ? 1 : 0, delivering: this.handoff?.delivering ? 1 : 0 }
   }

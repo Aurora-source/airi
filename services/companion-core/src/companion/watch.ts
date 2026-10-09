@@ -68,6 +68,8 @@ export interface WatchMemory {
  */
 export interface ReactionOutputPort {
   deliver: (input: { permit: ReactionPermit, facts: Record<string, unknown> | undefined }) => void | Promise<void>
+  /** False when this output did not ask for the permit's candidate. Watch then uses its default Spark output. */
+  owns?: (permit: ReactionPermit) => boolean
 }
 
 type WatchChannelClient = Pick<Client, 'onEvent' | 'send' | 'close'>
@@ -191,6 +193,7 @@ export class CompanionWatch {
   private readonly capture?: ChannelSystemAudioPort
   private readonly anilist: AniListAdapter
   private readonly output: ReactionOutputPort
+  private readonly spark: ReactionOutputPort
   private readonly unsubscribePerception?: () => void
   private recognition?: SpeechRecognitionPort
   private session?: Session
@@ -225,7 +228,8 @@ export class CompanionWatch {
       this.client = this.join()
     const send = (event: WebSocketEventOptionalSource) => this.client?.send(event) ?? false
     this.capture = options.systemAudio ? undefined : new ChannelSystemAudioPort({ send, replyTo: WATCH_MODULE })
-    this.output = options.reactionOutput ?? new SparkReactionOutput(send, this.now)
+    this.spark = new SparkReactionOutput(send, this.now)
+    this.output = options.reactionOutput ?? this.spark
     this.unsubscribePerception = options.perception?.subscribe(() => this.refresh())
     const events: SourceEvents = {
       observe: (observation) => {
@@ -772,7 +776,9 @@ export class CompanionWatch {
           record.outcome = 'revoked'
           return
         }
-        await this.output.deliver({ permit, facts: watchFacts(session.state.current(), this.extras(session), this.now()) })
+        // A candidate that another caller offered keeps the default Spark output, as before an output owner existed.
+        const output = this.output.owns?.(permit) === false ? this.spark : this.output
+        await output.deliver({ permit, facts: watchFacts(session.state.current(), this.extras(session), this.now()) })
         record.outcome = permit.signal.aborted ? 'revoked' : 'delivered'
         if (record.outcome === 'delivered')
           session.state.shared('shared-reaction', `reaction to a ${permit.candidate.kind}`)

@@ -267,6 +267,19 @@ describe('watch reactions through R6', () => {
     expect(status().director.metrics.visualAttempts).toBe(1)
   })
 
+  it('keeps the R6 Spark output for a candidate that another caller offered', async () => {
+    start()
+    turn('round-1', 'hi')
+    await flush()
+    await watchAndPause()
+    // R6 keeps the more salient pending candidate, so this external offer wins over the Director's pause moment.
+    expect(watch!.offerReaction({ kind: 'pause', observation_key: 'external-caller', salience: 0.95 })).toBe(true)
+    await pass(3000)
+    expect(watchChannel.sentOf('spark:notify')).toHaveLength(1)
+    expect(stage.behaviors()).toEqual([])
+    expect(watchStatus().session!.reaction.last.outcome).toBe('delivered')
+  })
+
   it('records no shared reaction when the stage declines the visual behavior', async () => {
     start()
     stage.visualResult = 'blocked'

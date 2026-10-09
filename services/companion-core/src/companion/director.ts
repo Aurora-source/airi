@@ -102,7 +102,6 @@ export interface DirectorWatch {
   snapshot: () => WatchSnapshot | undefined
   offerReaction: (candidate: ReactionCandidate) => boolean
   validPermit: (permit: ReactionPermit) => boolean
-  userSpeech: () => void
 }
 
 /** What the host reads from perception. CompanionPerception implements it. */
@@ -236,12 +235,16 @@ export class CompanionDirector {
     }
   }
 
-  /** Watch hands admitted permits here. Only a permit that matches the relay's own handoff can produce output. */
+  /**
+   * Watch hands admitted permits here. Only a permit that matches the relay's own handoff can produce output.
+   * A permit for another caller's candidate is not owned, so Watch keeps its default Spark output for it.
+   */
   reactionOutput(): ReactionOutputPort {
     return {
+      owns: permit => this.active?.relay.owns(permit) ?? false,
       deliver: async ({ permit, facts }) => {
         const relay = this.active?.relay
-        if (!relay || relay.status().pending === 0)
+        if (!relay?.owns(permit))
           throw new Error('No Director reaction is waiting for this permit')
         this.facts.set(permit, facts)
         const outcome = await relay.admit(permit)
@@ -536,8 +539,7 @@ export class CompanionDirector {
   private userVoice(active: boolean, inputId: string): void {
     this.counters.userSpeech++
     if (active) {
-      // R6 owns watch interruption. It hears this event on its own client too. This call makes it immediate.
-      this.watch?.userSpeech()
+      // R6 owns watch interruption and hears this same broadcast on its own client, so no Director step delays it.
       this.endUserSpeech()
       const renew = () => {
         this.submit({ type: 'speech', speaker: 'user', active: true })
