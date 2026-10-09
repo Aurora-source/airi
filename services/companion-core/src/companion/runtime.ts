@@ -16,7 +16,7 @@ import { dirname, join } from 'node:path'
 import { MemoryClient } from '../memory/client'
 import { awarenessUnit } from './awareness'
 import { ChannelObserver } from './channel-observer'
-import { CompanionDirector } from './director'
+import { CompanionDirector, DIRECTOR_CONTROLS_KEY, parseDirectorControls } from './director'
 import { CompanionMemory } from './memory'
 import { CompanionPerception } from './perception'
 import { createPrivateDirectory } from './private-directory'
@@ -124,6 +124,10 @@ export class CompanionRuntime implements TurnHooks {
    * Call it once the gateway listens.
    */
   attach(runtime: GatewayRuntime, gateway?: { baseURL: string, token: string }): void {
+    // Controls that the user set through Ops before a restart. Proactive speech stays off without such a record.
+    const stored = parseDirectorControls(runtime.opsState.setting(DIRECTOR_CONTROLS_KEY))
+    if (stored)
+      this.director?.configure(stored)
     this.perception?.attach(runtime)
     if (gateway) {
       this.watch?.attach(gateway)

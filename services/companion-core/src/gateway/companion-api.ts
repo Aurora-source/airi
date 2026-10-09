@@ -4,6 +4,7 @@ import type { CompanionDirector } from '../companion/director'
 import type { CompanionMemory } from '../companion/memory'
 import type { CompanionPerception, LookResult } from '../companion/perception'
 import type { CompanionWatch } from '../companion/watch'
+import type { OpsStateStore } from '../paid/ops-state'
 
 import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
@@ -12,7 +13,7 @@ import { join } from 'node:path'
 
 import * as v from 'valibot'
 
-import { parseDirectorControls } from '../companion/director'
+import { DIRECTOR_CONTROLS_KEY, parseDirectorControls, PREVIEW_ACTIVITIES, PREVIEW_BEHAVIORS } from '../companion/director'
 import { readRequestBody, RequestBodyTooLargeError, sendError } from './http'
 
 /** Admin and tool bodies are small JSON objects. */
@@ -49,6 +50,8 @@ export interface CompanionApiContext {
   director?: CompanionDirector
   /** Folder for memory backups. Each backup gets a new file. */
   backupDirectory?: string
+  /** Durable Ops settings. Director controls persist here, so a restart keeps the user's choices. */
+  opsState?: Pick<OpsStateStore, 'setting' | 'setSetting'>
 }
 
 type Reply = (status: number, body: unknown) => void
@@ -217,7 +220,7 @@ export async function handleOpsDirector(req: IncomingMessage, res: ServerRespons
     reply(200, director ? director.status() : { enabled: false })
     return true
   }
-  if (method !== 'POST' || !['/ops/director/configure', '/ops/director/cancel', '/ops/director/activity'].includes(path))
+  if (method !== 'POST' || !['/ops/director/configure', '/ops/director/cancel', '/ops/director/activity', '/ops/director/preview'].includes(path))
     return false
   if (!director) {
     sendError(res, 503, 'server_error', 'director_disabled', 'The Director is not enabled.')
@@ -239,10 +242,27 @@ export async function handleOpsDirector(req: IncomingMessage, res: ServerRespons
     reply(200, { ok: true })
     return true
   }
+  if (path === '/ops/director/preview') {
+    const parsed = v.safeParse(v.union([
+      v.strictObject({ neutral: v.literal(true) }),
+      v.strictObject({ behavior: v.optional(v.picklist(PREVIEW_BEHAVIORS)), activity: v.optional(v.picklist(PREVIEW_ACTIVITIES)) }),
+    ]), body)
+    if (!parsed.success || (!('neutral' in parsed.output) && !parsed.output.behavior && !parsed.output.activity))
+      return badRequest(res, `preview needs a behavior (${PREVIEW_BEHAVIORS.join(', ')}), an activity (${PREVIEW_ACTIVITIES.join(', ')}), or neutral.`)
+    const result = director.preview('neutral' in parsed.output ? 'neutral' : parsed.output)
+    reply(result === 'started' || result === 'cancelled' ? 200 : 409, { result })
+    return true
+  }
   const patch = parseDirectorControls(body)
   if (!patch)
     return badRequest(res, 'Invalid Director controls.')
-  reply(director.configure(patch) ? 200 : 409, { ok: true, controls: patch })
+  if (!director.configure(patch)) {
+    reply(409, { ok: false, controls: patch })
+    return true
+  }
+  // Only this authenticated route writes the stored controls. Configuration, model output, and media never do.
+  context.opsState?.setSetting(DIRECTOR_CONTROLS_KEY, director.userControls(), Date.now())
+  reply(200, { ok: true, controls: patch, persisted: context.opsState !== undefined })
   return true
 }
 

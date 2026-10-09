@@ -98,7 +98,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   const isOpsToken = createBearerCheck(options.credentials.ops)
   const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, report: line => writeLog(redact(JSON.stringify({ time: new Date().toISOString(), companion: line }))), ...options.runtime })
   const allowedOrigins = new Set(config.allowedOrigins)
-  const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, watch: options.companion?.watch, director: options.companion?.director, backupDirectory: options.backupDirectory }
+  const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, watch: options.companion?.watch, director: options.companion?.director, backupDirectory: options.backupDirectory, opsState: runtime.opsState }
 
   let allowedHosts = new Set<string>()
 

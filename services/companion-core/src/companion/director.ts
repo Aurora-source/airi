@@ -39,6 +39,12 @@ export const AFFECT_BEHAVIORS: Readonly<Record<Affect, string>> = Object.freeze(
   focused: 'focused',
 })
 
+/** Vivid behaviors and base activities that an Ops preview can request. The stage still applies its owner priority. */
+export const PREVIEW_BEHAVIORS = ['amused', 'curious', 'surprised', 'concerned', 'focused', 'happy'] as const
+export const PREVIEW_ACTIVITIES = ['listening', 'thinking', 'waiting', 'watching'] as const
+/** An Ops preview holds the avatar this long at most. */
+const PREVIEW_LEASE_MS = 4000
+
 /** A user speaking longer than the Director's 10 s speech lease gets renewed evidence this often. */
 const SPEECH_RENEW_MS = 4000
 /** Polls the output guard while the stage speaks a Director output. */
@@ -87,6 +93,9 @@ const controlSchema = v.strictObject({
     endMinute: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(1439)),
   })), v.maxLength(8))),
 })
+
+/** The Ops state key of the user's Director controls. Only the authenticated configure route writes it. */
+export const DIRECTOR_CONTROLS_KEY = 'director-controls'
 
 /** One authenticated Ops change of Director controls. */
 export type DirectorControlPatch = v.InferOutput<typeof controlSchema>
@@ -285,6 +294,23 @@ export class CompanionDirector {
     if (!this.active)
       return true
     return this.active.director.configure(patch, 'user')
+  }
+
+  /** The controls that authenticated Ops requests set. Ops stores them, and the host restores them after a restart. */
+  userControls(): DirectorControlPatch {
+    return structuredClone(this.controls)
+  }
+
+  /**
+   * One explicit visual preview from authenticated Ops: a behavior, a base activity, or `neutral` to end the preview.
+   * It uses the Director's own visual lane, so speech, ACT, lip sync, and clicks still win in the stage.
+   */
+  preview(request: { behavior?: typeof PREVIEW_BEHAVIORS[number], activity?: typeof PREVIEW_ACTIVITIES[number] } | 'neutral'): 'started' | 'cancelled' | 'unsupported' | 'blocked' {
+    if (request === 'neutral') {
+      this.visual.cancel()
+      return 'cancelled'
+    }
+    return this.visual.preview(request.behavior, request.activity, PREVIEW_LEASE_MS)
   }
 
   /** An explicit user activity declaration from authenticated Ops, for example `working`. */
@@ -780,6 +806,15 @@ class ChannelVisual {
     return 'started'
   }
 
+  /** An Ops preview. The stage reports the result. Here only the send counts. */
+  preview(behavior: string | undefined, activity: VisualIntent['activity'] | undefined, leaseMs: number): 'started' | 'blocked' | 'unsupported' {
+    if (!this.available)
+      return 'unsupported'
+    if (this.blocked)
+      return 'blocked'
+    return this.post(randomUUID(), behavior, activity, undefined, leaseMs) ? 'started' : 'unsupported'
+  }
+
   /** One R6-admitted silent reaction. Delivered only when the stage reports that the behavior started. */
   async reaction(input: AdmittedWatchReaction): Promise<Outcome> {
     if (!this.available || this.blocked)
@@ -846,7 +881,7 @@ class ChannelVisual {
     return { available: this.available, blocked: this.blocked, owners: [...this.owners], owned: this.owned !== undefined, watching: this.activityRequest !== undefined, ...this.counters }
   }
 
-  private post(requestId: string, behavior: string, activity: VisualIntent['activity'] | undefined, intensity: VisualIntent['intensity'] | undefined, leaseMs: number): boolean {
+  private post(requestId: string, behavior: string | undefined, activity: VisualIntent['activity'] | undefined, intensity: VisualIntent['intensity'] | undefined, leaseMs: number): boolean {
     this.cancel()
     const sent = this.send({ type: 'output:visual:request', data: { requestId, behavior, activity, intensity, leaseMs: Math.floor(leaseMs) }, route: { destinations: [{ type: 'module', modules: STAGE_MODULES }] } })
     if (sent) {

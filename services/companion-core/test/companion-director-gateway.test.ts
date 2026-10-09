@@ -2,8 +2,13 @@ import type { TurnIdentity } from '../src/companion/turn-identity'
 import type { CompanionHarness } from './support/companion'
 import type { ProviderHandler } from './support/harness'
 
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { parseConfig } from '../src'
 import { eventually, identityHeaders, startCompanionGateway } from './support/companion'
 import { sse, startFakeProvider, TEST_INFERENCE_TOKEN, TEST_OPS_TOKEN, writeEvents } from './support/harness'
 import { FakeStage } from './support/stage'
@@ -133,5 +138,68 @@ describe('director in the real gateway', () => {
     expect(harness!.companion.director).toBeUndefined()
     expect((await ops('director/status')).body).toEqual({ enabled: false })
     expect((await ops('director/configure', { quietMode: true })).status).toBe(503)
+  })
+})
+
+describe('director controls that Ops persists', () => {
+  it('restores Ops controls after a restart, and proactive speech stays off without a stored choice', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'companion-director-'))
+    try {
+      const store = { path: join(directory, 'state.sqlite') }
+      await start({ store, director: { quietMode: false } })
+      expect((await ops('director/status')).body.userControls).toEqual({})
+      await chat(identity('round-1'), [{ role: 'user', content: 'Hello' }])
+      expect((await ops('director/status')).body.director.configuration.proactiveSpeech).toBe(false)
+      const saved = await ops('director/configure', { proactiveSpeech: true, quietMode: true, reactionFrequency: 'normal' })
+      expect(saved.body).toMatchObject({ ok: true, persisted: true })
+      await harness!.close()
+      harness = undefined
+
+      await start({ store })
+      await chat(identity('round-2'), [{ role: 'user', content: 'Hello again' }])
+      const restored = (await ops('director/status')).body
+      expect(restored.userControls).toEqual({ proactiveSpeech: true, quietMode: true, reactionFrequency: 'normal' })
+      expect(restored.director.configuration).toMatchObject({ proactiveSpeech: true, quietMode: true, reactionFrequency: 'normal' })
+    }
+    finally {
+      await harness?.close()
+      harness = undefined
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('never reads proactive speech from configuration', async () => {
+    expect(() => parseConfig({ providers: {}, aliases: {}, director: { proactiveSpeech: true } })).not.toThrow()
+    await start({ director: { proactiveSpeech: true, reasoningEnabled: true } as Record<string, unknown> })
+    await chat(identity('round-1'), [{ role: 'user', content: 'Hello' }])
+    expect((await ops('director/status')).body.director.configuration).toMatchObject({ proactiveSpeech: false, reasoningEnabled: false })
+  })
+
+  it('previews an allowed visual behavior or activity through the Director lane only with the ops token', async () => {
+    await start()
+
+    const behavior = await ops('director/preview', { behavior: 'happy' })
+    const activity = await ops('director/preview', { activity: 'thinking' })
+    const neutral = await ops('director/preview', { neutral: true })
+    const invalid = await ops('director/preview', { behavior: 'dance' })
+    const empty = await ops('director/preview', {})
+    const inference = await ops('director/preview', { behavior: 'happy' }, TEST_INFERENCE_TOKEN)
+
+    expect([behavior.status, activity.status, neutral.status]).toEqual([200, 200, 200])
+    expect(neutral.body.result).toBe('cancelled')
+    expect(stage.visuals.map(request => [request.behavior ?? null, request.activity ?? null, request.leaseMs])).toEqual([['happy', null, 4000], [null, 'thinking', 4000]])
+    expect(stage.cancels.length).toBeGreaterThan(0)
+    expect([invalid.status, empty.status, inference.status]).toEqual([400, 400, 401])
+  })
+
+  it('reports blocked previews while the stage has no visual controller', async () => {
+    harness = await startCompanionGateway(provider.baseURL, {}, { watchPorts: { createClient: watchChannel.connect }, directorPorts: { createClient: stage.channel.connect } })
+    watchChannel.ready(true)
+    stage.ready({ available: false })
+
+    const result = await ops('director/preview', { behavior: 'amused' })
+
+    expect(result.status).toBe(409)
+    expect(result.body.result).toBe('unsupported')
   })
 })
