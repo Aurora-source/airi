@@ -25,6 +25,8 @@ export interface GatewayLogEvent {
   /** Estimated prompt size by part, in tokens. Counts only. */
   tokens?: { system: number, conversation: number, tools: number, memory?: number, awareness?: number, output: number, total: number }
   stream?: boolean
+  /** The thinking effort that the Gateway sent, and who chose it, for example `low (selection)`. */
+  effort?: string
   /** Milliseconds from request start to the first provider body byte. */
   firstByteMs?: number
   bytesOut?: number

@@ -89,6 +89,10 @@ interface Attempt {
  *   the break. The gateway never continues an answer with another model.
  * - A request error from the provider (HTTP 400 without a size problem) goes to the client unchanged, because another model fails the same way.
  *
+ * Paid Gemini contract:
+ * - A Gemini provider gets the selected `reasoning_effort` and `stream_options.include_usage`. Nothing else changes.
+ * - Each request to a Gemini provider writes one usage row: settled with reported tokens, unknown, or failed.
+ *
  * Call stack:
  *
  * handleRequest (../server)
@@ -204,8 +208,10 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
   const { runtime, context, res, clientSignal, startedAt } = attempt
   const { model } = candidate
   const apiKey = model.provider.keyRef ? runtime.providerKeys.get(model.provider.keyRef) : undefined
-  const logBase = { method: 'POST', path: '/v1/chat/completions', alias: attempt.alias, model: model.id, tier: candidate.tier, stream: attempt.stream }
+  const effort = candidate.thinking ? `${candidate.thinking.effort} (${candidate.thinking.source})` : undefined
+  const logBase = { method: 'POST', path: '/v1/chat/completions', alias: attempt.alias, model: model.id, tier: candidate.tier, stream: attempt.stream, ...(effort ? { effort } : {}) }
   const tokens = tokenCounts(candidate)
+  const paid = runtime.paid.begin(model, attempt.alias, candidate.thinking, { inputTokens: candidate.estimatedInputTokens, outputTokens: candidate.diagnostics.estimatedOutputTokens })
 
   const ticket = runtime.ledger.begin(model.scope, candidate.estimatedInputTokens)
   const sentAt = performance.now()
@@ -219,6 +225,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
     clearTimeout(timer)
     runtime.ledger.finish(ticket, { counted: false })
     runtime.health.recordFailure(model.id, label)
+    paid?.finish({ response: 'none', error: label })
     note(label)
     context.log({ ...logBase, status: 502, outcome: 'network_error', reason: `${label}: ${context.redact(errorMessageFrom(error) ?? 'request failed')}`, tokens, durationMs: elapsed(startedAt) })
     return { kind: 'failed' }
@@ -226,6 +233,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
   const clientGone = (reason: string): AttemptOutcome => {
     clearTimeout(timer)
     runtime.ledger.finish(ticket, { counted: false })
+    paid?.finish({ response: 'none', error: 'cancelled' })
     note('cancelled')
     context.log({ ...logBase, status: 499, outcome: 'cancelled', reason, tokens, durationMs: elapsed(startedAt) })
     return { kind: 'client-gone' }
@@ -237,7 +245,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
       provider: model.provider,
       apiKey,
       // Spread keeps the original key order. Overwriting `model` keeps its position.
-      body: JSON.stringify({ ...(model.provider.compat === 'gemini' ? prepareGeminiRequest(candidate.body) : candidate.body), model: model.model }),
+      body: JSON.stringify({ ...runtime.paid.outgoing(model, model.provider.compat === 'gemini' ? prepareGeminiRequest(candidate.body) : candidate.body, candidate.thinking), model: model.model }),
       signal,
     })
   }
@@ -264,6 +272,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
     clearTimeout(timer)
     runtime.ledger.finish(ticket, { counted: false })
     const failure = classifyUpstreamFailure(upstream.status, upstream.headers, captured.body.toString('utf8'), runtime.now())
+    paid?.finish({ response: 'error', error: failure.kind })
     note(failure.kind)
     context.log({ ...logBase, status: upstream.status, outcome: 'upstream_error', reason: failure.kind, tokens, durationMs: elapsed(startedAt) })
 
@@ -326,6 +335,8 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
       headers[name] = value
   })
   Object.assign(headers, diagnosticHeaders(model.id, candidate.tier, attempt))
+  if (candidate.thinking)
+    headers['x-companion-effort'] = candidate.thinking.effort
   res.writeHead(upstream.status, headers)
   res.flushHeaders()
 
@@ -340,6 +351,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
     prompt: candidate.diagnostics,
     status: upstream.status,
     firstByteMs,
+    effort: candidate.thinking,
   }
   let bytesOut = 0
   try {
@@ -361,6 +373,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
     const usage = sniffer.usage()
     if (clientSignal.aborted) {
       runtime.ledger.finish(ticket, { counted: true, inputTokens: usage?.promptTokens, outputTokens: usage?.completionTokens })
+      paid?.finish({ response: 'stream', usage, error: 'cancelled', firstByteMs })
       context.log({ ...logBase, status: upstream.status, outcome: 'cancelled', reason: 'client_closed_during_response', attempts: attempt.attempts, tokens, firstByteMs: elapsed(startedAt), bytesOut, durationMs: elapsed(startedAt) })
       return { kind: 'client-gone' }
     }
@@ -368,6 +381,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
     // an incomplete response, exactly as it would with a direct connection.
     res.destroy()
     runtime.ledger.finish(ticket, { counted: true })
+    paid?.finish({ response: 'stream', usage: sniffer.usage(), error: 'stream-broke', firstByteMs })
     runtime.health.recordFailure(model.id, 'network')
     context.log({ ...logBase, status: upstream.status, outcome: 'upstream_error', reason: `stream_broke: ${context.redact(errorMessageFrom(error) ?? 'provider stream failed')}`, attempts: attempt.attempts, tokens, firstByteMs: elapsed(startedAt), bytesOut, durationMs: elapsed(startedAt) })
     runtime.recordRoute(route)
@@ -377,6 +391,7 @@ async function attemptCandidate(candidate: Candidate, attempt: Attempt): Promise
   attempt.delivered = { complete: true, reply: capture?.reply() }
   const usage = sniffer.usage()
   runtime.ledger.finish(ticket, { counted: true, inputTokens: usage?.promptTokens, outputTokens: usage?.completionTokens })
+  paid?.finish({ response: 'stream', usage, firstByteMs })
   if (usage?.promptTokens)
     runtime.health.recordUsage(model.id, candidate.estimatedInputTokens, usage.promptTokens)
   context.log({ ...logBase, status: upstream.status, outcome: 'ok', attempts: attempt.attempts, skipped: attempt.skipped, tokens, firstByteMs: elapsed(startedAt), bytesOut, durationMs: elapsed(startedAt) })

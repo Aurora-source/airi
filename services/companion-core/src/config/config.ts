@@ -280,6 +280,21 @@ const directorSchema = v.object({
   reasoningAlias: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(64))),
 })
 
+/**
+ * The paid Gemini model selection that Ops controls, and the usage ledger. Without a Gemini provider it stays unavailable.
+ * The model and effort are not configuration: only an authenticated Ops request changes them.
+ */
+const paidGeminiSchema = v.object({
+  /** The chat alias that the selected model leads. @default `companion-chat` when that alias serves chat completions */
+  alias: v.optional(v.pipe(v.string(), v.minLength(1))),
+  /** Provider of the selected model. It needs `compat: gemini`. @default the only cloud provider with `compat: gemini` */
+  provider: v.optional(v.pipe(v.string(), v.minLength(1))),
+  /** Time zone of the daily and monthly usage windows. Google Cloud billing reports use Pacific time. */
+  timeZone: v.optional(v.pipe(v.string(), v.minLength(1)), 'America/Los_Angeles'),
+  /** Days of paid request records to keep. */
+  retentionDays: v.optional(v.pipe(v.number(), v.integer(), v.minValue(7), v.maxValue(1000)), 400),
+})
+
 const PROFILES = ['local', 'cloud', 'cloud-mura-voice', 'hybrid'] as const
 
 const configSchema = v.pipe(
@@ -306,13 +321,18 @@ const configSchema = v.pipe(
     routing: v.optional(routingSchema, {}),
     /** Bounds of `POST /v1/audio/transcriptions`. The `speech-recognition` aliases choose its models. */
     audio: v.optional(audioSchema, {}),
-    /** SQLite file for the quota ledger, sticky choices, and probe results. `:memory:` keeps them in memory. */
-    store: v.optional(v.object({ path: v.optional(v.string()) }), {}),
+    /**
+     * `path`: SQLite file for the quota ledger, sticky choices, and probe results.
+     * `opsPath`: SQLite file for Ops settings and the paid request ledger. @default `companion-ops.sqlite` next to `path`
+     * `:memory:` keeps a file in memory.
+     */
+    store: v.optional(v.object({ path: v.optional(v.string()), opsPath: v.optional(v.string()) }), {}),
     memory: v.optional(memorySchema, {}),
     channel: v.optional(channelSchema, {}),
     perception: v.optional(perceptionSchema, {}),
     watch: v.optional(watchSchema, {}),
     director: v.optional(directorSchema, {}),
+    paidGemini: v.optional(paidGeminiSchema, {}),
     providers: v.record(v.string(), providerSchema),
     models: v.optional(v.record(v.string(), modelSchema), {}),
     aliases: v.record(v.string(), aliasSchema),
@@ -363,6 +383,14 @@ const configSchema = v.pipe(
       addIssue({ message: 'perception.ambient needs perception.enabled.' })
     if (config.watch.systemAudio.enabled && config.aliases[config.watch.systemAudio.alias]?.role !== 'speech-recognition')
       addIssue({ message: `watch.systemAudio needs alias "${config.watch.systemAudio.alias}" with role "speech-recognition".` })
+    if (!isTimeZone(config.paidGemini.timeZone))
+      addIssue({ message: `paidGemini.timeZone "${config.paidGemini.timeZone}" is not a known time zone.` })
+    const paidAlias = config.paidGemini.alias
+    if (paidAlias !== undefined && (!config.aliases[paidAlias] || !servesChatCompletions(config.aliases[paidAlias])))
+      addIssue({ message: `paidGemini.alias "${paidAlias}" must name an alias that serves chat completions.` })
+    const paidProvider = config.paidGemini.provider
+    if (paidProvider !== undefined && (config.providers[paidProvider]?.compat !== 'gemini' || config.providers[paidProvider]?.locality !== 'cloud'))
+      addIssue({ message: `paidGemini.provider "${paidProvider}" must name a cloud provider with compat "gemini".` })
     const jellyfin = config.watch.sources.jellyfin
     if (jellyfin.enabled) {
       try {
@@ -389,6 +417,7 @@ export type ChannelOptions = CompanionConfig['channel']
 export type PerceptionConfig = CompanionConfig['perception']
 export type WatchConfig = CompanionConfig['watch']
 export type MediaSourcesConfig = CompanionConfig['watch']['sources']
+export type PaidGeminiConfig = CompanionConfig['paidGemini']
 
 /** Whether `POST /v1/chat/completions` can route this alias. */
 export function servesChatCompletions(alias: AliasConfig): boolean {
@@ -425,6 +454,17 @@ export function parseConfig(input: unknown): CompanionConfig {
   if (!result.success)
     throw new Error(`Invalid companion-core configuration: ${v.summarize(result.issues)}`)
   return result.output
+}
+
+function isTimeZone(value: string): boolean {
+  try {
+    // eslint-disable-next-line no-new
+    new Intl.DateTimeFormat('en-US', { timeZone: value })
+    return true
+  }
+  catch {
+    return false
+  }
 }
 
 /** Joins one model entry with its provider. Returns `undefined` for an unknown id. */

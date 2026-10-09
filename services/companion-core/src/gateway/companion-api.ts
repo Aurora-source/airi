@@ -415,20 +415,20 @@ function lookReply(result: LookResult): Record<string, unknown> {
   }
 }
 
-function jsonReply(res: ServerResponse): Reply {
+export function jsonReply(res: ServerResponse): Reply {
   return (status, body) => {
     res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' })
     res.end(JSON.stringify(body))
   }
 }
 
-function badRequest(res: ServerResponse, message: string): true {
+export function badRequest(res: ServerResponse, message: string): true {
   sendError(res, 400, 'invalid_request_error', 'invalid_arguments', message)
   return true
 }
 
 /** Reads a small JSON object. Sends the error itself and returns `undefined` when the body is unusable. */
-async function readJson(req: IncomingMessage, res: ServerResponse): Promise<unknown> {
+export async function readJson(req: IncomingMessage, res: ServerResponse): Promise<unknown> {
   try {
     const raw = await readRequestBody(req, MAX_BODY_BYTES)
     return raw.byteLength === 0 ? {} : JSON.parse(raw.toString('utf8'))

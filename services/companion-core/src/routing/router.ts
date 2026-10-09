@@ -1,8 +1,9 @@
 import type { InjectedUnit } from '../budget/budgeter'
 import type { WireRequest } from '../budget/wire'
 import type { CompanionConfig, ModelCapabilities, ResolvedModel } from '../config/config'
+import type { CandidateThinking } from '../paid/paid-gemini'
 import type { QuotaLedger } from '../quota/ledger'
-import type { Candidate, Skip } from './eligibility'
+import type { Candidate, Skip, SkipReason } from './eligibility'
 import type { ModelHealth } from './health'
 import type { RequestTraits } from './request-analysis'
 import type { StickyStore } from './sticky'
@@ -20,7 +21,19 @@ export interface RouterDeps {
   hasKey: (model: ResolvedModel) => boolean
   /** Capabilities that a live probe measured for a model. They replace the configured ones. */
   capabilitiesOf?: (model: ResolvedModel) => ModelCapabilities
+  /** Ops controls: the selected model, thinking efforts, spending limits, and cloud suspension. */
+  admission?: RouteAdmission
   now: () => number
+}
+
+/** What Ops decided for routing. Absent means the configured chains as they are. */
+export interface RouteAdmission {
+  /** The chain to try for an unpinned request of an alias. */
+  chain: (alias: string, chain: ResolvedModel[]) => ResolvedModel[]
+  /** The model that the user selected for an alias. It goes first, like a sticky choice. */
+  leader: (alias: string) => string | undefined
+  /** Checks before eligibility. A skip names its reason. A candidate can get a thinking effort. */
+  admit: (model: ResolvedModel, body: WireRequest, isLeader: boolean) => { skip: { reason: SkipReason, detail?: string } } | { thinking?: CandidateThinking }
 }
 
 export interface RouteError {
@@ -58,6 +71,7 @@ export type RoutePlan
  * 4. The rest follow the chain order of the alias.
  *
  * A model name `alias:model` is an explicit override. Only that model serves it.
+ * An Ops model selection leads its alias. The configured chain after it stays the authorized fallback.
  */
 export class Router {
   constructor(private readonly deps: RouterDeps) {}
@@ -76,7 +90,9 @@ export class Router {
     if (!servesChatCompletions(aliasConfig))
       return failure(400, 'model_not_supported', `Model "${body.model}" is a ${aliasConfig.role} alias. It does not serve chat completions.`, [])
     const chain = resolveAlias(this.deps.config, alias)!
-    const models = pinned ? chain.filter(model => model.id === pinned) : chain
+    const { admission } = this.deps
+    const leaderId = pinned ? undefined : admission?.leader(alias)
+    const models = pinned ? chain.filter(model => model.id === pinned) : admission?.chain(alias, chain) ?? chain
     const traits = analyzeRequest(body)
     const context = {
       profile: this.deps.config.profile,
@@ -96,14 +112,20 @@ export class Router {
         skipped.push({ modelId: model.id, reason: 'PROFILE_FORBIDS_LOCAL', category: 'ineligible' })
         continue
       }
+      const admitted = admission?.admit(model, body, model.id === leaderId)
+      if (admitted && 'skip' in admitted) {
+        skipped.push({ modelId: model.id, reason: admitted.skip.reason, category: 'ineligible', detail: admitted.skip.detail })
+        continue
+      }
       const result = evaluateModel(model, body, traits, context)
       if ('candidate' in result)
-        candidates.push(result.candidate)
+        candidates.push(admitted?.thinking ? { ...result.candidate, thinking: admitted.thinking } : result.candidate)
       else
         skipped.push(result.skip)
     }
 
-    const stickyModelId = pinned ? undefined : this.deps.sticky.get(alias, traits.conversationKey)?.modelId
+    // The user's selection outranks the conversation's earlier model.
+    const stickyModelId = pinned ? undefined : leaderId ?? this.deps.sticky.get(alias, traits.conversationKey)?.modelId
     if (candidates.length === 0)
       return { ok: false, error: this.errorFor(skipped, pinned) }
 
@@ -144,7 +166,11 @@ export class Router {
     }
     if (skipped.some(skip => skip.reason === 'CONTEXT_TOO_SMALL' || skip.reason === 'TPM_INELIGIBLE'))
       return { status: 413, code: 'request_too_large', message: `${subject} ${can} take a request of this size. ${summary}`, skipped }
-    if (skipped.some(skip => skip.reason.startsWith('CAPABILITY_')))
+    if (skipped.some(skip => skip.reason === 'CLOUD_SUSPENDED') && skipped.every(skip => skip.reason === 'CLOUD_SUSPENDED' || skip.reason === 'PROFILE_FORBIDS_LOCAL'))
+      return { status: 503, code: 'cloud_suspended', message: `Cloud inference is suspended in Ops. ${summary}`, skipped }
+    if (skipped.every(skip => skip.reason === 'SPENDING_LIMIT' || skip.category === 'ineligible') && skipped.some(skip => skip.reason === 'SPENDING_LIMIT'))
+      return { status: 429, code: 'spending_limit_reached', message: `A spending limit set in Ops is reached. ${summary}`, skipped }
+    if (skipped.some(skip => skip.reason.startsWith('CAPABILITY_') || skip.reason.startsWith('THINKING_')))
       return { status: 400, code: 'unsupported_request', message: `${subject} ${pinned ? 'does not support' : 'supports'} what this request needs. ${summary}`, skipped }
     return { status: 503, code: 'no_provider_available', message: `${subject} ${pinned ? 'is not' : 'is'} available. ${summary}`, skipped }
   }

@@ -95,7 +95,9 @@ async function main(argv: string[]): Promise<void> {
       // only once the gateway exists.
       companion.attach(gateway.runtime, { baseURL: gateway.baseURL, token: credentials.inference })
       const perception = !companion.perception ? 'off' : config.perception.ambient ? 'ambient' : 'look_now only'
-      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'}, perception: ${perception}, watch: ${companion.watch ? 'on' : 'off'}, director: ${companion.director ? 'on' : 'off'})`)
+      const selection = gateway.runtime.paid.selection()
+      const paid = gateway.runtime.paid.inactiveReason() ? 'off' : `${selection.model} ${selection.effort} (${selection.source})`
+      console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'}, perception: ${perception}, watch: ${companion.watch ? 'on' : 'off'}, director: ${companion.director ? 'on' : 'off'}, gemini selection: ${paid}, cloud: ${gateway.runtime.cloudSuspended ? 'suspended' : 'on'})`)
       // Watch and perception stop first, so no recording, capture, or upload outlives the router.
       // Memory closes last, after the final turn.
       const stop = () => {

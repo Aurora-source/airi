@@ -26,6 +26,7 @@ export function opsStatus(runtime: GatewayRuntime) {
   }]))
   return {
     profile: config.profile,
+    cloudSuspended: runtime.cloudSuspended,
     aliases,
     sticky: runtime.sticky.list(),
     recentRoutes: runtime.recentRoutes(),

@@ -23,6 +23,7 @@ import { LOOPBACK_HOST, servesChatCompletions } from './config/config'
 import { proxyChatCompletion } from './gateway/chat-completions'
 import { handleCompanionTool, handleOpsDirector, handleOpsMemory, handleOpsPerception, handleOpsWatch } from './gateway/companion-api'
 import { sendError } from './gateway/http'
+import { handleOpsPaid } from './gateway/ops-paid'
 import { opsStatus } from './gateway/ops-status'
 import { GatewayRuntime } from './gateway/runtime'
 import { createRedactor } from './logging/redact'
@@ -95,7 +96,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
   const log = (event: GatewayLogEvent) => writeLog(redact(JSON.stringify({ time: new Date().toISOString(), ...event })))
   const isInferenceToken = createBearerCheck(options.credentials.inference)
   const isOpsToken = createBearerCheck(options.credentials.ops)
-  const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, ...options.runtime })
+  const runtime = new GatewayRuntime({ config, providerKeys: options.providerKeys, report: line => writeLog(redact(JSON.stringify({ time: new Date().toISOString(), companion: line }))), ...options.runtime })
   const allowedOrigins = new Set(config.allowedOrigins)
   const companionApi = { memory: options.companion?.memory, perception: options.companion?.perception, watch: options.companion?.watch, director: options.companion?.director, backupDirectory: options.backupDirectory }
 
@@ -164,7 +165,7 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
         log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
-      if (await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi) || await handleOpsWatch(req, res, path, companionApi) || await handleOpsDirector(req, res, path, companionApi)) {
+      if (await handleOpsPaid(req, res, path, runtime) || await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi) || await handleOpsWatch(req, res, path, companionApi) || await handleOpsDirector(req, res, path, companionApi)) {
         log({ method, path, status: res.statusCode, outcome: res.statusCode < 400 ? 'ok' : 'rejected', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
@@ -192,6 +193,8 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
     if (method === 'POST' && path === '/v1/audio/transcriptions') {
       if (!audioRoutes)
         return reject(503, 'audio_not_configured', 'Audio transcription is not configured.')
+      if (runtime.cloudSuspended && [...audioRoutes.aliases.values()].some(chain => chain.some(model => model.locality === 'cloud')))
+        return reject(503, 'cloud_suspended', 'Cloud inference is suspended in Ops.')
       // A microphone upload means the user spoke, so watch stops pending reactions and audio work. Watch's own
       // system-output uploads carry a marker and never count.
       if (req.headers[SYSTEM_OUTPUT_AUDIO_HEADER] !== 'system-output')

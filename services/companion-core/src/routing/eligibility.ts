@@ -1,6 +1,7 @@
 import type { BudgetResult, InjectedUnit, PromptDiagnostics } from '../budget/budgeter'
 import type { WireRequest } from '../budget/wire'
 import type { AliasConfig, ModelCapabilities, Profile, ResolvedModel, RoutingOptions } from '../config/config'
+import type { CandidateThinking } from '../paid/paid-gemini'
 import type { QuotaLedger, QuotaNeed, QuotaReason } from '../quota/ledger'
 import type { ModelHealth } from './health'
 import type { RequestTraits } from './request-analysis'
@@ -33,6 +34,14 @@ export type SkipReason
     | 'CAPABILITY_STRUCTURED_OUTPUT'
     | 'CONTEXT_TOO_SMALL'
     | 'TPM_INELIGIBLE'
+    /** A client `reasoning_effort` that this Gemini model does not support. The Gateway never converts a level. */
+    | 'THINKING_UNSUPPORTED'
+    /** A numeric thinking budget next to the selected effort. Google rejects both together. */
+    | 'THINKING_CONFLICT'
+    /** A spending limit that the user set in Ops is reached. */
+    | 'SPENDING_LIMIT'
+    /** Ops suspended cloud inference. */
+    | 'CLOUD_SUSPENDED'
     | QuotaReason
 
 const UNAVAILABLE_REASONS = new Set<SkipReason>(['COOLING_DOWN', 'OBSERVED_REQUESTS_EXHAUSTED', 'RPM_EXHAUSTED', 'RPD_EXHAUSTED', 'TPM_WINDOW_FULL', 'TPD_EXHAUSTED'])
@@ -72,6 +81,8 @@ export interface Candidate {
    * and a refusal costs more than a try. The router puts it behind every healthy model.
    */
   restingUntilMs?: number
+  /** The `reasoning_effort` that the Gateway sends to this model, and who chose it. */
+  thinking?: CandidateThinking
 }
 
 export interface EligibilityContext {
