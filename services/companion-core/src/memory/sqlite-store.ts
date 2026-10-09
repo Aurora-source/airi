@@ -1,6 +1,6 @@
 import type { SQLInputValue, SQLOutputValue } from 'node:sqlite'
 
-import type { AdminTarget, ConsolidationResult, EditRequest, FactClaim, IngestResult, InspectRequest, MemoryExport, MemoryItem, MemoryObservation, RecallRequest, RecallResult } from './ports'
+import type { AdminTarget, ConsolidationResult, EditRequest, FactClaim, IngestResult, InspectRequest, MemoryCharacter, MemoryExport, MemoryItem, MemoryObservation, RecallRequest, RecallResult } from './ports'
 
 import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
@@ -384,6 +384,11 @@ export class SQLiteMemoryStore {
   inspect(request: InspectRequest): MemoryItem[] {
     return this.all(`SELECT * FROM items WHERE user_id=? AND scope_key IN ('global',?) AND (? IS NULL OR kind=?)
       ORDER BY recorded_at DESC,id LIMIT ? OFFSET ?`, request.userId, `char:${request.characterId}`, request.kind ?? null, request.kind ?? null, bounded(request.limit, 50, 100), bounded(request.offset, 0, 1_000_000)).map(row => this.item(row))
+  }
+
+  characters(userId: string): MemoryCharacter[] {
+    return this.all(`SELECT character_id, COUNT(*) AS items FROM items WHERE user_id=? AND character_id IS NOT NULL
+      GROUP BY character_id ORDER BY items DESC, character_id LIMIT 32`, userId).map(row => ({ characterId: String(row.character_id), items: Number(row.items) }))
   }
 
   /** Wall-clock deadline includes worker queue time. A late result never updates reinforcement state. */

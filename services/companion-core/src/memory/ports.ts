@@ -129,6 +129,11 @@ export interface InspectRequest {
   offset?: number
 }
 
+/** One character that owns memory items, with its active item count. Ids are AIRI card ids, never names. */
+export interface MemoryCharacter {
+  characterId: string
+  items: number
+}
 export interface AdminTarget {
   userId: string
   itemId: string
@@ -166,6 +171,8 @@ export interface MemoryQueryPort {
 /** Adapters authenticate user ownership before calling these local privileged controls. */
 export interface MemoryAdminPort {
   inspect: (request: InspectRequest) => Promise<MemoryItem[]>
+  /** Characters with character-scoped items, most items first, at most 32. Ops inspects memory per character. */
+  characters: (userId: string) => Promise<MemoryCharacter[]>
   edit: (request: EditRequest) => Promise<MemoryItem | null>
   delete: (target: AdminTarget) => Promise<boolean>
   forget: (target: AdminTarget) => Promise<boolean>

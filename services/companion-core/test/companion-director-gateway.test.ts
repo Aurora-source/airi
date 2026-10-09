@@ -203,3 +203,16 @@ describe('director controls that Ops persists', () => {
     expect(result.body.result).toBe('unsupported')
   })
 })
+
+describe('memory characters for Ops inspection', () => {
+  it('lists characters that own memory without a live turn', async () => {
+    await start()
+    await chat(identity('round-1', 'card-mura'), [{ role: 'user', content: 'Remember that my favorite tea is barley tea' }])
+    await harness!.companion.memory!.rememberForTool({ text: 'User likes barley tea', key: 'favorite_tea', value: 'barley tea', category: 'preference', scope: 'character' })
+
+    const listed = await eventually(async () => (await ops('memory/characters')).body, body => body.characters.length > 0)
+
+    expect(listed.characters).toEqual([{ characterId: 'card-mura', items: expect.any(Number) }])
+    expect((await ops('memory/characters', undefined, TEST_INFERENCE_TOKEN)).status).toBe(401)
+  })
+})

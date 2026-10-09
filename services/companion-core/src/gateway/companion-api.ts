@@ -91,6 +91,10 @@ export async function handleOpsMemory(req: IncomingMessage, res: ServerResponse,
     reply(200, { items })
     return true
   }
+  if (method === 'GET' && path === '/ops/memory/characters') {
+    reply(200, { characters: await memory.ports.characters(userId), activeCharacterId: memory.activeTurn()?.characterId ?? null })
+    return true
+  }
   if (method === 'GET' && path === '/ops/memory/export') {
     reply(200, await memory.ports.exportUser(userId))
     return true

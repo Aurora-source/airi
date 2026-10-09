@@ -77,6 +77,7 @@ function stubPorts(overrides: Partial<MemoryPorts>): MemoryPorts {
     setAuthorityAvailable: async () => {},
     recall: fail,
     inspect: fail,
+    characters: fail,
     edit: fail,
     delete: fail,
     forget: fail,

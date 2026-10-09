@@ -1,4 +1,4 @@
-import type { AdminTarget, ConsolidationResult, EditRequest, IngestResult, InspectRequest, MemoryExport, MemoryItem, MemoryObservation, RecallRequest, RecallResult } from './ports'
+import type { AdminTarget, ConsolidationResult, EditRequest, IngestResult, InspectRequest, MemoryCharacter, MemoryExport, MemoryItem, MemoryObservation, RecallRequest, RecallResult } from './ports'
 
 /** Internal thread messages stay separate from public storage ports and external transport contracts. */
 export interface Operations {
@@ -7,6 +7,7 @@ export interface Operations {
   recall: { args: [RecallRequest], result: RecallResult }
   acceptRecall: { args: [string, string, number], result: boolean }
   inspect: { args: [InspectRequest], result: MemoryItem[] }
+  characters: { args: [string], result: MemoryCharacter[] }
   edit: { args: [EditRequest], result: MemoryItem | null }
   delete: { args: [AdminTarget], result: boolean }
   forget: { args: [AdminTarget], result: boolean }

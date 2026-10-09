@@ -140,6 +140,10 @@ export class MemoryClient implements MemoryEventPort, MemoryQueryPort, MemoryAdm
     return this.request('edit', [request])
   }
 
+  characters(userId: string) {
+    return this.request('characters', [userId])
+  }
+
   delete(target: AdminTarget) {
     return this.request('delete', [target])
   }

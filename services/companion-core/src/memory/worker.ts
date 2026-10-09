@@ -45,6 +45,7 @@ async function start(): Promise<void> {
       case 'recall': return store.recall(request.args[0], request.deadlineAt)
       case 'acceptRecall': return store.acceptRecall(...request.args)
       case 'inspect': return store.inspect(...request.args)
+      case 'characters': return store.characters(...request.args)
       case 'edit': return store.edit(...request.args)
       case 'delete': return store.delete(...request.args)
       case 'forget': return store.forget(...request.args)
