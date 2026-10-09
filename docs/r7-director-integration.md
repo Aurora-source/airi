@@ -1,5 +1,8 @@
 # R7A future integration handoff
 
+Status: implemented on `integration/r6-media-visual-r7`. See [the combined runtime](r6-r7-combined-integration.md).
+The implementation uses the dedicated `curious` behavior, because the merged Vivid catalog has it.
+
 R7A is a standalone foundation on `codex/r7-director-foundation`.
 Integrate it after the active R6 local-media and Visual Presence work.
 This branch does not modify production Stage, media adapters, Jellyfin, animations, or Companion Ops frontend.
@@ -123,12 +126,12 @@ After integration, implement `VisualIntentPort` against the actual high-level `V
 | Director behavior | Accepted Vivid behavior ID |
 | --- | --- |
 | amused | amused |
-| curious | thinking |
+| curious | curious |
 | surprised | surprised |
 | concerned | concerned |
 | focused | focused |
 
-The accepted catalog has no `curious` ID. Verify this mapping against the final merged catalog.
+The merged Vivid catalog has a `curious` behavior, so the mapping is 1:1.
 Map intensity to the visual owner's existing idle intensity control.
 Map activity through its existing activity control. Respect its admission result.
 Keep an owner token so `cancel()` removes only behavior requested by this Director.

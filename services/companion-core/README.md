@@ -349,6 +349,21 @@ object of the status has this shape. Titles are for the Ops user only. No captio
 `connection` is `connected`, `waiting` (no player or server reachable), `unauthorized` (missing or refused credential),
 or `error` (see `error`). A player with `eligible: false` plays on another device and needs a `POST /ops/watch/source`.
 
+## Director
+
+`CompanionDirector` (`src/companion/director.ts`) hosts the R7 Director for the configured user and the character of
+the newest authenticated AIRI turn. It is on by default (`director.enabled`) and needs AIRI's server channel. Silence
+is the default outcome. See [the combined runtime](../../docs/r6-r7-combined-integration.md).
+
+| Part | Behavior |
+| --- | --- |
+| Answers | The existing chat pipeline answers every user request. The Director only attaches to that answer, so one request gets one answer. Tool rounds and retries add no request. |
+| Speech | Opt-in Director speech and spoken watch reactions use `spark:notify` with `requiresAck`. The stage result decides delivery. Proactive speech is off and only `POST /ops/director/configure` turns it on. |
+| Visual | Silent reactions are semantic `output:visual:request` events. The stage owns the Vivid controller and its owner priority. |
+| Watch | R6 admits every Director reaction through `WatchReactionRelay`, its gap rule, and its cooldown. Other reaction callers keep R6's Spark output. |
+| Memory and screen | Bounded R4 recall, R4 change notices, and content-free R5 screen state. Privacy states revoke screen-derived work at once. |
+| Ops | `GET /ops/director/status`, `POST /ops/director/configure`, `POST /ops/director/cancel`, `POST /ops/director/activity`. Ops token only. The status holds counts, enums, and times, never text or identities. |
+
 ## When to use it
 
 - You want AIRI to use cloud models without storing provider keys in AIRI.

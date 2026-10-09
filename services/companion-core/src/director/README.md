@@ -1,7 +1,8 @@
-# Standalone Director
+# Director
 
 The Director selects companion intentions from current evidence. Silence is the default.
-It is a standalone R7A foundation. No production Stage or frontend imports it.
+It started as the standalone R7A foundation. `CompanionDirector` in `../companion/director.ts` hosts it in the Core runtime.
+See [the combined runtime](../../../../docs/r6-r7-combined-integration.md) for its owners, events, and Ops API.
 
 Import `Director` and its contracts from this directory's `index.ts` inside Companion Core.
 The package has no new published Director subpath. Future packaging remains an integration decision.

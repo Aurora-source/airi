@@ -2,6 +2,8 @@
 
 Branch: `codex/visual-presence`. Base: upstream `45b8670e63f93debe7000453832b0611a66a5129`. Avatar and lip-sync packages matched the integrated foundation at branch creation. This branch does not wire into Stage or any integration runtime.
 
+Status: wired into the real Stage on `integration/r6-media-visual-r7` through `VisualPresenceHost` (`packages/stage-ui/src/libs/visual-presence`). The VRM frame context there reports lip sync from active visemes only. See [the combined runtime](r6-r7-combined-integration.md).
+
 ## Runtime ownership
 
 Create one controller for the visible avatar. The host selects idle intensity and visual activity and supplies current speaking, ACT, explicit-motion, and manual-control flags before updates. Speaking and explicit ACT always win. Listening has priority 60, explicit visual requests 40, long idle 20, and micro/short idle 10. The host releases ownership before model disposal and removes callbacks on unmount.
