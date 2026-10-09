@@ -95,7 +95,10 @@ export const useCharacterOrchestratorStore = defineStore('character-orchestrator
   function acknowledge(event: WebSocketEventOf<'spark:notify'>, state: WebSocketEvents['spark:emit']['state'], note?: string) {
     if (!event.data.requiresAck)
       return
-    modsServerChannelStore.send({ type: 'spark:emit', data: { id: event.data.id, eventId: event.data.eventId, state, note, destinations: [] } })
+    // An empty destination list reaches no peer. The acknowledgement goes back to the instance that sent the notify.
+    const producer = event.metadata?.source?.id
+    const destinations = producer ? [`instance:${producer}`] : ['*']
+    modsServerChannelStore.send({ type: 'spark:emit', data: { id: event.data.id, eventId: event.data.eventId, state, note, destinations }, ...(producer ? { route: { destinations } } : {}) })
   }
 
   async function acknowledgeReaction(event: WebSocketEventOf<'spark:notify'>) {

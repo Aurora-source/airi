@@ -392,6 +392,7 @@ describe('store character-orchestrator', () => {
       type: 'spark:notify',
       source: 'companion-core-director',
       data: { id: nanoid(), eventId: nanoid(), kind: 'ping', urgency: 'immediate', headline: 'Watch moment', destinations: ['character'], requiresAck: true, ttlMs: 5000, ...overrides },
+      metadata: { source: { kind: 'plugin', id: 'director-instance-1', plugin: { id: 'companion-core-director' } } },
     }
   }
 
@@ -418,6 +419,9 @@ describe('store character-orchestrator', () => {
     finishSpeech('finished')
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(acks()).toEqual(['working', 'done'])
+    // The server delivers an empty destination list to nobody, so every acknowledgement names its producer.
+    const emits = sendSparkCommandMock.mock.calls.map(([sent]) => sent).filter(sent => sent.type === 'spark:emit')
+    expect(emits.every(sent => sent.route?.destinations?.[0] === 'instance:director-instance-1')).toBe(true)
   })
 
   it('reports dropped when the reaction speech was interrupted or no reaction came', async () => {
