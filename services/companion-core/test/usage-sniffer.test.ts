@@ -31,7 +31,7 @@ describe('createUsageSniffer', () => {
     const { bytes, usage } = await run(events)
 
     expect(bytes).toBe(events.join(''))
-    expect(usage).toEqual({ promptTokens: 4321, completionTokens: 17 })
+    expect(usage).toEqual({ promptTokens: 4321, completionTokens: 17, totalTokens: 4338 })
   })
 
   it('finds usage when an event is split across chunks', async () => {
@@ -40,6 +40,17 @@ describe('createUsageSniffer', () => {
     const { usage } = await run([event.slice(0, 30), event.slice(30, 60), event.slice(60)])
 
     expect(usage).toEqual({ promptTokens: 100, completionTokens: 5 })
+  })
+
+  it('reads total, cached, and reasoning counts, and keeps the last usage chunk', async () => {
+    const events = [
+      sse({ choices: [], usage: { prompt_tokens: 50, completion_tokens: 1, total_tokens: 51 } }),
+      sse({ choices: [], usage: { prompt_tokens: 585, completion_tokens: 32, total_tokens: 1198, prompt_tokens_details: { cached_tokens: 100 }, completion_tokens_details: { reasoning_tokens: 581 } } }),
+    ]
+
+    const { usage } = await run(events)
+
+    expect(usage).toEqual({ promptTokens: 585, completionTokens: 32, totalTokens: 1198, cachedTokens: 100, reasoningTokens: 581 })
   })
 
   it('reads the usage of a JSON body', async () => {

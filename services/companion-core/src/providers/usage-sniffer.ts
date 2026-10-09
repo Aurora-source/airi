@@ -1,8 +1,6 @@
-/** Token counts that a provider reported for one request. */
-export interface ReportedUsage {
-  promptTokens?: number
-  completionTokens?: number
-}
+import type { ReportedUsage } from '../paid/usage'
+
+export type { ReportedUsage } from '../paid/usage'
 
 export interface UsageSniffer {
   /** Pass the response body through this stream. Every byte leaves unchanged. */
@@ -33,20 +31,24 @@ export function createUsageSniffer(contentType: string): UsageSniffer {
   function read(payload: string): void {
     if (!payload.includes('"usage"'))
       return
-    let parsed: { usage?: { prompt_tokens?: unknown, completion_tokens?: unknown } }
+    let parsed: { usage?: { prompt_tokens?: unknown, completion_tokens?: unknown, total_tokens?: unknown, prompt_tokens_details?: { cached_tokens?: unknown } | null, completion_tokens_details?: { reasoning_tokens?: unknown } | null } | null }
     try {
       parsed = JSON.parse(payload)
     }
     catch {
       return
     }
-    const promptTokens = parsed.usage?.prompt_tokens
-    const completionTokens = parsed.usage?.completion_tokens
-    if (typeof promptTokens !== 'number' && typeof completionTokens !== 'number')
+    const usage = parsed.usage
+    const number = (value: unknown) => typeof value === 'number' ? value : undefined
+    if (number(usage?.prompt_tokens) === undefined && number(usage?.completion_tokens) === undefined)
       return
+    // A later usage chunk replaces an earlier one, because streamed usage is cumulative.
     found = {
-      promptTokens: typeof promptTokens === 'number' ? promptTokens : undefined,
-      completionTokens: typeof completionTokens === 'number' ? completionTokens : undefined,
+      promptTokens: number(usage?.prompt_tokens),
+      completionTokens: number(usage?.completion_tokens),
+      totalTokens: number(usage?.total_tokens),
+      cachedTokens: number(usage?.prompt_tokens_details?.cached_tokens),
+      reasoningTokens: number(usage?.completion_tokens_details?.reasoning_tokens),
     }
   }
 
