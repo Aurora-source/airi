@@ -1,0 +1,55 @@
+{
+  "capturedAt": "2026-10-09",
+  "sources": [
+    "https://ai.google.dev/gemini-api/docs/generate-content/thinking",
+    "https://ai.google.dev/gemini-api/docs/thinking",
+    "https://ai.google.dev/gemini-api/docs/openai"
+  ],
+  "levels": {
+    "gemini-3.1-flash-lite": [
+      "minimal",
+      "low",
+      "medium",
+      "high"
+    ],
+    "gemini-3.5-flash": [
+      "minimal",
+      "low",
+      "medium",
+      "high"
+    ],
+    "gemini-3.6-flash": [
+      "minimal",
+      "low",
+      "medium",
+      "high"
+    ],
+    "gemini-3.7-flash": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "gemini-3.8-flash": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "disabledThinking": false,
+  "minimalGuaranteesZeroTokens": false,
+  "nativeParameter": "generationConfig.thinkingConfig.thinkingLevel",
+  "openaiParameter": "reasoning_effort",
+  "numericBudget": "Not recommended for Gemini 3. Do not combine with thinkingLevel. No numeric-budget probes were dispatched.",
+  "unsupported": [
+    "All listed Gemini 3 models: true off/none",
+    "3.7 Flash and 3.8 Flash: minimal"
+  ],
+  "generationAccess": [
+    "gemini-3.6-flash/minimal",
+    "gemini-3.5-flash/minimal",
+    "gemini-3.8-flash/low",
+    "gemini-3.8-flash/medium",
+    "gemini-3.8-flash/high",
+    "gemini-3.1-flash-lite/minimal"
+  ]
+}

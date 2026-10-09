@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "status": "inactive-research-proposal",
+  "appliedToProduction": false,
+  "humanAcceptanceComplete": false,
+  "physicalVoiceAcceptanceComplete": false,
+  "defaultCandidate": "BALANCED_COMPANION",
+  "modes": {
+    "FAST_CONVERSATION": {
+      "model": "gemini-3.6-flash",
+      "request": {
+        "reasoning_effort": "minimal",
+        "max_tokens": 4096
+      },
+      "provisional": true,
+      "acceptance": ["ACT emotion vocabulary", "leading DELAY scheduling", "blinded personality", "physical first audio"]
+    },
+    "BALANCED_COMPANION": {
+      "model": "gemini-3.8-flash",
+      "request": {
+        "reasoning_effort": "low",
+        "max_tokens": 4096
+      },
+      "provisional": true,
+      "acceptance": ["blinded personality", "voice latency", "tools and context finalists"]
+    },
+    "DEEP_RESPONSE": {
+      "model": "gemini-3.8-flash",
+      "request": {
+        "reasoning_effort": "medium",
+        "max_tokens": 4096
+      },
+      "explicitUserSelectionRequired": true,
+      "provisional": true,
+      "acceptance": ["complex detailed conversations", "Gateway deadline", "terminal usage reliability"]
+    }
+  },
+  "authority": {
+    "selection": "trusted user or application policy",
+    "r7Role": "attention and whether a response is warranted",
+    "r2bRole": "authorized inference, resolved-model capability validation, quotas and spending",
+    "watchOrNowCanSelectModelOrEffort": false,
+    "continuousCloudInference": false,
+    "automaticProductionSwitchingImplemented": false
+  },
+  "profiles": {
+    "LOCAL": "cloud modes remain unavailable",
+    "CLOUD": "existing R2B authorization remains required",
+    "HYBRID": "existing local-first policy and cloud authorization remain required"
+  },
+  "voice": {
+    "default": "existing local Mura TTS",
+    "nativeLiveEnabled": false,
+    "alternativeArchitectureRequiresOptIn": true
+  },
+  "financialPolicy": {
+    "doNotChangeProductionQuotas": true,
+    "includeThinkingInGeneratedTokens": true,
+    "reserveBeforeEveryDispatch": true,
+    "unknownUsageRetainsReservationAndHalts": true,
+    "validateEveryResolvedFallbackModel": true
+  }
+}

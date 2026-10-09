@@ -1,0 +1,5958 @@
+{
+  "version": 1,
+  "ceilingNano": 5000000000,
+  "halted": true,
+  "entries": [
+    {
+      "id": "a5a89e3e-c537-457f-9e94-9490cb1d804c",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 603750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 44,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "9dad4b2b-4412-4d29-b261-031c1b88e69f",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1471500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 66,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7c1833f5-9847-401e-8fbf-4405d13b09b8",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 630000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 51,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "ea1f97bd-bbd1-4690-9b8d-a889c0d8cf4a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2737500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 613,
+        "thinking": 581
+      }
+    },
+    {
+      "id": "6d281376-d68f-4735-8386-1d4325bfd488",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2565000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 567,
+        "thinking": 520
+      }
+    },
+    {
+      "id": "ca235821-77fd-4aae-8fe8-29ef9c1339ed",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 233250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 58,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "9e15d1ed-9f8a-459a-b20c-0a5ebed8190d",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 652500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "8530353e-e386-4926-bb0c-003f154ea212",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1408500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 59,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "5fcba4ea-12b4-4827-85e7-50afa82897ad",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "6c7028a3-f6a9-41d5-a527-00e8eac588a0",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2760000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 619,
+        "thinking": 578
+      }
+    },
+    {
+      "id": "be38713d-c7c9-4087-936a-bb6b3254621f",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2737500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 613,
+        "thinking": 574
+      }
+    },
+    {
+      "id": "3e568bff-6de7-47c5-9b92-92c0b5996d5d",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 231750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "1321ea00-2f00-47cd-8c30-79fe80daba9e",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1345500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 52,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "41089b44-1cef-4c48-8d70-3b1f90a20af8",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 630000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 51,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "1ed1b172-e3d4-4683-bd9e-1b98d49646e1",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2407500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 525,
+        "thinking": 474
+      }
+    },
+    {
+      "id": "a0a07eb2-d8c0-457e-9434-671b4818a8b3",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 4323750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 1036,
+        "thinking": 1002
+      }
+    },
+    {
+      "id": "a110b60b-6194-428f-b3ae-7be42a4e8c75",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 224250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 52,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "e1b1b765-c539-4d40-87e0-2bd5e3cb4102",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 626250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "2058f508-c588-48fa-ac8d-86c1cd89faca",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "ed1d859a-7b09-41ad-ac2f-f04ccc5fd3cb",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2002500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 417,
+        "thinking": 376
+      }
+    },
+    {
+      "id": "bf6726ed-0e5c-44b4-8c6a-0a4259920ee1",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2703750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 604,
+        "thinking": 564
+      }
+    },
+    {
+      "id": "a0c55f2d-6b4b-4056-8a3c-db93cc0d2548",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 231750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "fcbcbdf5-7883-485b-8222-bee08b8882fa",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 611250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 46,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7bb6d241-3510-4d5e-9c9b-5567cd4b2fda",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1381500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 56,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f7e407a5-a109-47c7-9396-23260e841057",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2295000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 495,
+        "thinking": 450
+      }
+    },
+    {
+      "id": "aa077043-7c68-4990-baec-fe8997d04c84",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2610000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 579,
+        "thinking": 531
+      }
+    },
+    {
+      "id": "1ec9553e-0d22-4118-9375-33dfedfdee17",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 219750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 49,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "4ad29407-e2af-498a-b1f6-d4c206227c16",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "578222ce-a67c-43f3-bbc1-cb5848ada9f5",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1354500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 53,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "2ef37c33-4dcc-49f8-981e-df6db934deab",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "14cfb005-f2bf-4e08-b8a0-994f200cfdcb",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2707500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 605,
+        "thinking": 568
+      }
+    },
+    {
+      "id": "ef9369b4-da95-4dec-9273-3f936f939b45",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 222750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 51,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "6123ae2b-9eaf-4f28-b158-7fba295ceea6",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "e514d0ee-dbfd-4680-b251-d0b53286d03a",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1390500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f0ed48e3-e398-416e-bdf6-13d988ac069d",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 678750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 64,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "21733b01-f9a2-4645-bce8-ff2f761a9704",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2186250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 466,
+        "thinking": 419
+      }
+    },
+    {
+      "id": "b30e444d-3552-49b2-85fc-5888e1f184cd",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 216750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 47,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "5d147393-d124-4624-ad23-6af2bf54861a",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 630000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 51,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "4258d96f-3fc7-42fe-a164-c5802689758a",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1408500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 59,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "dfca8c5f-aa11-4a3e-8724-85caff311a5c",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 581250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 38,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "3c862729-1585-4427-9d61-1fd39f7d0a91",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2287500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 493,
+        "thinking": 451
+      }
+    },
+    {
+      "id": "26d4b00d-2120-4bd8-9334-afc920358f06",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2857500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 645,
+        "thinking": 603
+      }
+    },
+    {
+      "id": "a4f5cdec-3b29-43f5-99b9-31f1ae0d34ed",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 234750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 59,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "799dd14b-9ad3-49f7-bb0b-c09f6ff79a09",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2715000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 607,
+        "thinking": 569
+      }
+    },
+    {
+      "id": "7a40d721-0f96-4631-a584-7ddd8a055719",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2100000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 443,
+        "thinking": 402
+      }
+    },
+    {
+      "id": "962febdd-6a04-4a32-8158-cff4b9cefb56",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 603750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 44,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "750b8455-01d7-41f4-a458-0608b532d3ac",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1471500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 66,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "cff50555-6ff9-4602-96af-3a8b158cb4bb",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 626250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "bd06fdcb-00d5-410a-9e81-eb00830ead30",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2662500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 593,
+        "thinking": 563
+      }
+    },
+    {
+      "id": "a5153674-1974-4a7a-9087-ba12a4562ca1",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2741250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 614,
+        "thinking": 577
+      }
+    },
+    {
+      "id": "2d00a5f7-aadb-4a55-bcc1-b9c4efd1bbc4",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "ea9ab486-7346-4d5d-9f5b-36ed97e94e9b",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1327500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "2dfcb5e7-4b9d-48a2-b26f-9dc09f181a99",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 615000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 47,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "60c26458-261a-40c3-88f0-fddeca07871b",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 234750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 59,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "3c4df5dc-5f78-43b3-a62a-974749c03d4a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2471250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 542,
+        "thinking": 504
+      }
+    },
+    {
+      "id": "8c86db0c-3790-498f-bc06-7fadcdab9716",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 641250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 54,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "ef4fef28-3c97-45aa-b9f9-f3fad38a67a2",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1390500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "b50af2d4-2bbf-4125-8824-6a282e0f178d",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 615000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 47,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "db3df681-3b24-4a31-a7e0-785df4caace9",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 233250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 58,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "11995d82-0327-42ed-98bf-21034a44fb8c",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2928750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 664,
+        "thinking": 628
+      }
+    },
+    {
+      "id": "056d6cff-98b3-491e-b633-e357ddb89ce1",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 630000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 51,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "44b08e16-84b0-4ff9-b7ef-fed1c86d22e2",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1336500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 51,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "478ecea1-51df-4a38-b13c-bd489d36ff39",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "00a40d98-bc4d-429d-8d48-9cb0800b7e43",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 221250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f2681920-8450-43c0-b7dc-c27364fb8e45",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3078750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 704,
+        "thinking": 673
+      }
+    },
+    {
+      "id": "3e3b665e-4025-4db8-853e-626b4e2dbccf",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2122500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 449,
+        "thinking": 402
+      }
+    },
+    {
+      "id": "968fd4dc-4560-487d-8482-2e93468abd3e",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1480500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 67,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "cbb6cc91-4c2d-4f61-a49f-cacee8492cb2",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 645000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 55,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "27056c60-0053-4604-ae2d-c2c0dd42bd53",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 240750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 63,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "324d32c8-f469-4bb7-b2a2-a7e36fe42d90",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2700000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 603,
+        "thinking": 575
+      }
+    },
+    {
+      "id": "098c1e4a-eb21-4fae-9de5-2ce7d39769bb",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2340000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 507,
+        "thinking": 463
+      }
+    },
+    {
+      "id": "813b3725-8720-446d-a9ee-e162e3148fad",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 615000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 47,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "b0448696-721b-468a-a3cd-3ee2f4307928",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 637500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 53,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "ef3d73bc-d141-49c0-ae0d-e791af4f73a1",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 227250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 54,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c3a1c862-0e73-49cf-b9fa-8dbdc67e977a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3303750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 764,
+        "thinking": 729
+      }
+    },
+    {
+      "id": "dfcdd256-8854-4eda-b89b-52812fa0ace3",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2688750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 600,
+        "thinking": 559
+      }
+    },
+    {
+      "id": "b221401b-7229-414e-96ef-14b411611933",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 622500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 49,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "1b845e02-3864-4396-a46b-136687faaa61",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1327500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "6fc413ce-85fa-4204-b98b-b247d31a27ab",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 633750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 52,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "9d72c2b4-76e5-4160-888f-fd4de567f9c7",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1390500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "905d7d90-50b6-4951-9d3a-ba9fe9394cb8",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 637500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 53,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "d302c472-9226-4134-b482-4e53c95a9d05",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2426250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 530,
+        "thinking": 495
+      }
+    },
+    {
+      "id": "ac1d5d14-b664-4fbb-9b87-a1c80b1c9cf1",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 4308750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 1032,
+        "thinking": 996
+      }
+    },
+    {
+      "id": "f8bfdf9e-91cf-4db4-8b54-7efa9651d1ca",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 245250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 66,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "0f26b521-dd15-4e6a-bfd1-fdd6f8d70bab",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1363500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 54,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "decf64ce-652b-4d17-9598-b57150d967b4",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 622500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 49,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7f18e8f9-6549-4fe9-9c1a-d6120f5b4616",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2145000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 455,
+        "thinking": 399
+      }
+    },
+    {
+      "id": "61d257fe-2867-44f7-b650-ae7b5255a8c7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2662500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 593,
+        "thinking": 550
+      }
+    },
+    {
+      "id": "72f0e82a-6354-48ff-8678-9a749da53a6b",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 242250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 64,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "1626fa95-1470-44f4-b232-9f9d4b3273be",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 641250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 54,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "79dddefd-12ac-444c-b523-0b4695273fd9",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 615000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 47,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "045a4836-b73d-417b-901f-cfdcbae56ecf",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2295000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 495,
+        "thinking": 454
+      }
+    },
+    {
+      "id": "1db85331-e39f-4aa4-9967-d552e615b814",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2958750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 672,
+        "thinking": 629
+      }
+    },
+    {
+      "id": "82ffda58-def1-42e6-9dbb-307b45d12245",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 221250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "02eedf97-31e8-4a64-beeb-557d5617a741",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 622500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 49,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "18892f7b-ec4f-4819-b4b9-bbbcc854e452",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1327500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "9e4f3704-6094-435a-a82e-3b01cb9d9b1c",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2182500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 465,
+        "thinking": 425
+      }
+    },
+    {
+      "id": "43228098-c0e5-4598-b9e2-f139f714b568",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3108750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 712,
+        "thinking": 675
+      }
+    },
+    {
+      "id": "d1f3da01-fa2f-43f0-8426-df41629a580d",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 236250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 60,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "003d91a3-d01c-4392-92db-491b9fb17f32",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 611250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 46,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "862cc5de-33cc-4b93-bcea-037cb7623b5a",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1408500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 59,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "6eafa810-4f1c-4847-b954-1cc2f829065f",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 626250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7c85bbf9-59e2-492c-8681-ac0552d58d6f",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3292500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 761,
+        "thinking": 724
+      }
+    },
+    {
+      "id": "d61a6dd4-438b-49f4-9d4b-f71d38b3c885",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 225750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 53,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "90d5ca7d-cc30-4034-8f43-5d27f3c75c02",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 626250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f20db2ca-9adb-4a3f-a4d2-328e956a0611",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1390500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "a2ec2201-58bb-4d78-953c-474d30a6831d",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 600000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 43,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "86878ded-caf3-4f8b-8411-9807998fc84c",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2242500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 481,
+        "thinking": 439
+      }
+    },
+    {
+      "id": "700f1e1a-3f24-41e8-9936-f373455c50d2",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 228750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 55,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "4ff7aa13-adfc-402d-a229-4cb8b9bac87a",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 615000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 47,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "161474d2-dbc0-4fe6-97d1-7f526f1dec28",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1345500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 52,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "759cf27e-5795-43d7-baee-4c5e842b1b41",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "42364fe6-eed3-42fd-bde0-b18cd1d3f5c7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2572500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 569,
+        "thinking": 514
+      }
+    },
+    {
+      "id": "f5d95dbc-1046-4290-8fa6-90ccdc3564c5",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3330000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 771,
+        "thinking": 730
+      }
+    },
+    {
+      "id": "fdb691ae-5c8c-4f74-97f4-5d6dae219d24",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 228750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 55,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f4a4b2ad-ffaf-42f8-b625-1ee4dca878cd",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3086250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 706,
+        "thinking": 666
+      }
+    },
+    {
+      "id": "8fef2ff7-cd80-429f-adaf-ce2c653d4158",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2625000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 583,
+        "thinking": 539
+      }
+    },
+    {
+      "id": "c7db091d-4cce-4fe4-8a70-74efd69c31e7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 637500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 53,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "750d1679-52dd-4caa-8199-2a0f6e408b57",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1390500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "9282f76e-caa6-43a6-a7cc-aaad57141139",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 626250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f24f6cb6-ac8d-45de-8877-f8d8961f5eaa",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2726250,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 610,
+        "thinking": 577
+      }
+    },
+    {
+      "id": "62c3a9c5-197c-42db-a31e-2de747a7ad14",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2223750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 476,
+        "thinking": 437
+      }
+    },
+    {
+      "id": "f22dbc93-bd57-4aab-9072-034c9719f8d5",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 615000,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 47,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "63bc2d0e-9a3b-4001-ac74-5720b83a6355",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1327500,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 50,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "56769658-e89c-44e4-85c7-7fbc6bfb6dd6",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 618750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "3576a596-cc7d-4790-af85-dd842b04b45c",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 231750,
+      "usage": {
+        "input": 585,
+        "cached": 0,
+        "output": 57,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "3060a738-7dbd-4a94-8d5d-8408785a47d8",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 723750,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 77,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "d5b45ae0-e4bc-4d27-82a5-3d89e44160ea",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 783750,
+      "usage": {
+        "input": 675,
+        "cached": 0,
+        "output": 74,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "64fc5e36-45ee-4cd4-8edf-b34c02843083",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 917250,
+      "usage": {
+        "input": 763,
+        "cached": 0,
+        "output": 92,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "cc352210-d77a-4671-b5af-48f07c2a2950",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1752000,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 98,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7120f036-ddd6-4bb4-89dc-608629d2c742",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 2061000,
+      "usage": {
+        "input": 696,
+        "cached": 0,
+        "output": 113,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f27e02c0-cd03-42aa-aa8a-b8e12b02fa28",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 2116500,
+      "usage": {
+        "input": 823,
+        "cached": 0,
+        "output": 98,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c8ee1e24-6f0c-4ea1-a76f-2c896d5c5857",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 690000,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 68,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "457a28f1-2b3a-49e8-b56e-c8e97d93f193",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 728250,
+      "usage": {
+        "input": 666,
+        "cached": 0,
+        "output": 61,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "02d858bd-b741-4c61-ab62-377bad2264a4",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 893250,
+      "usage": {
+        "input": 741,
+        "cached": 0,
+        "output": 90,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7fc49b3f-2b41-442e-b765-19ed353b23d4",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2475000,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 544,
+        "thinking": 483
+      }
+    },
+    {
+      "id": "6442d088-4162-4667-8f6e-1be397ed5cf9",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2163000,
+      "usage": {
+        "input": 659,
+        "cached": 0,
+        "output": 445,
+        "thinking": 394
+      }
+    },
+    {
+      "id": "0976d98f-e157-42cd-9153-c9af7a78e9c8",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2778000,
+      "usage": {
+        "input": 724,
+        "cached": 0,
+        "output": 596,
+        "thinking": 525
+      }
+    },
+    {
+      "id": "7138b427-15f6-42eb-a11a-c2a0c6d6ef9a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2722500,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 610,
+        "thinking": 553
+      }
+    },
+    {
+      "id": "37179c49-5933-4678-9b2d-897082514a07",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3495000,
+      "usage": {
+        "input": 655,
+        "cached": 0,
+        "output": 801,
+        "thinking": 740
+      }
+    },
+    {
+      "id": "1f31fe75-c7eb-4a9a-a40d-0c9da1497fa6",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2763750,
+      "usage": {
+        "input": 730,
+        "cached": 0,
+        "output": 591,
+        "thinking": 527
+      }
+    },
+    {
+      "id": "20e0cee3-d86c-4f85-bb22-377953284bf2",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 262000,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 78,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c5494584-a634-4beb-aeae-a19713cfb4ed",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 247000,
+      "usage": {
+        "input": 676,
+        "cached": 0,
+        "output": 52,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "03c98d70-91f6-479a-9d7a-9374808572ae",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 317500,
+      "usage": {
+        "input": 742,
+        "cached": 0,
+        "output": 88,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "d317b9b7-da7f-416a-992f-2132771e4cb1",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1900500,
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 114,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "aa5a567e-6765-4901-9a6f-a03e14059af7",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1779000,
+      "usage": {
+        "input": 718,
+        "cached": 0,
+        "output": 78,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "27471ea0-c30a-41e0-bbca-8888cd981f9a",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 2205000,
+      "usage": {
+        "input": 816,
+        "cached": 0,
+        "output": 109,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "93afd5ed-37c7-4d25-ac04-d6f8e602342d",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 718500,
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 75,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "6e81c782-ad27-4ffd-960b-09be167a3371",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 659250,
+      "usage": {
+        "input": 679,
+        "cached": 0,
+        "output": 40,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "710076c9-4d90-402c-9b3b-32b91ee66528",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 824250,
+      "usage": {
+        "input": 739,
+        "cached": 0,
+        "output": 72,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7050bab7-2ee2-4d2a-b2c2-a217fe8303f9",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2559750,
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 566,
+        "thinking": 491
+      }
+    },
+    {
+      "id": "47f689fc-59ed-422d-9a0e-73026b9d5354",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2305500,
+      "usage": {
+        "input": 679,
+        "cached": 0,
+        "output": 479,
+        "thinking": 441
+      }
+    },
+    {
+      "id": "ce2e3e56-3dd6-4e43-8540-3ac298eabb82",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3736500,
+      "usage": {
+        "input": 737,
+        "cached": 0,
+        "output": 849,
+        "thinking": 784
+      }
+    },
+    {
+      "id": "038911d9-047e-4521-8427-0aeb1dd19788",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3069750,
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 702,
+        "thinking": 649
+      }
+    },
+    {
+      "id": "89b20cbb-5db1-4d9a-9d65-d84cc7b3231a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2817750,
+      "usage": {
+        "input": 657,
+        "cached": 0,
+        "output": 620,
+        "thinking": 580
+      }
+    },
+    {
+      "id": "cfe00b95-f80c-48b5-9609-a93579213781",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 4392750,
+      "usage": {
+        "input": 717,
+        "cached": 0,
+        "output": 1028,
+        "thinking": 973
+      }
+    },
+    {
+      "id": "ac8ae0c5-845e-497a-9571-6d07c8299abe",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 289750,
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 96,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "059c79d8-294b-4d99-b499-0ca90d94d0c5",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 233500,
+      "usage": {
+        "input": 700,
+        "cached": 0,
+        "output": 39,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "2c4de388-767f-4078-978b-8d3132d82974",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 332250,
+      "usage": {
+        "input": 759,
+        "cached": 0,
+        "output": 95,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "383f0039-993c-41e5-8a44-561d588ea35d",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 774750,
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 90,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "45204a7c-567d-4577-b4a8-9a42fe9be2f7",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 726750,
+      "usage": {
+        "input": 694,
+        "cached": 0,
+        "output": 55,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "5d7d445d-3db8-4c58-8050-b745f91c9355",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 858000,
+      "usage": {
+        "input": 769,
+        "cached": 0,
+        "output": 75,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "39e1a147-9efe-41cc-9cb2-302c6f9ca3b7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 686250,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 67,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c9a075bf-3a04-4a9a-b63c-f743b1b6d5a0",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 600750,
+      "usage": {
+        "input": 661,
+        "cached": 0,
+        "output": 28,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "868403ff-6c5f-4e59-81d7-0910ea0654fa",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 723750,
+      "usage": {
+        "input": 705,
+        "cached": 0,
+        "output": 52,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "a123c39c-5e39-4fd9-850a-1f273a39827b",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2103750,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 445,
+        "thinking": 372
+      }
+    },
+    {
+      "id": "589d9c85-abf2-4570-af5c-b9650e9bc33a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2034000,
+      "usage": {
+        "input": 667,
+        "cached": 0,
+        "output": 409,
+        "thinking": 385
+      }
+    },
+    {
+      "id": "aac327f8-ab1e-4d27-86ed-b9df85b627bb",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 1565250,
+      "usage": {
+        "input": 707,
+        "cached": 0,
+        "output": 276,
+        "thinking": 228
+      }
+    },
+    {
+      "id": "4b01ad5c-e1a7-48f8-bd26-904bc267aac7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3142500,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 722,
+        "thinking": 655
+      }
+    },
+    {
+      "id": "d1695c9c-599d-49fe-ae3d-68db6622d044",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3087000,
+      "usage": {
+        "input": 661,
+        "cached": 0,
+        "output": 691,
+        "thinking": 667
+      }
+    },
+    {
+      "id": "3aca05e1-7cc2-4be7-b3d2-6aa8ce22748a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2644500,
+      "usage": {
+        "input": 701,
+        "cached": 0,
+        "output": 565,
+        "thinking": 532
+      }
+    },
+    {
+      "id": "077fbcce-d8d0-44a0-9eeb-24b779ae1e5d",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 299500,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 103,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "181decb8-1d1c-4157-8d47-f68f0a03b349",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 225500,
+      "usage": {
+        "input": 698,
+        "cached": 0,
+        "output": 34,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "a369703a-db00-4113-8a76-4717dace460c",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 275500,
+      "usage": {
+        "input": 748,
+        "cached": 0,
+        "output": 59,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "939f362c-4ee5-4f83-a90b-b44cccf5a54e",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 738750,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 81,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c83ceb19-f671-4961-89c5-1d9189aa4967",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 588750,
+      "usage": {
+        "input": 675,
+        "cached": 0,
+        "output": 22,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "01c28d9e-cb3d-43bd-be96-49b92182ea5b",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 744750,
+      "usage": {
+        "input": 713,
+        "cached": 0,
+        "output": 56,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "00e33a5c-b637-479d-b491-8fe7c0bf5b30",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1986000,
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 124,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "91d61bc8-8796-47e8-98ba-24c391442f33",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1293000,
+      "usage": {
+        "input": 718,
+        "cached": 0,
+        "output": 24,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "b3fa40eb-0da2-4583-8ac9-06d295d47d59",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1731000,
+      "usage": {
+        "input": 758,
+        "cached": 0,
+        "output": 66,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "938a5d0d-3c31-42b0-a85c-7b15649010b7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2290500,
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 494,
+        "thinking": 435
+      }
+    },
+    {
+      "id": "b0766031-df20-4458-9867-f165b7126c49",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2067000,
+      "usage": {
+        "input": 661,
+        "cached": 0,
+        "output": 419,
+        "thinking": 366
+      }
+    },
+    {
+      "id": "15e0fd57-ded3-458f-b2e7-e2ee6f68e637",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 1722000,
+      "usage": {
+        "input": 731,
+        "cached": 0,
+        "output": 313,
+        "thinking": 286
+      }
+    },
+    {
+      "id": "04ccbd1f-42d8-4da6-bd26-824d708af8a8",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2575500,
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 570,
+        "thinking": 514
+      }
+    },
+    {
+      "id": "0c215788-da91-4a34-8b06-ad8b4ea20e75",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2076750,
+      "usage": {
+        "input": 659,
+        "cached": 0,
+        "output": 422,
+        "thinking": 370
+      }
+    },
+    {
+      "id": "5ca056d3-b9e9-4874-939d-3a8d5a7897e7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2353500,
+      "usage": {
+        "input": 728,
+        "cached": 0,
+        "output": 482,
+        "thinking": 455
+      }
+    },
+    {
+      "id": "a72e6dd3-12a4-4acf-84a5-634e70276e30",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 218000,
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "93ccec83-c1cc-44c2-8c30-0de26adff171",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 254250,
+      "usage": {
+        "input": 651,
+        "cached": 0,
+        "output": 61,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "5e985fe6-5c41-4055-a8d6-e5782e6ee41a",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 228750,
+      "usage": {
+        "input": 729,
+        "cached": 0,
+        "output": 31,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "eb6ff1fd-30b8-4882-b35f-d8e8843f7854",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 696750,
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 69,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "e966e95b-a525-4d77-8f63-4f8a5479fd75",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 732000,
+      "usage": {
+        "input": 671,
+        "cached": 0,
+        "output": 61,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "4d4e9063-85f3-4424-9034-ab595b601d36",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 644250,
+      "usage": {
+        "input": 749,
+        "cached": 0,
+        "output": 22,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "84504797-c534-4793-b4a6-0d0870ed013e",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1506000,
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 70,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "18cbae4d-b81c-4a0b-b3b3-b2b039ef600c",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1620000,
+      "usage": {
+        "input": 672,
+        "cached": 0,
+        "output": 68,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "3b95c4d1-5e30-499c-8d81-f7b72c9134e7",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1405500,
+      "usage": {
+        "input": 757,
+        "cached": 0,
+        "output": 30,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "7e5f7944-0d29-473f-8f40-15fffb1902b2",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 655500,
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 58,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "28f76a23-92ed-45f2-96d6-109c42048324",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 652500,
+      "usage": {
+        "input": 660,
+        "cached": 0,
+        "output": 42,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "63fe6196-fd01-4911-a067-2a12d7da35a4",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 633000,
+      "usage": {
+        "input": 719,
+        "cached": 0,
+        "output": 25,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "e05e59e7-83d5-4ca0-94ff-20d1385d9bfe",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 4050750,
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 960,
+        "thinking": 903
+      }
+    },
+    {
+      "id": "cbfbfa3b-2001-4a1f-ae49-389e4fc029ad",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2857500,
+      "usage": {
+        "input": 670,
+        "cached": 0,
+        "output": 628,
+        "thinking": 562
+      }
+    },
+    {
+      "id": "c1731951-235c-4ba3-b3b6-dc7346ec73a3",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2357250,
+      "usage": {
+        "input": 748,
+        "cached": 0,
+        "output": 479,
+        "thinking": 427
+      }
+    },
+    {
+      "id": "a313d1dd-9a80-458a-9d5c-19796a6ce22d",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 274750,
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 83,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "fb64677f-f149-45b5-8d88-465345eff972",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 309000,
+      "usage": {
+        "input": 696,
+        "cached": 0,
+        "output": 90,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "874828d6-d584-4a49-a4a4-7fbcb8135f89",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 267000,
+      "usage": {
+        "input": 798,
+        "cached": 0,
+        "output": 45,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "539b848a-7604-457d-a8c8-bc3dff280c75",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 777000,
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 87,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "e0121a7d-29e8-4338-aaeb-37376e0045ac",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 821250,
+      "usage": {
+        "input": 700,
+        "cached": 0,
+        "output": 79,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "3497b0bf-44be-4b25-b948-8e7613790fb0",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 859500,
+      "usage": {
+        "input": 791,
+        "cached": 0,
+        "output": 71,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "698c15af-5312-4f95-9926-9ef605ec2086",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1585500,
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 76,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "896622ed-fd14-4528-9eba-bc8a479ccb29",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1807500,
+      "usage": {
+        "input": 689,
+        "cached": 0,
+        "output": 86,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "88c3fa3b-977a-450f-a2d7-94f49ec24d46",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1819500,
+      "usage": {
+        "input": 787,
+        "cached": 0,
+        "output": 71,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "6db28ab4-7976-42f7-a540-d1d93c289205",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 705750,
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 68,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "021cced9-087e-4b14-834c-bc484d8cf7a2",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 784500,
+      "usage": {
+        "input": 681,
+        "cached": 0,
+        "output": 73,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "99c3e066-b4b5-4bec-b475-82e35c361159",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 810750,
+      "usage": {
+        "input": 766,
+        "cached": 0,
+        "output": 63,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "78e5d63b-3422-4cde-951f-5368bf0696d3",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2682000,
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 595,
+        "thinking": 540
+      }
+    },
+    {
+      "id": "a32dae41-edc8-47f3-b7f3-95e6388a8514",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2578500,
+      "usage": {
+        "input": 668,
+        "cached": 0,
+        "output": 554,
+        "thinking": 496
+      }
+    },
+    {
+      "id": "c5cdc941-6f5b-426f-b7ba-b416748240ad",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 1978500,
+      "usage": {
+        "input": 738,
+        "cached": 0,
+        "output": 380,
+        "thinking": 349
+      }
+    },
+    {
+      "id": "ea112a1a-7409-4f6d-bd56-8fb4a2a20fdb",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 247000,
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 60,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c6c7f64a-3f56-405e-9c86-36b8c40b95bd",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 293250,
+      "usage": {
+        "input": 705,
+        "cached": 0,
+        "output": 78,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c08fc6dd-0861-4214-8390-ffefe4420e4a",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "costNano": 307250,
+      "usage": {
+        "input": 797,
+        "cached": 0,
+        "output": 72,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "11456d0d-532f-465a-b82c-c84fa0d7408e",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 767250,
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 79,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "ff3698db-8f51-4b36-8217-1b874cf2b145",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 873000,
+      "usage": {
+        "input": 724,
+        "cached": 0,
+        "output": 88,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "62d9c7f2-e8c5-4369-a840-9ed016067c64",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 908250,
+      "usage": {
+        "input": 826,
+        "cached": 0,
+        "output": 77,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "c7af0696-6ca0-42a6-b2c4-d477e4e9c594",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1599000,
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 73,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "6865f4cc-b267-403b-8277-f48b758fde3e",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1707000,
+      "usage": {
+        "input": 718,
+        "cached": 0,
+        "output": 70,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "f83d74d5-316e-4fab-bd40-f67b6f617096",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "costNano": 1941000,
+      "usage": {
+        "input": 802,
+        "cached": 0,
+        "output": 82,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "74d92caf-d0ec-42f8-9a9d-621ffc82e400",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 711000,
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 64,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "a0ea3d88-9620-4ba5-9239-601272d58cc7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 816750,
+      "usage": {
+        "input": 709,
+        "cached": 0,
+        "output": 76,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "bb94eff8-0f84-4fae-86d0-c381217d6beb",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 861750,
+      "usage": {
+        "input": 799,
+        "cached": 0,
+        "output": 70,
+        "thinking": 0
+      }
+    },
+    {
+      "id": "74adad9c-edb4-4f18-b24a-149b879160d5",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2428500,
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 522,
+        "thinking": 473
+      }
+    },
+    {
+      "id": "e9652a92-2e40-4849-ab2a-a1c89fb22234",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 1975500,
+      "usage": {
+        "input": 694,
+        "cached": 0,
+        "output": 388,
+        "thinking": 327
+      }
+    },
+    {
+      "id": "433d8f49-01eb-4962-ad87-056b3622a051",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 2350500,
+      "usage": {
+        "input": 769,
+        "cached": 0,
+        "output": 473,
+        "thinking": 429
+      }
+    },
+    {
+      "id": "2bf9bb81-0ba4-461e-a394-35ab56f7a2f8",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 7374750,
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 1841,
+        "thinking": 1788
+      }
+    },
+    {
+      "id": "75de4ef8-da84-42da-8649-7c728b0a12a7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 4112250,
+      "usage": {
+        "input": 698,
+        "cached": 0,
+        "output": 957,
+        "thinking": 876
+      }
+    },
+    {
+      "id": "2ab074a9-5888-438f-966a-529a959b5f14",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "costNano": 3009750,
+      "usage": {
+        "input": 793,
+        "cached": 0,
+        "output": 644,
+        "thinking": 602
+      }
+    },
+    {
+      "id": "dc23e714-6b9f-4c4d-a7a2-58d333bc9e62",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 88,
+        "thinking": 0
+      },
+      "costNano": 277000
+    },
+    {
+      "id": "f21bbca2-0c1a-4c07-bbc7-e759e9273b54",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 686,
+        "cached": 0,
+        "output": 71,
+        "thinking": 0
+      },
+      "costNano": 278000
+    },
+    {
+      "id": "e9cab5df-ec84-4ca8-800d-89c21c7f7eb6",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 771,
+        "cached": 0,
+        "output": 98,
+        "thinking": 0
+      },
+      "costNano": 339750
+    },
+    {
+      "id": "d99aebd8-f709-4ece-8d7b-1a4684efdef7",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 633,
+        "thinking": 576
+      },
+      "costNano": 2808750
+    },
+    {
+      "id": "b8292646-e6f8-4843-9b6a-bf041a16fbc3",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 655,
+        "cached": 0,
+        "output": 634,
+        "thinking": 581
+      },
+      "costNano": 2868750
+    },
+    {
+      "id": "c6649357-c8df-4866-bcbe-d9ead6cd4369",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 722,
+        "cached": 0,
+        "output": 715,
+        "thinking": 646
+      },
+      "costNano": 3222750
+    },
+    {
+      "id": "64661f90-79dd-4666-b5a8-a734bb4e13e2",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 411,
+        "thinking": 342
+      },
+      "costNano": 1976250
+    },
+    {
+      "id": "160e4255-f3cd-4de5-a8d7-440624a7642f",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 667,
+        "cached": 0,
+        "output": 386,
+        "thinking": 330
+      },
+      "costNano": 1947750
+    },
+    {
+      "id": "4ba223d1-b611-400a-b3a0-771e36b2ceef",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 737,
+        "cached": 0,
+        "output": 686,
+        "thinking": 609
+      },
+      "costNano": 3125250
+    },
+    {
+      "id": "b59f939a-34f1-4b18-9f24-f5d365a7ddd3",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 87,
+        "thinking": 0
+      },
+      "costNano": 761250
+    },
+    {
+      "id": "2ce29c38-0e05-4f87-bdca-93b2a71c4669",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 685,
+        "cached": 0,
+        "output": 86,
+        "thinking": 0
+      },
+      "costNano": 836250
+    },
+    {
+      "id": "09ecd5a5-cd3a-4484-a791-268b968dd639",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 785,
+        "cached": 0,
+        "output": 103,
+        "thinking": 0
+      },
+      "costNano": 975000
+    },
+    {
+      "id": "c429f2b7-90c3-43fd-a25b-1664bb5174e7",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 88,
+        "thinking": 0
+      },
+      "costNano": 1662000
+    },
+    {
+      "id": "62af6e54-f5ef-41d2-9903-8727069462cd",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 686,
+        "cached": 0,
+        "output": 76,
+        "thinking": 0
+      },
+      "costNano": 1713000
+    },
+    {
+      "id": "a8130cb9-b62f-4030-ab69-4a4cbd864bfe",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 776,
+        "cached": 0,
+        "output": 107,
+        "thinking": 0
+      },
+      "costNano": 2127000
+    },
+    {
+      "id": "d04e7cac-ab09-48f4-9883-0921adb6eeec",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 77,
+        "thinking": 0
+      },
+      "costNano": 723750
+    },
+    {
+      "id": "8e792ecf-3657-4ada-b4f1-e8c0c308750a",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 675,
+        "cached": 0,
+        "output": 76,
+        "thinking": 0
+      },
+      "costNano": 791250
+    },
+    {
+      "id": "5d0326fc-8236-4213-97d7-1ba0f183dbab",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 764,
+        "cached": 0,
+        "output": 92,
+        "thinking": 0
+      },
+      "costNano": 918000
+    },
+    {
+      "id": "1a9ed4b5-4ba5-44fd-a573-7fa5ee85035f",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 831,
+        "thinking": 766
+      },
+      "costNano": 3553500
+    },
+    {
+      "id": "704bff2f-17b5-4df9-9c1b-0ed21cdf75cb",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 669,
+        "cached": 0,
+        "output": 611,
+        "thinking": 573
+      },
+      "costNano": 2793000
+    },
+    {
+      "id": "1ebc9828-37a8-45f3-ab99-545473d542eb",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 727,
+        "cached": 0,
+        "output": 951,
+        "thinking": 896
+      },
+      "costNano": 4111500
+    },
+    {
+      "id": "92906639-4d2d-4ba6-8de8-fbd3dc70078a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 539,
+        "thinking": 474
+      },
+      "costNano": 2458500
+    },
+    {
+      "id": "924b5ebd-c364-4679-89ed-2d9e226ffc95",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 669,
+        "cached": 0,
+        "output": 423,
+        "thinking": 387
+      },
+      "costNano": 2088000
+    },
+    {
+      "id": "86314c69-e480-4d66-817d-5336bb98f571",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 725,
+        "cached": 0,
+        "output": 656,
+        "thinking": 590
+      },
+      "costNano": 3003750
+    },
+    {
+      "id": "ee1c6384-0ef8-4484-91dc-58d8e8bb7d9f",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 86,
+        "thinking": 0
+      },
+      "costNano": 759750
+    },
+    {
+      "id": "53c2bc45-fafd-4cae-9cad-c3842c3b9e8d",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 690,
+        "cached": 0,
+        "output": 44,
+        "thinking": 0
+      },
+      "costNano": 682500
+    },
+    {
+      "id": "6fece5bd-7f33-4768-951f-a25ea1c10b12",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 754,
+        "cached": 0,
+        "output": 82,
+        "thinking": 0
+      },
+      "costNano": 873000
+    },
+    {
+      "id": "ff3ebfc2-96c5-4efe-b9c4-c6da6d77665e",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 122,
+        "thinking": 0
+      },
+      "costNano": 1972500
+    },
+    {
+      "id": "625e1c56-5b30-42de-8d08-7ecb827f5f6d",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 726,
+        "cached": 0,
+        "output": 72,
+        "thinking": 0
+      },
+      "costNano": 1737000
+    },
+    {
+      "id": "754371f5-ea1d-464f-a1eb-d7370e975dea",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 818,
+        "cached": 0,
+        "output": 138,
+        "thinking": 0
+      },
+      "costNano": 2469000
+    },
+    {
+      "id": "ca007046-725a-47ff-8d07-60e8c35b6a1e",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 86,
+        "thinking": 0
+      },
+      "costNano": 759750
+    },
+    {
+      "id": "2f2529b4-131a-4b97-8355-09c15ec1465f",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 690,
+        "cached": 0,
+        "output": 45,
+        "thinking": 0
+      },
+      "costNano": 686250
+    },
+    {
+      "id": "16bcdb64-8ffc-4a54-80b5-f60e0fe59c49",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 755,
+        "cached": 0,
+        "output": 92,
+        "thinking": 0
+      },
+      "costNano": 911250
+    },
+    {
+      "id": "4a96bc45-8b33-472c-9f73-7b47fcda07c8",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 583,
+        "cached": 0,
+        "output": 70,
+        "thinking": 0
+      },
+      "costNano": 250750
+    },
+    {
+      "id": "e9534892-25f2-4b44-81ae-891e0c060536",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 674,
+        "cached": 0,
+        "output": 49,
+        "thinking": 0
+      },
+      "costNano": 242000
+    },
+    {
+      "id": "9788c57f-6fd6-407b-ba93-647a27cc8585",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 744,
+        "cached": 0,
+        "output": 87,
+        "thinking": 0
+      },
+      "costNano": 316500
+    },
+    {
+      "id": "df42d9e4-df69-4d54-8ea4-1fd8e9018996",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 504,
+        "thinking": 430
+      },
+      "costNano": 2325000
+    },
+    {
+      "id": "cfbff2de-ee98-4dc4-b600-db7292af3021",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 668,
+        "cached": 0,
+        "output": 522,
+        "thinking": 506
+      },
+      "costNano": 2458500
+    },
+    {
+      "id": "bac98b57-3278-4f73-a398-17e42c9c9b9e",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 700,
+        "cached": 0,
+        "output": 392,
+        "thinking": 346
+      },
+      "costNano": 1995000
+    },
+    {
+      "id": "9d6aaf3f-2370-4b22-9417-fb475763173e",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 98,
+        "thinking": 0
+      },
+      "costNano": 802500
+    },
+    {
+      "id": "429c0834-7732-48d5-888c-b9cccc27ecf6",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 692,
+        "cached": 0,
+        "output": 37,
+        "thinking": 0
+      },
+      "costNano": 657750
+    },
+    {
+      "id": "079107fa-4ddb-49f5-879e-0abbdbd08799",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 745,
+        "cached": 0,
+        "output": 66,
+        "thinking": 0
+      },
+      "costNano": 806250
+    },
+    {
+      "id": "e3e1ae9b-f84e-4705-9b4d-b7e6199efc3c",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 111,
+        "thinking": 0
+      },
+      "costNano": 1869000
+    },
+    {
+      "id": "c2e8f793-4d12-412a-a749-664733bc7e08",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 705,
+        "cached": 0,
+        "output": 32,
+        "thinking": 0
+      },
+      "costNano": 1345500
+    },
+    {
+      "id": "b1ecd795-3a48-4954-a02a-b0f7ab84482e",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 753,
+        "cached": 0,
+        "output": 68,
+        "thinking": 0
+      },
+      "costNano": 1741500
+    },
+    {
+      "id": "bf06a80c-6cbd-496b-aabc-8592f964da8a",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 126,
+        "thinking": 0
+      },
+      "costNano": 907500
+    },
+    {
+      "id": "c79e4b19-bbb7-484e-aa9e-8291c54b5591",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 720,
+        "cached": 0,
+        "output": 27,
+        "thinking": 0
+      },
+      "costNano": 641250
+    },
+    {
+      "id": "3a1cf098-ba27-4836-a49a-6d1616281406",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 763,
+        "cached": 0,
+        "output": 77,
+        "thinking": 0
+      },
+      "costNano": 861000
+    },
+    {
+      "id": "0b2c89f6-2c09-4830-97a4-ec587bfe1695",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 111,
+        "thinking": 0
+      },
+      "costNano": 311500
+    },
+    {
+      "id": "8ecec9b7-36f6-4abb-bbff-712b84d2dd14",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 706,
+        "cached": 0,
+        "output": 40,
+        "thinking": 0
+      },
+      "costNano": 236500
+    },
+    {
+      "id": "27c79a85-6742-4560-b0b7-9f4935b70d9d",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 762,
+        "cached": 0,
+        "output": 62,
+        "thinking": 0
+      },
+      "costNano": 283500
+    },
+    {
+      "id": "168bb3c1-669b-4f9a-ae5d-bf9fa8b03aec",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 580,
+        "cached": 0,
+        "output": 651,
+        "thinking": 587
+      },
+      "costNano": 2876250
+    },
+    {
+      "id": "a2856461-a421-4826-aaed-c1c3949e0e43",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 658,
+        "cached": 0,
+        "output": 569,
+        "thinking": 545
+      },
+      "costNano": 2627250
+    },
+    {
+      "id": "2cc3d1ed-aa54-424e-b117-2166fd861176",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 698,
+        "cached": 0,
+        "output": 418,
+        "thinking": 373
+      },
+      "costNano": 2091000
+    },
+    {
+      "id": "9c402c79-9c7f-470a-8362-78c37dcdeb68",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 51,
+        "thinking": 0
+      },
+      "costNano": 629250
+    },
+    {
+      "id": "f8205b36-9837-45f6-ba31-9241c67bfbd9",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 653,
+        "cached": 0,
+        "output": 44,
+        "thinking": 0
+      },
+      "costNano": 654750
+    },
+    {
+      "id": "2aa21290-2d3f-429b-b80d-b5f8f70a7087",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 714,
+        "cached": 0,
+        "output": 18,
+        "thinking": 0
+      },
+      "costNano": 603000
+    },
+    {
+      "id": "35d83d07-15fc-40bb-bda3-8dc3b5ef905d",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 74,
+        "thinking": 0
+      },
+      "costNano": 1542000
+    },
+    {
+      "id": "ccb00d15-ade7-4c43-a14a-da512d056ac2",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 676,
+        "cached": 0,
+        "output": 62,
+        "thinking": 0
+      },
+      "costNano": 1572000
+    },
+    {
+      "id": "d4691bee-8a5a-436c-a836-66a51d9b8f7e",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 755,
+        "cached": 0,
+        "output": 30,
+        "thinking": 0
+      },
+      "costNano": 1402500
+    },
+    {
+      "id": "e9533f80-98df-4ae7-8515-c4fce1a49a0e",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 68,
+        "thinking": 0
+      },
+      "costNano": 693000
+    },
+    {
+      "id": "0bcd26d8-a643-4535-b48a-e81084693e1d",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 670,
+        "cached": 0,
+        "output": 59,
+        "thinking": 0
+      },
+      "costNano": 723750
+    },
+    {
+      "id": "98b922d4-d5ae-4213-bef7-b1cecdf16375",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 746,
+        "cached": 0,
+        "output": 27,
+        "thinking": 0
+      },
+      "costNano": 660750
+    },
+    {
+      "id": "02680f43-4218-4ec9-9c3b-ac2357b92833",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 41,
+        "thinking": 0
+      },
+      "costNano": 207500
+    },
+    {
+      "id": "26df03c0-34b5-41f8-82ed-9e1e8c1eb49c",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 643,
+        "cached": 0,
+        "output": 60,
+        "thinking": 0
+      },
+      "costNano": 250750
+    },
+    {
+      "id": "fc561e80-a4fa-4f5e-8137-c0ba2d48564c",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 720,
+        "cached": 0,
+        "output": 34,
+        "thinking": 0
+      },
+      "costNano": 231000
+    },
+    {
+      "id": "daf7c411-18d8-43b5-88fd-1ebe86fbb88e",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 522,
+        "thinking": 468
+      },
+      "costNano": 2395500
+    },
+    {
+      "id": "6e575393-dd52-4134-b341-6673bc024b1c",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 656,
+        "cached": 0,
+        "output": 374,
+        "thinking": 327
+      },
+      "costNano": 1894500
+    },
+    {
+      "id": "e158482c-5fb4-4f69-9e91-2a5887254749",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 720,
+        "cached": 0,
+        "output": 426,
+        "thinking": 398
+      },
+      "costNano": 2137500
+    },
+    {
+      "id": "b4d205fb-4223-4d13-9717-224b47170b5a",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 584,
+        "cached": 0,
+        "output": 344,
+        "thinking": 303
+      },
+      "costNano": 1728000
+    },
+    {
+      "id": "7e866a61-5754-42b7-a177-aec393d46f95",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 643,
+        "cached": 0,
+        "output": 375,
+        "thinking": 339
+      },
+      "costNano": 1888500
+    },
+    {
+      "id": "b1362cdf-49df-45a2-8d1b-713df37c7b6d",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 696,
+        "cached": 0,
+        "output": 283,
+        "thinking": 256
+      },
+      "costNano": 1583250
+    },
+    {
+      "id": "92475782-552b-4e3f-af04-193556bc49b1",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 115,
+        "thinking": 0
+      },
+      "costNano": 1936500
+    },
+    {
+      "id": "51a7b238-5716-4ea8-a914-3442dfcde3e9",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 728,
+        "cached": 0,
+        "output": 98,
+        "thinking": 0
+      },
+      "costNano": 1974000
+    },
+    {
+      "id": "c4d0a808-7803-4c79-9cdf-2ba34f541cd1",
+      "model": "gemini-3.5-flash",
+      "price": {
+        "input": 1.5,
+        "cached": 0.15,
+        "output": 9
+      },
+      "reservedNano": 1609728000,
+      "status": "settled",
+      "usage": {
+        "input": 838,
+        "cached": 0,
+        "output": 65,
+        "thinking": 0
+      },
+      "costNano": 1842000
+    },
+    {
+      "id": "db99c01c-a7ff-4f96-9637-0a3afb46ff39",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 56,
+        "thinking": 0
+      },
+      "costNano": 660750
+    },
+    {
+      "id": "9897099d-4900-460b-8ab4-2eeae1cd209b",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 669,
+        "cached": 0,
+        "output": 56,
+        "thinking": 0
+      },
+      "costNano": 711750
+    },
+    {
+      "id": "5c407dca-51fc-412c-aa24-9a140fee754b",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 737,
+        "cached": 0,
+        "output": 48,
+        "thinking": 0
+      },
+      "costNano": 732750
+    },
+    {
+      "id": "31da2a18-d8ad-4aee-9220-737f62c27f99",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 58,
+        "thinking": 0
+      },
+      "costNano": 237250
+    },
+    {
+      "id": "cb736144-ac91-477d-b346-3491444de962",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 672,
+        "cached": 0,
+        "output": 64,
+        "thinking": 0
+      },
+      "costNano": 264000
+    },
+    {
+      "id": "d9ef39ae-bcb3-47ca-a03e-26d2eefb9974",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 748,
+        "cached": 0,
+        "output": 54,
+        "thinking": 0
+      },
+      "costNano": 268000
+    },
+    {
+      "id": "48218d33-76b2-4cb5-a7e4-97736144cfb1",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 862,
+        "thinking": 814
+      },
+      "costNano": 3683250
+    },
+    {
+      "id": "b409c591-142d-4d3c-93e9-da72a300d3e4",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 661,
+        "cached": 0,
+        "output": 614,
+        "thinking": 565
+      },
+      "costNano": 2798250
+    },
+    {
+      "id": "455c2d3b-2e3c-437f-aa10-e3dd2ce347b0",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 722,
+        "cached": 0,
+        "output": 547,
+        "thinking": 504
+      },
+      "costNano": 2592750
+    },
+    {
+      "id": "f56e15b3-d288-48a5-ba6e-dbf890274ae5",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 454,
+        "thinking": 397
+      },
+      "costNano": 2153250
+    },
+    {
+      "id": "e9b928c1-65f6-49d9-a332-0cab30eff361",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 670,
+        "cached": 0,
+        "output": 572,
+        "thinking": 496
+      },
+      "costNano": 2647500
+    },
+    {
+      "id": "ed273360-ddc7-437e-a46b-a0bdcf59f225",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 758,
+        "cached": 0,
+        "output": 325,
+        "thinking": 275
+      },
+      "costNano": 1787250
+    },
+    {
+      "id": "3f284e1b-dabd-4d4d-bb4e-214b647f31c6",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 601,
+        "cached": 0,
+        "output": 80,
+        "thinking": 0
+      },
+      "costNano": 750750
+    },
+    {
+      "id": "39e631aa-663f-41ff-b370-8d2f4a96aac5",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 693,
+        "cached": 0,
+        "output": 71,
+        "thinking": 0
+      },
+      "costNano": 786000
+    },
+    {
+      "id": "b2c68349-2667-4c4a-98b2-9a54a5d5a234",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 776,
+        "cached": 0,
+        "output": 64,
+        "thinking": 0
+      },
+      "costNano": 822000
+    },
+    {
+      "id": "aad233ec-f165-4ba2-821d-5c29d83add6f",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 49,
+        "thinking": 0
+      },
+      "costNano": 654750
+    },
+    {
+      "id": "b8d40999-1fe0-4a67-ab55-90b214bcaf99",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 694,
+        "cached": 0,
+        "output": 84,
+        "thinking": 0
+      },
+      "costNano": 835500
+    },
+    {
+      "id": "cc473258-01bd-4a87-aa11-0def22b6b67c",
+      "model": "gemini-3.6-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "settled",
+      "usage": {
+        "input": 792,
+        "cached": 0,
+        "output": 74,
+        "thinking": 0
+      },
+      "costNano": 871500
+    },
+    {
+      "id": "c9803446-f23d-4893-803d-bb826fe900f4",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 628,
+        "cached": 0,
+        "output": 72,
+        "thinking": 0
+      },
+      "costNano": 265000
+    },
+    {
+      "id": "167c3cad-8999-41b3-823f-ad55f1c81b5f",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 717,
+        "cached": 0,
+        "output": 77,
+        "thinking": 0
+      },
+      "costNano": 294750
+    },
+    {
+      "id": "0ff86e9f-4705-4178-a464-9c0242375c04",
+      "model": "gemini-3.1-flash-lite",
+      "price": {
+        "input": 0.25,
+        "cached": 0.025,
+        "output": 1.5
+      },
+      "reservedNano": 268288000,
+      "status": "settled",
+      "usage": {
+        "input": 808,
+        "cached": 0,
+        "output": 67,
+        "thinking": 0
+      },
+      "costNano": 302500
+    },
+    {
+      "id": "aa76f763-784a-4ff5-aa61-2e93faa1db23",
+      "model": "gemini-3.8-flash",
+      "price": {
+        "input": 0.75,
+        "cached": 0.075,
+        "output": 3.75
+      },
+      "reservedNano": 801792000,
+      "status": "unknown"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "paidCalls": 0,
+  "mode": "loopback fixtures, not Gemini or physical voice",
+  "cancellation": [
+    {
+      "abortToPeerCloseMs": 7.363999999999976,
+      "peerClosed": true
+    }
+  ],
+  "failover": [
+    {
+      "status": 200,
+      "servedBy": "second",
+      "firstByteMs": 8.134999999999991,
+      "attemptGapMs": 2.495299999999986,
+      "attempts": [
+        "first=server",
+        "second=ok"
+      ]
+    }
+  ],
+  "retry": [
+    {
+      "status": 200,
+      "requestedWaitMs": 1250,
+      "measuredSleepMs": 1259.2653,
+      "otherElapsedMs": 1750.7347
+    }
+  ]
+}

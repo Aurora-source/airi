@@ -1,0 +1,221 @@
+{
+  "assumptions": {
+    "cachedFraction": 0,
+    "measuredGenerationIncludesThinking": true,
+    "turns": "One generation per user turn. Add tool continuation, retries, STT, and other admitted inference separately.",
+    "creditsDiscounted": false,
+    "localTtsMeteredCostUsd": 0
+  },
+  "rows": [
+    {
+      "model": "gemini-3.6-flash",
+      "effort": "minimal",
+      "n": 33,
+      "measuredGeneratedTokens": 68.6969696969697,
+      "measuredThinkingTokens": 0,
+      "measuredKnownCostPer1000AccountedTurnsUsd": 0.7672272727272728,
+      "planning": [
+        {
+          "inputTokens": 1000,
+          "costPer1000TurnsUsd": 1.0076136363636363,
+          "monthly30TurnsPerDayUsd": 0.9068522727272728,
+          "monthly120TurnsPerDayUsd": 3.627409090909091,
+          "turnsWithin10Usd": 9924,
+          "turnsWithin15Usd": 14886
+        },
+        {
+          "inputTokens": 4000,
+          "costPer1000TurnsUsd": 3.2576136363636365,
+          "monthly30TurnsPerDayUsd": 2.931852272727273,
+          "monthly120TurnsPerDayUsd": 11.727409090909092,
+          "turnsWithin10Usd": 3069,
+          "turnsWithin15Usd": 4604
+        },
+        {
+          "inputTokens": 10000,
+          "costPer1000TurnsUsd": 7.7576136363636365,
+          "monthly30TurnsPerDayUsd": 6.981852272727273,
+          "monthly120TurnsPerDayUsd": 27.92740909090909,
+          "turnsWithin10Usd": 1289,
+          "turnsWithin15Usd": 1933
+        }
+      ],
+      "january2027Multiplier": 2
+    },
+    {
+      "model": "gemini-3.5-flash",
+      "effort": "minimal",
+      "n": 33,
+      "measuredGeneratedTokens": 82.06060606060606,
+      "measuredThinkingTokens": 0,
+      "measuredKnownCostPer1000AccountedTurnsUsd": 1.7794090909090907,
+      "planning": [
+        {
+          "inputTokens": 1000,
+          "costPer1000TurnsUsd": 2.2385454545454544,
+          "monthly30TurnsPerDayUsd": 2.014690909090909,
+          "monthly120TurnsPerDayUsd": 8.058763636363636,
+          "turnsWithin10Usd": 4467,
+          "turnsWithin15Usd": 6700
+        },
+        {
+          "inputTokens": 4000,
+          "costPer1000TurnsUsd": 6.738545454545454,
+          "monthly30TurnsPerDayUsd": 6.064690909090908,
+          "monthly120TurnsPerDayUsd": 24.258763636363632,
+          "turnsWithin10Usd": 1483,
+          "turnsWithin15Usd": 2225
+        },
+        {
+          "inputTokens": 10000,
+          "costPer1000TurnsUsd": 15.738545454545452,
+          "monthly30TurnsPerDayUsd": 14.164690909090908,
+          "monthly120TurnsPerDayUsd": 56.65876363636363,
+          "turnsWithin10Usd": 635,
+          "turnsWithin15Usd": 953
+        }
+      ],
+      "january2027Multiplier": 1
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "effort": "low",
+      "n": 33,
+      "measuredGeneratedTokens": 63.90909090909091,
+      "measuredThinkingTokens": 0,
+      "measuredKnownCostPer1000AccountedTurnsUsd": 0.7441136363636364,
+      "planning": [
+        {
+          "inputTokens": 1000,
+          "costPer1000TurnsUsd": 0.989659090909091,
+          "monthly30TurnsPerDayUsd": 0.8906931818181819,
+          "monthly120TurnsPerDayUsd": 3.5627727272727276,
+          "turnsWithin10Usd": 10104,
+          "turnsWithin15Usd": 15156
+        },
+        {
+          "inputTokens": 4000,
+          "costPer1000TurnsUsd": 3.239659090909091,
+          "monthly30TurnsPerDayUsd": 2.9156931818181815,
+          "monthly120TurnsPerDayUsd": 11.662772727272726,
+          "turnsWithin10Usd": 3086,
+          "turnsWithin15Usd": 4630
+        },
+        {
+          "inputTokens": 10000,
+          "costPer1000TurnsUsd": 7.739659090909091,
+          "monthly30TurnsPerDayUsd": 6.965693181818182,
+          "monthly120TurnsPerDayUsd": 27.862772727272727,
+          "turnsWithin10Usd": 1292,
+          "turnsWithin15Usd": 1938
+        }
+      ],
+      "january2027Multiplier": 2
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "effort": "medium",
+      "n": 33,
+      "measuredGeneratedTokens": 473.3030303030303,
+      "measuredThinkingTokens": 420.72727272727275,
+      "measuredKnownCostPer1000AccountedTurnsUsd": 2.2715,
+      "planning": [
+        {
+          "inputTokens": 1000,
+          "costPer1000TurnsUsd": 2.524886363636364,
+          "monthly30TurnsPerDayUsd": 2.2723977272727276,
+          "monthly120TurnsPerDayUsd": 9.08959090909091,
+          "turnsWithin10Usd": 3960,
+          "turnsWithin15Usd": 5940
+        },
+        {
+          "inputTokens": 4000,
+          "costPer1000TurnsUsd": 4.774886363636364,
+          "monthly30TurnsPerDayUsd": 4.2973977272727275,
+          "monthly120TurnsPerDayUsd": 17.18959090909091,
+          "turnsWithin10Usd": 2094,
+          "turnsWithin15Usd": 3141
+        },
+        {
+          "inputTokens": 10000,
+          "costPer1000TurnsUsd": 9.274886363636364,
+          "monthly30TurnsPerDayUsd": 8.347397727272726,
+          "monthly120TurnsPerDayUsd": 33.389590909090906,
+          "turnsWithin10Usd": 1078,
+          "turnsWithin15Usd": 1617
+        }
+      ],
+      "january2027Multiplier": 2
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "effort": "high",
+      "n": 33,
+      "measuredGeneratedTokens": 687,
+      "measuredThinkingTokens": 636.1212121212121,
+      "measuredKnownCostPer1000AccountedTurnsUsd": 3.0714545454545457,
+      "planning": [
+        {
+          "inputTokens": 1000,
+          "costPer1000TurnsUsd": 3.3262500000000004,
+          "monthly30TurnsPerDayUsd": 2.993625,
+          "monthly120TurnsPerDayUsd": 11.9745,
+          "turnsWithin10Usd": 3006,
+          "turnsWithin15Usd": 4509
+        },
+        {
+          "inputTokens": 4000,
+          "costPer1000TurnsUsd": 5.57625,
+          "monthly30TurnsPerDayUsd": 5.018624999999999,
+          "monthly120TurnsPerDayUsd": 20.074499999999997,
+          "turnsWithin10Usd": 1793,
+          "turnsWithin15Usd": 2689
+        },
+        {
+          "inputTokens": 10000,
+          "costPer1000TurnsUsd": 10.07625,
+          "monthly30TurnsPerDayUsd": 9.068625,
+          "monthly120TurnsPerDayUsd": 36.2745,
+          "turnsWithin10Usd": 992,
+          "turnsWithin15Usd": 1488
+        }
+      ],
+      "january2027Multiplier": 2
+    },
+    {
+      "model": "gemini-3.1-flash-lite",
+      "effort": "minimal",
+      "n": 33,
+      "measuredGeneratedTokens": 66.63636363636364,
+      "measuredThinkingTokens": 0,
+      "measuredKnownCostPer1000AccountedTurnsUsd": 0.2689621212121212,
+      "planning": [
+        {
+          "inputTokens": 1000,
+          "costPer1000TurnsUsd": 0.3499545454545455,
+          "monthly30TurnsPerDayUsd": 0.31495909090909097,
+          "monthly120TurnsPerDayUsd": 1.2598363636363639,
+          "turnsWithin10Usd": 28575,
+          "turnsWithin15Usd": 42862
+        },
+        {
+          "inputTokens": 4000,
+          "costPer1000TurnsUsd": 1.0999545454545454,
+          "monthly30TurnsPerDayUsd": 0.989959090909091,
+          "monthly120TurnsPerDayUsd": 3.959836363636364,
+          "turnsWithin10Usd": 9091,
+          "turnsWithin15Usd": 13636
+        },
+        {
+          "inputTokens": 10000,
+          "costPer1000TurnsUsd": 2.5999545454545454,
+          "monthly30TurnsPerDayUsd": 2.339959090909091,
+          "monthly120TurnsPerDayUsd": 9.359836363636363,
+          "turnsWithin10Usd": 3846,
+          "turnsWithin15Usd": 5769
+        }
+      ],
+      "january2027Multiplier": 1
+    }
+  ]
+}

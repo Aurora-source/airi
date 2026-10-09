@@ -1,0 +1,14 @@
+{
+  "A": "gemini-3.8-flash|low|gateway-paid|4a0f30d2-d55a-4c85-9a6f-b5608210fd5d",
+  "B": "gemini-3.8-flash|high|gateway-paid|333a9777-a97f-4f1c-8d5a-dcbb1c70abfd",
+  "C": "gemini-3.8-flash|medium|gateway-paid|4a0f30d2-d55a-4c85-9a6f-b5608210fd5d",
+  "D": "gemini-3.5-flash|minimal|gateway-paid|4a0f30d2-d55a-4c85-9a6f-b5608210fd5d",
+  "E": "gemini-3.6-flash|minimal|gateway-paid|4a0f30d2-d55a-4c85-9a6f-b5608210fd5d",
+  "F": "gemini-3.8-flash|high|gateway-paid|4a0f30d2-d55a-4c85-9a6f-b5608210fd5d",
+  "G": "gemini-3.8-flash|low|gateway-paid|333a9777-a97f-4f1c-8d5a-dcbb1c70abfd",
+  "H": "gemini-3.5-flash|minimal|gateway-paid|333a9777-a97f-4f1c-8d5a-dcbb1c70abfd",
+  "I": "gemini-3.1-flash-lite|minimal|gateway-paid|4a0f30d2-d55a-4c85-9a6f-b5608210fd5d",
+  "J": "gemini-3.6-flash|minimal|gateway-paid|333a9777-a97f-4f1c-8d5a-dcbb1c70abfd",
+  "K": "gemini-3.8-flash|medium|gateway-paid|333a9777-a97f-4f1c-8d5a-dcbb1c70abfd",
+  "L": "gemini-3.1-flash-lite|minimal|gateway-paid|333a9777-a97f-4f1c-8d5a-dcbb1c70abfd"
+}

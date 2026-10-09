@@ -1,0 +1,60 @@
+{
+  "capturedAt": "2026-10-09",
+  "source": "https://ai.google.dev/gemini-api/docs/pricing",
+  "standard": {
+    "gemini-2.5-flash-lite": {
+      "input": 0.1,
+      "cached": 0.01,
+      "output": 0.4
+    },
+    "gemini-2.5-flash": {
+      "input": 0.3,
+      "cached": 0.03,
+      "output": 2.5
+    },
+    "gemini-2.5-pro": {
+      "input": 1.25,
+      "cached": 0.125,
+      "output": 10,
+      "threshold": 200000,
+      "above": {
+        "input": 2.5,
+        "cached": 0.25,
+        "output": 15
+      }
+    },
+    "gemini-3.1-flash-lite": {
+      "input": 0.25,
+      "cached": 0.025,
+      "output": 1.5
+    },
+    "gemini-3.5-flash-lite": {
+      "input": 0.3,
+      "cached": 0.03,
+      "output": 2.5
+    },
+    "gemini-3.5-flash": {
+      "input": 1.5,
+      "cached": 0.15,
+      "output": 9
+    },
+    "gemini-3.6-flash": {
+      "input": 0.75,
+      "cached": 0.075,
+      "output": 3.75
+    },
+    "gemini-3.7-flash": {
+      "input": 0.75,
+      "cached": 0.075,
+      "output": 3.75
+    },
+    "gemini-3.8-flash": {
+      "input": 0.75,
+      "cached": 0.075,
+      "output": 3.75
+    }
+  },
+  "unit": "USD per million tokens",
+  "outputIncludesThinking": true,
+  "futureFlashPricesDoubleAt": "2027-01-01"
+}

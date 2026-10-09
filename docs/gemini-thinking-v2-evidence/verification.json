@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-09T08:57:27Z",
+  "status": "INCOMPLETE_BLOCKED_BY_UNKNOWN_USAGE",
+  "baseCommit": "40669ed3520bc807ece0847591224933e29000af",
+  "branch": "codex/gemini-thinking-benchmark-v2",
+  "productionModified": false,
+  "accounting": {
+    "campaign": "gemini-thinking-v2-2026-10-09",
+    "unit": "estimated USD",
+    "attempts": 331,
+    "settledRequests": 330,
+    "unknownRequests": 1,
+    "halted": true,
+    "authorizedV2TotalCeiling": 5,
+    "v1SeparateCost": 0.340722225,
+    "v2KnownCost": 0.4702965,
+    "v2UnresolvedReservation": 0.801792,
+    "v2MaximumExposure": 1.2720885,
+    "combinedKnownCost": 0.811018725,
+    "combinedMaximumExposure": 1.612810725,
+    "finalActualCostKnown": false,
+    "ledgerCostsEqualSampleCosts": true,
+    "accountedSamplesHaveTerminalUsage": true,
+    "unknownRequestId": "aa76f763-784a-4ff5-aa61-2e93faa1db23",
+    "unknownStatus": 502,
+    "unknownRequestLatencyMs": 30016.7635,
+    "concurrency": 1,
+    "candidateCount": 1,
+    "maximumCombinedGeneratedTokensPerRequest": 4096,
+    "inputReservation": "Full advertised model input capacity. No strict tighter OpenAI-wire bound was established.",
+    "livePaidRequests": 0,
+    "liveCost": 0,
+    "liveAllocationMaximum": 1,
+    "liveAdmission": "Documentation and authenticated metadata only. No reliable aggregate-session bound or terminal-on-close accounting guarantee."
+  },
+  "comparison": {
+    "paidConfigurations": [
+      { "model": "gemini-3.6-flash", "effort": "minimal" },
+      { "model": "gemini-3.5-flash", "effort": "minimal" },
+      { "model": "gemini-3.8-flash", "effort": "low" },
+      { "model": "gemini-3.8-flash", "effort": "medium" },
+      { "model": "gemini-3.8-flash", "effort": "high" },
+      { "model": "gemini-3.1-flash-lite", "effort": "minimal" }
+    ],
+    "matchedPersonaTurns": 198,
+    "matchedPersonaConversations": 66,
+    "matchedTurnsPerConfiguration": 33,
+    "otherRetainedPersonaAttempts": 7,
+    "controlledWarmAttemptsPerConfiguration": 19,
+    "controlledWarmMeaningfulSamples3_5": 17,
+    "controlledWarmP95Eligible": false,
+    "personaP95": "Descriptive only. Different scenes and correlated conversation turns.",
+    "knownThinkingTokens": 58460,
+    "knownThinkingCostUsd": 0.219225,
+    "humanReviewComplete": false,
+    "physicalAudioMeasured": false,
+    "liveAudioMeasured": false,
+    "unrun": [
+      "secondary model-effort combinations",
+      "character detail and frustration extension",
+      "warm latency top-up",
+      "paid native tools and continuation",
+      "paid structured output and cancellation",
+      "context-size finalists",
+      "paired direct-provider comparison",
+      "native Live audio sessions"
+    ]
+  },
+  "checks": [
+    {
+      "command": "pnpm -F @proj-airi/companion-core exec vitest run test/gemini-benchmark.test.ts test/gemini-thinking.test.ts test/gemini-request.test.ts test/gemini-compat.test.ts test/gateway-routing.test.ts test/budgeter.test.ts test/quota-ledger.test.ts test/style-reminder.test.ts --no-file-parallelism --maxWorkers 1",
+      "exitCode": 0,
+      "testFilesPassed": 8,
+      "testsPassed": 179,
+      "log": "final-focused-tests.log"
+    },
+    {
+      "command": "pnpm -F @proj-airi/companion-core typecheck",
+      "exitCode": 0,
+      "log": "raw-companion-typecheck-final.log"
+    },
+    {
+      "command": "pnpm typecheck",
+      "exitCode": 0,
+      "tasksPassed": 56,
+      "log": "final-root-typecheck.log"
+    },
+    {
+      "command": "pnpm lint",
+      "exitCode": 0,
+      "errors": 0,
+      "existingWarnings": 651,
+      "log": "final-lint.log"
+    },
+    {
+      "command": "git -c core.whitespace=-blank-at-eof diff --cached --check",
+      "exitCode": 0,
+      "scope": "Evidence retains generated worksheet and raw test-log endings. Only blank-at-eof is exempt. Source whitespace check passed separately."
+    },
+    {
+      "check": "financial and measurement review",
+      "result": "No material findings"
+    },
+    {
+      "check": "Live documentation review",
+      "result": "No material findings"
+    },
+    {
+      "check": "credential-pattern scan",
+      "filesScannedAtCheckpoint": 63,
+      "credentialMatches": 0,
+      "rawThoughtSignatureFieldsInSamples": 0,
+      "modelNamesInBalancedHumanWorksheet": false
+    }
+  ],
+  "sha256": {
+    "ledger.json": "c4c9af0ba9943e7a7df7441a0cca860edfbf849815c6831306974de4df133205",
+    "samples.ndjson": "360568d4c70e0eb036c719616409e498543e955de67bb3d314569e2a27f72db3",
+    "discovery.json": "e4777e993841dfbdbb0f023e216cebef8d660e564962993749a7d5617f890bee",
+    "prices.json": "66df15bbd8485b271563e57b135fe7982a2fa612e2afcb928d0f0be5b5b418d2",
+    "results.json": "2217455dc8b37c0fe3e750ad747148ae94d5f083d0f7326998fbc452b0bb34d5",
+    "human-review.md": "06773a4f24ed2f765dfc6bef7c3f8a6e69c404a0c48de347bb585e270e90179d",
+    "human-review-key.json": "a64d2053e9714b2b5d90f37878e14df369b11ec84fd53c30745e850a1cc5fa54",
+    "retained-conversations.md": "211ec203744b6c9e216a723c74af20e8b950caa7e834cdeef60bb5f337e8d1b4",
+    "retained-conversations-key.json": "a64d2053e9714b2b5d90f37878e14df369b11ec84fd53c30745e850a1cc5fa54",
+    "voice-text-replay.json": "f94abfac404e429215b49afcaa2350e5f8e39c33f6cd5b27db1878f10e8e18c4",
+    "live-metadata.json": "0d10ea1a58f81e9cee3f3d139cc86ec2ec2bdd0e17b61c9218610ad3adba9d18",
+    "preflight.json": "d545a49157c14fa99b31136c9954e527f5c5dff7dbabf409fc9b66c06f96872d"
+  }
+}

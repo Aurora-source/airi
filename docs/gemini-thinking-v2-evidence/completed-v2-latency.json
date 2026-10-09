@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-09T07:12:13.282Z",
+  "campaignRunId": "3b4531d6-8e02-4a18-bc59-58a00d194d12",
+  "calls": 120,
+  "ledger": {
+    "spentNano": 173284500,
+    "exposureNano": 173284500,
+    "halted": false
+  }
+}

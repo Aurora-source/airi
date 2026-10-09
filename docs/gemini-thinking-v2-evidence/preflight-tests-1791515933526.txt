@@ -1,0 +1,10 @@
+
+ RUN  v4.1.11 D:/AI/airi-gemini-thinking/services/companion-core
+
+
+ Test Files  2 passed (2)
+      Tests  59 passed (59)
+   Start at  08:48:48
+   Duration  4.83s (transform 317ms, setup 0ms, import 1.10s, tests 3.46s, environment 0ms)
+
+

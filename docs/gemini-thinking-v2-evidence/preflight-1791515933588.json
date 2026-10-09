@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-09T03:18:53.529Z",
+  "sourceSha256": "c19fb06dff8208024c47106fc76231063ae9c8ac09e06aa85417b7774602b873",
+  "discoverySha256": "4621ef10af851c8266c1d4157b50b93f18548f72492b828f582102469094494c",
+  "pricesSha256": "f6e19683b3d8060334ca3427acfa6038458d8f703035dab6f66a4dfb946dd04e",
+  "testsPassed": 59,
+  "paidCalls": 0,
+  "ceilingUsd": 5,
+  "concurrency": 1,
+  "priceValidUntil": "2026-10-10T00:00:00.000Z"
+}
