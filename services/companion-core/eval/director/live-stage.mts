@@ -98,9 +98,16 @@ async function main(): Promise<void> {
   })
   const shot = (name: string) => page.screenshot({ path: join(out, `${name}.png`) })
 
-  const probe = new Client({ url: state.channel, name: 'r7-live-probe', possibleEvents: ['output:visual:result', 'output:visual:state'], autoConnect: true, autoReconnect: true })
+  const probe = new Client({ url: state.channel, name: 'r7-live-probe', possibleEvents: ['output:visual:result', 'output:visual:state', 'spark:emit'], autoConnect: true, autoReconnect: true })
   const visualResults = new Map<string, string>()
   probe.onEvent('output:visual:result', event => visualResults.set(String(event.data.requestId), String(event.data.result)))
+  const sparkStates = new Map<string, string[]>()
+  probe.onEvent('spark:emit', event => sparkStates.set(String(event.data.id), [...(sparkStates.get(String(event.data.id)) ?? []), event.data.note ? `${event.data.state}:${event.data.note}` : String(event.data.state)]))
+  const notify = (id: string) => probe.send({
+    type: 'spark:notify',
+    data: { id, eventId: id, kind: 'ping', urgency: 'immediate', headline: 'Watch moment: pause', note: 'A short reaction fits now.', payload: {}, ttlMs: 20_000, requiresAck: true, destinations: ['character'] },
+    route: { destinations: [{ type: 'module', modules: [STAGE_MODULE] }] },
+  })
   let requestNo = 0
   const visual = async (data: { behavior?: string, activity?: 'idle' | 'listening' | 'thinking' | 'waiting' | 'watching', leaseMs: number }) => {
     const requestId = `probe-${++requestNo}`
@@ -265,6 +272,20 @@ async function main(): Promise<void> {
       const response = await ops('director/cancel', {})
       const status = await ops('director/status')
       return { response, cancellations: status.director.metrics.cancellations }
+    })
+
+    await check('j_spark_ack_through_real_server', async () => {
+      // The real stage generates the reaction through the Core gateway, speaks it, and acknowledges this instance.
+      const spoken = `probe-notify-${Date.now()}`
+      notify(spoken)
+      await waitFor(() => sparkStates.get(spoken) ?? [], states => states.some(state => ['done', 'dropped', 'blocked', 'expired'].includes(state.split(':')[0])), 45_000, 200)
+      // A producer drop stops the reaction, which then ends as dropped.
+      const revoked = `probe-revoked-${Date.now()}`
+      notify(revoked)
+      await waitFor(() => sparkStates.get(revoked) ?? [], states => states.some(state => state.startsWith('working')), 20_000, 50)
+      probe.send({ type: 'spark:emit', data: { id: revoked, eventId: revoked, state: 'dropped', note: 'revoked by its producer', destinations: ['character'] }, route: { destinations: [{ type: 'module', modules: [STAGE_MODULE] }] } })
+      await waitFor(() => sparkStates.get(revoked) ?? [], states => states.some(state => ['done', 'dropped'].includes(state.split(':')[0])), 45_000, 200)
+      return { spoken: sparkStates.get(spoken), revoked: sparkStates.get(revoked) }
     })
   }
   finally {
