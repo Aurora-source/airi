@@ -90,7 +90,9 @@ async function main(argv: string[]): Promise<void> {
         console.warn(`No VLC password stored (secret "${sources.vlc.passwordRef}"). Run "companion-core secret-import ${sources.vlc.passwordRef} --from-env VLC_HTTP_PASSWORD".`)
       const mediaSources = createMediaSources(sources, { jellyfinToken, vlcPassword }, { now: Date.now, hostname: hostname(), lookup: lookupAll, report })
       const companion = await CompanionRuntime.open({ config, home, channelToken, report, mediaSources })
-      const gateway = await startGateway({ config, credentials, providerKeys, companion, backupDirectory: join(home, 'memory', 'backups') })
+      let stopping = false
+      // Ops can request the same orderly stop as Ctrl+C. `stop` is a hoisted function declared below.
+      const gateway = await startGateway({ config, credentials, providerKeys, companion, backupDirectory: join(home, 'memory', 'backups'), onShutdown: () => stop() })
       // Vision routes through the gateway's router and watch transcription through its own route, so both attach
       // only once the gateway exists.
       companion.attach(gateway.runtime, { baseURL: gateway.baseURL, token: credentials.inference })
@@ -100,7 +102,10 @@ async function main(argv: string[]): Promise<void> {
       console.info(`Companion Gateway listening at ${gateway.baseURL} (aliases: ${Object.keys(config.aliases).join(', ') || 'none'}, memory: ${companion.memory ? 'on' : 'off'}, perception: ${perception}, watch: ${companion.watch ? 'on' : 'off'}, director: ${companion.director ? 'on' : 'off'}, gemini selection: ${paid}, cloud: ${gateway.runtime.cloudSuspended ? 'suspended' : 'on'})`)
       // Watch and perception stop first, so no recording, capture, or upload outlives the router.
       // Memory closes last, after the final turn.
-      const stop = () => {
+      function stop() {
+        if (stopping)
+          return
+        stopping = true
         void Promise.resolve(companion.watch?.shutdown())
           .then(() => companion.perception?.shutdown())
           .then(() => gateway.close())

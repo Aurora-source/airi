@@ -61,6 +61,11 @@ export interface GatewayOptions {
   companion?: GatewayCompanion
   /** Folder for memory backups that Ops requests. */
   backupDirectory?: string
+  /**
+   * Stops the whole Core, like Ctrl+C. `POST /ops/shutdown` calls it after the reply, so Companion Ops can stop a Core
+   * that it did not start. Absent means the route answers 503.
+   */
+  onShutdown?: () => void
 }
 
 export interface RunningGateway {
@@ -80,7 +85,8 @@ export interface RunningGateway {
  * 2. A request with an `Origin` header must come from `config.allowedOrigins`, even when it has a valid token.
  * 3. `GET /livez` needs no token and reveals nothing but liveness.
  * 4. `/v1/*` needs the inference token. The ops token is rejected there. This includes the companion tools.
- * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory, perception, watch, and Director administration.
+ * 5. `/ops/*` needs the ops token. The inference token is rejected there. This includes memory, perception, watch, Director,
+ *    model selection, paid usage, cloud suspension, and shutdown.
  *
  * Call stack:
  *
@@ -163,6 +169,14 @@ export async function startGateway(options: GatewayOptions): Promise<RunningGate
         res.writeHead(200, { 'content-type': 'application/json' })
         res.end(JSON.stringify(opsStatus(runtime)))
         log({ method, path, status: 200, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
+        return
+      }
+      if (method === 'POST' && path === '/ops/shutdown') {
+        if (!options.onShutdown)
+          return reject(503, 'shutdown_unavailable', 'This Core has no shutdown hook.')
+        res.writeHead(202, { 'content-type': 'application/json' })
+        res.end('{"ok":true,"stopping":true}', () => setImmediate(() => options.onShutdown?.()))
+        log({ method, path, status: 202, outcome: 'ok', durationMs: Math.round(performance.now() - startedAt) })
         return
       }
       if (await handleOpsPaid(req, res, path, runtime) || await handleOpsMemory(req, res, path, companionApi) || await handleOpsPerception(req, res, path, companionApi) || await handleOpsWatch(req, res, path, companionApi) || await handleOpsDirector(req, res, path, companionApi)) {

@@ -10,6 +10,8 @@ const MAX_REQUESTS = 64
 const REQUEST_TTL_MS = 10 * 60_000
 /** An answered reply that starts no speech within this time counts as delivered without speech. */
 const SPEECH_GRACE_MS = 1500
+/** First-audio latencies kept for Ops. */
+const MAX_LATENCIES = 50
 
 interface Attachment {
   outputId: string
@@ -30,6 +32,10 @@ interface Request {
   open: number
   speaking: boolean
   updatedAt: number
+  /** When the gateway saw the first request of the round. */
+  openedAt: number
+  /** Set at the first speech report of the round. */
+  spoke: boolean
   attached?: Attachment
 }
 
@@ -51,6 +57,8 @@ interface Request {
  */
 export class ConversationLedger {
   private readonly requests = new Map<string, Request>()
+  /** Milliseconds from the first gateway request of a round to its first speech report, newest last. */
+  private readonly firstSpeech: Array<{ ms: number, at: number }> = []
 
   constructor(private readonly now: () => number = Date.now) {}
 
@@ -69,7 +77,7 @@ export class ConversationLedger {
     let request = this.requests.get(requestId)
     const isNew = !request
     if (!request) {
-      request = { requestId, sessionId: turn.sessionId, roundId: turn.roundId, characterId: turn.characterId, state: 'generating', open: 0, speaking: false, updatedAt: this.now() }
+      request = { requestId, sessionId: turn.sessionId, roundId: turn.roundId, characterId: turn.characterId, state: 'generating', open: 0, speaking: false, updatedAt: this.now(), openedAt: this.now(), spoke: false }
       this.requests.set(requestId, request)
       while (this.requests.size > MAX_REQUESTS)
         this.drop(this.requests.keys().next().value!)
@@ -124,15 +132,39 @@ export class ConversationLedger {
       return undefined
     request.speaking = active
     request.updatedAt = this.now()
+    if (active && !request.spoke) {
+      request.spoke = true
+      this.firstSpeech.push({ ms: request.updatedAt - request.openedAt, at: request.updatedAt })
+      if (this.firstSpeech.length > MAX_LATENCIES)
+        this.firstSpeech.shift()
+    }
     const attached = request.attached && !request.attached.settled ? request.attached.outputId : undefined
     this.settle(request)
     return attached
   }
 
-  /** Counts for Ops. No ids. */
-  status(): { requests: number, generating: number, attached: number } {
+  /**
+   * Counts and timings for Ops. No ids. `firstSpeech` measures the voice path as the Core sees it: from the first
+   * gateway request of a round to the stage's first speech report, so model time and synthesis time together.
+   */
+  status() {
     const values = [...this.requests.values()]
-    return { requests: values.length, generating: values.filter(item => item.state === 'generating').length, attached: values.filter(item => item.attached && !item.attached.settled).length }
+    const latencies = this.firstSpeech.map(item => item.ms).sort((a, b) => a - b)
+    const at = (q: number) => latencies.length === 0 ? null : latencies[Math.min(latencies.length - 1, Math.ceil(q * latencies.length) - 1)]
+    const last = this.firstSpeech.at(-1)
+    return {
+      requests: values.length,
+      generating: values.filter(item => item.state === 'generating').length,
+      attached: values.filter(item => item.attached && !item.attached.settled).length,
+      firstSpeech: {
+        samples: latencies.length,
+        p50Ms: at(0.5),
+        p95Ms: latencies.length >= 20 ? at(0.95) : null,
+        lastMs: last?.ms ?? null,
+        lastAt: last ? new Date(last.at).toISOString() : null,
+        recentMs: this.firstSpeech.slice(-20).map(item => item.ms),
+      },
+    }
   }
 
   /** Cancels every pending attachment and forgets all requests, for example on an identity change. */

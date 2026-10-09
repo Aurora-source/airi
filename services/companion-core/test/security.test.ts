@@ -10,7 +10,7 @@ import { join } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { DpapiSecretStore, loadOrCreateCredentials, MemorySecretStore, parseConfig } from '../src'
+import { DpapiSecretStore, loadOrCreateCredentials, MemorySecretStore, parseConfig, startGateway } from '../src'
 import { createBearerCheck } from '../src/auth/credentials'
 import { createRedactor } from '../src/logging/redact'
 import { ALLOWED_ORIGIN, authHeaders, readChunks, sse, startFakeProvider, startTestGateway, TEST_INFERENCE_TOKEN, TEST_OPS_TOKEN, TEST_PROVIDER_KEY, writeEvents } from './support/harness'
@@ -190,6 +190,45 @@ describe('ops routes', () => {
     const response = await rawRequest({ path: '/v1/models', headers: opsHeaders })
 
     expect(response.status).toBe(401)
+  })
+
+  it.each(['/ops/models', '/ops/usage', '/ops/memory/characters'])('rejects the inference token on %s', async (path) => {
+    const response = await rawRequest({ path, headers: { authorization: `Bearer ${TEST_INFERENCE_TOKEN}` } })
+
+    expect(response.status).toBe(401)
+  })
+
+  it.each(['/ops/models/select', '/ops/usage/controls', '/ops/cloud', '/ops/director/preview', '/ops/shutdown'])('rejects a POST to %s without the ops token or from a foreign Origin', async (path) => {
+    const inference = await rawRequest({ path, method: 'POST', headers: { 'authorization': `Bearer ${TEST_INFERENCE_TOKEN}`, 'content-type': 'application/json' }, body: '{}' })
+    const foreign = await rawRequest({ path, method: 'POST', headers: { ...opsHeaders, 'origin': 'https://evil.example', 'content-type': 'application/json' }, body: '{}' })
+
+    expect(inference.status).toBe(401)
+    expect(foreign.status).toBe(403)
+  })
+
+  it('answers 503 to a shutdown request when the Core has no shutdown hook', async () => {
+    const response = await rawRequest({ path: '/ops/shutdown', method: 'POST', headers: { ...opsHeaders, 'content-type': 'application/json' }, body: '{}' })
+
+    expect(response.status).toBe(503)
+  })
+})
+
+describe('ops shutdown', () => {
+  it('replies first and then calls the shutdown hook once per request', async () => {
+    let calls = 0
+    const config = parseConfig({ port: 0, store: { path: ':memory:' }, providers: {}, aliases: {} })
+    const local = await startGateway({ config, credentials: { inference: TEST_INFERENCE_TOKEN, ops: TEST_OPS_TOKEN }, providerKeys: new Map(), writeLog: () => {}, onShutdown: () => calls++ })
+    try {
+      const response = await fetch(new URL('../ops/shutdown', local.baseURL), { method: 'POST', headers: { 'authorization': `Bearer ${TEST_OPS_TOKEN}`, 'content-type': 'application/json' }, body: '{}' })
+
+      expect(response.status).toBe(202)
+      expect(await response.json()).toEqual({ ok: true, stopping: true })
+      await new Promise(resolve => setTimeout(resolve, 20))
+      expect(calls).toBe(1)
+    }
+    finally {
+      await local.close()
+    }
   })
 })
 
