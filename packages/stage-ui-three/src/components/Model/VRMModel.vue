@@ -412,7 +412,8 @@ function runVrmFrameHooks(context: VrmFrameHookContext) {
 function runVrmFrameRuntimeHook(vrm: VRM, delta: number) {
   try {
     vrmRuntimeContext.actActive = vrmEmote.value?.currentEmotion.value !== null && vrmEmote.value?.currentEmotion.value !== undefined
-    vrmRuntimeContext.lipSyncActive = !!currentAudioSource.value || vrmLipSync.isLipSyncActive.value
+    // Active visemes only. The stage keeps its last audio source after playback ends, so a present source is not speech.
+    vrmRuntimeContext.lipSyncActive = vrmLipSync.isLipSyncActive.value
     vrmFrameRuntimeHook.value?.(vrm, delta, vrmRuntimeContext)
   }
   catch (error) {
@@ -518,7 +519,7 @@ function bindManagedVrmInstanceRenderLoop() {
     const expressionMs = measureFrameStep(tracingEnabled, () => {
       if (activeVrm && vrmExpressionFrameRuntimeHook.value) {
         vrmRuntimeContext.actActive = vrmEmote.value?.currentEmotion.value !== null && vrmEmote.value?.currentEmotion.value !== undefined
-        vrmRuntimeContext.lipSyncActive = !!currentAudioSource.value || isLipSyncActive
+        vrmRuntimeContext.lipSyncActive = isLipSyncActive
         try {
           vrmExpressionFrameRuntimeHook.value(activeVrm, delta, vrmRuntimeContext)
         }
