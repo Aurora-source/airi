@@ -132,6 +132,9 @@ describe('paid Gemini selection', () => {
     const models = (await ops('models')).json
     expect(models.selection).toMatchObject({ model: 'gemini-3.8-flash', effort: 'low', source: 'default', active: true })
     expect(models.fallback).toEqual(['gemini-flash-lite-31', 'other-model'])
+    const status = (await ops('status')).json
+    expect(status.aliases['companion-chat'].chain.map((model: { id: string }) => model.id)).toEqual(['selected:gemini-3.8-flash', 'gemini-flash-lite-31', 'other-model'])
+    expect(status.recentRoutes.at(-1).effort).toEqual({ effort: 'low', source: 'selection' })
   })
 
   it('applies an Ops selection to the next real request', async () => {
