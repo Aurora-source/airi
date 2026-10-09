@@ -18,6 +18,9 @@ const VRM_EXPRESSION_BY_VOWEL: Record<WLipSyncVowel, string> = {
   U: 'ou',
 }
 
+/** What the vowel driver reads after the source ended. */
+const SILENT_FRAME = { volume: 0, weights: {} }
+
 /**
  * Applies shared wLipSync vowel weights to a VRM expression manager.
  *
@@ -31,6 +34,7 @@ export function useVRMLipSync(
   const isLipSyncActive = ref(false)
   const lipSyncNode = shallowRef<WLipSyncAudioNode>()
   const vowelDriver = createWLipSyncVowelDriver()
+  let sourcePlaying = false
 
   watch(audioContext, (context, _, onCleanup) => {
     lipSyncNode.value = undefined
@@ -62,6 +66,7 @@ export function useVRMLipSync(
   }, { immediate: true })
 
   watch([lipSyncNode, audioSource], ([node, source], _, onCleanup) => {
+    sourcePlaying = false
     if (!node || !source)
       return
 
@@ -73,7 +78,14 @@ export function useVRMLipSync(
       return
     }
 
+    sourcePlaying = true
+    const onEnded = () => {
+      sourcePlaying = false
+    }
+    source.addEventListener('ended', onEnded)
+
     onCleanup(() => {
+      source.removeEventListener('ended', onEnded)
       try {
         source.disconnect(node)
       }
@@ -90,7 +102,12 @@ export function useVRMLipSync(
       return
     }
 
-    const weights = vowelDriver.update(node, delta)
+    // NOTICE:
+    // The wLipSync worklet posts no frame once its input stops, so the node keeps its last vowel weights.
+    // The mouth then stays open after speech, and lip sync never reports silence.
+    // Source: node_modules/wlipsync/dist/audio-processor.js process() returns early without an input channel.
+    // Removal condition: wLipSync reports silence when its input ends.
+    const weights = vowelDriver.update(sourcePlaying ? node : SILENT_FRAME, delta)
     let hasActiveVisemes = false
     for (const vowel of WLIP_SYNC_VOWELS) {
       const weight = weights[vowel]
