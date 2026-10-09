@@ -484,6 +484,10 @@ export class CompanionDirector {
         this.cancelAdvance = undefined
         if (this.active !== active || this.closed)
           return
+        // R6 derives a dialogue gap from cue timing without a state change, so a waiting intention reads it fresh.
+        const snapshot = this.watch?.snapshot()
+        if (snapshot)
+          this.submitSnapshot(snapshot)
         active.director.advance()
         this.afterFlush(active)
       })

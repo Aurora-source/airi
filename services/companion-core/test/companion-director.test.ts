@@ -481,6 +481,119 @@ describe('proactive defaults and controls', () => {
   })
 })
 
+describe('spoken watch reactions', () => {
+  /** Opt-in follow-up while a video plays with a timed caption. The cue ends 1 s after it is sent. */
+  async function followUpWhileWatching() {
+    recallItems = [memoryItemFor('card-mura', 'promise')]
+    start()
+    expect(director!.configure({ proactiveSpeech: true })).toBe(true)
+    extension.sendVideo({ isPlaying: true, currentTimeSec: 10 })
+    extension.sendSubtitle('A timed line', { startMs: 10_000, endMs: 11_000, language: 'ja' })
+    await flush()
+    answer(turn('round-1', 'I am back'))
+    await flush()
+  }
+
+  it('speaks a follow-up only after R6 admits a proven gap, and records the shared moment once', async () => {
+    await followUpWhileWatching()
+    expect(stage.notifies).toHaveLength(0)
+    for (let i = 0; i < 60 && stage.notifies.length === 0; i++)
+      await pass(100)
+    expect(stage.notifies).toHaveLength(1)
+    const notify = stage.notifies[0]
+    expect(notify.headline).toBe('Watch moment: shared-moment')
+    expect(notify.ttlMs).toBeLessThanOrEqual(5000)
+    stage.ack(notify.id, 'done')
+    await flush()
+    expect(watchStatus().session!.reaction.last.outcome).toBe('delivered')
+    expect(milestones.filter(milestone => milestone.text.startsWith('Shared a moment'))).toHaveLength(1)
+  })
+
+  it('stops the spoken reaction when dialogue resumes, and records nothing', async () => {
+    await followUpWhileWatching()
+    for (let i = 0; i < 60 && stage.notifies.length === 0; i++)
+      await pass(100)
+    const notify = stage.notifies[0]
+    // A new caption means dialogue again. R6 revokes the permit, and the stage gets a drop for this notify.
+    extension.sendSubtitle('Another spoken line', { language: 'ja' })
+    await flush()
+    expect(stage.drops).toContain(notify.id)
+    stage.ack(notify.id, 'done')
+    await flush()
+    expect(watchStatus().session!.reaction.last.outcome).toBe('revoked')
+    expect(milestones.filter(milestone => milestone.text.startsWith('Shared a moment'))).toHaveLength(0)
+  })
+})
+
+describe('long session', () => {
+  it('stays bounded and quiet through two hours of chat, watching, interruptions, a character switch, privacy, idle, reconnect, and provider errors', async () => {
+    const perception = new FakePerception()
+    start({ perception })
+    const timersAtStart = vi.getTimerCount()
+    let round = 0
+    const chat = async (characterId = 'card-mura', ok = true) => {
+      const entry = turn(`round-${++round}`, 'Something to talk about', characterId)
+      await flush()
+      stage.speak(`round-${round}`, true, 'session-1')
+      advance(500)
+      if (ok)
+        answer(entry)
+      else
+        entry.finish({ status: 'incomplete' })
+      stage.speak(`round-${round}`, false, 'session-1')
+      await flush()
+    }
+    for (let minute = 0; minute < 120; minute++) {
+      if (minute % 10 === 0)
+        await chat(minute >= 60 ? 'card-other' : 'card-mura', minute !== 110)
+      if (minute >= 20 && minute < 50) {
+        // Anime with captions, a pause every few minutes, and a user remark.
+        extension.sendVideo({ isPlaying: minute % 4 !== 0, currentTimeSec: minute * 60 })
+        extension.sendSubtitle(`${INJECTION} ${minute}`, { language: 'ja', startMs: minute * 60_000, endMs: minute * 60_000 + 800 })
+        if (minute % 7 === 0) {
+          userVoice(true, `voice-${minute}`)
+          advance(2000)
+          userVoice(false, `voice-${minute}`)
+        }
+      }
+      if (minute === 50)
+        extension.sendVideo({ isPlaying: false, isStopped: true, currentTimeSec: 3000 })
+      if (minute === 70)
+        perception.publish({ status: 'blocked-by-privacy' })
+      if (minute === 75)
+        perception.publish({ status: 'unavailable' })
+      if (minute === 100) {
+        watchChannel.ready(false)
+        stage.channel.ready(false)
+        advance(5000)
+        watchChannel.ready(true)
+        stage.ready()
+      }
+      for (let second = 0; second < 60; second += 5) {
+        advance(5000)
+        await flush()
+      }
+    }
+    const final = status()
+    expect(stage.notifies).toHaveLength(0)
+    // Low frequency and the R6 cooldown bound silent reactions: at most one per three minutes of watching.
+    expect(stage.behaviors().length).toBeLessThanOrEqual(10)
+    expect(final.counters.identitySwitches).toBe(1)
+    expect(final.director.resources.queue).toBe(0)
+    expect(final.director.resources.eventIds).toBeLessThanOrEqual(256)
+    expect(final.director.resources.history).toBeLessThanOrEqual(64)
+    expect(final.director.resources.candidates).toBeLessThanOrEqual(16)
+    expect(final.conversation.requests).toBeLessThanOrEqual(64)
+    expect(JSON.stringify([final, stage.channel.sent])).not.toContain('Ignore previous instructions')
+    await director!.close()
+    await watch!.shutdown()
+    director = undefined
+    watch = undefined
+    // Every host, relay, R6, and watch timer stops at shutdown.
+    expect(vi.getTimerCount()).toBeLessThanOrEqual(timersAtStart)
+  }, 120_000)
+})
+
 function memoryItemFor(characterId: string, category = 'open_thread'): MemoryItem {
   return {
     id: `memory-${category}`,
