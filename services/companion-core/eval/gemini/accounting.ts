@@ -35,7 +35,7 @@ const entrySchema = v.object({
   costNano: v.optional(token),
   usage: v.optional(usageSchema),
 })
-const ledgerSchema = v.object({ version: v.literal(1), ceilingNano: token, halted: v.boolean(), entries: v.array(entrySchema) })
+const ledgerSchema = v.object({ version: v.literal(1), ceilingNano: token, halted: v.boolean(), entries: v.array(entrySchema), authorizations: v.optional(v.array(v.object({ previousCeilingNano: token, ceilingNano: token, reason: v.string(), at: v.string() }))) })
 type LedgerState = v.InferOutput<typeof ledgerSchema>
 
 /** Calculates nanodollars, rounding up once. Tier selection uses the entire prompt, including cached input. */
@@ -112,7 +112,7 @@ export class SpendLedger {
 
   /** @default ceilingNano 4,500,000,000. @default concurrency 2. */
   constructor(private readonly path: string, ceilingNano = 4_500_000_000, private readonly concurrency = 2) {
-    if (!Number.isSafeInteger(ceilingNano) || ceilingNano <= 0 || ceilingNano > 4_500_000_000)
+    if (!Number.isSafeInteger(ceilingNano) || ceilingNano <= 0 || ceilingNano > 5_000_000_000)
       throw new Error('Unsafe budget ceiling')
     if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 2)
       throw new Error('Unsafe concurrency limit')
@@ -169,6 +169,17 @@ export class SpendLedger {
     if (this.snapshot().exposureNano + reservedNano >= this.state.ceilingNano)
       throw new Error('Budget ceiling rejects this request')
     this.state.entries.push({ id, model, price: v.parse(priceSchema, price), reservedNano, status: 'reserved' })
+    this.persist()
+  }
+
+  /** Records explicit user authorization. Existing charges, reservations, and halted state remain intact. Constructor restarts never increase ceilings. */
+  authorizeCeiling(ceilingNano: number, reason: string): void {
+    this.assertOpen()
+    if (!Number.isSafeInteger(ceilingNano) || ceilingNano <= this.state.ceilingNano || ceilingNano > 5_000_000_000 || !reason.trim())
+      throw new Error('Unsafe or unrecorded budget authorization')
+    this.state.authorizations ??= []
+    this.state.authorizations.push({ previousCeilingNano: this.state.ceilingNano, ceilingNano, reason, at: new Date().toISOString() })
+    this.state.ceilingNano = ceilingNano
     this.persist()
   }
 

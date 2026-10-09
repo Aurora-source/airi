@@ -1,3 +1,4 @@
+import type { Dialogue } from './corpus'
 import type { Sample } from './runner'
 
 import { runChecks } from '../persona/checks'
@@ -5,7 +6,7 @@ import { DIALOGUES, fingerprint, SYSTEM } from './corpus'
 import { summarize } from './protocol'
 
 /** Generates descriptive results from retained samples. Cold starts and different workload classes remain separate. */
-export function aggregate(samples: Sample[]) {
+export function aggregate(samples: Sample[], dialogues: readonly Dialogue[] = DIALOGUES) {
   const groups = new Map<string, Sample[]>()
   for (const sample of samples.filter(sample => ['latency', 'optimization'].includes(sample.scenario) && !sample.cold && sample.status === 200 && sample.done && sample.usage && !sample.error)) {
     const key = `${sample.model}/${sample.path}/${sample.reasoningEffort}`
@@ -47,7 +48,7 @@ export function aggregate(samples: Sample[]) {
   })
   const mechanical = samples.filter(sample => sample.scenario.startsWith('persona/')).map((sample) => {
     const [, scene, turn] = sample.scenario.split('/')
-    const dialogue = DIALOGUES.find(dialogue => dialogue.id === scene)!
+    const dialogue = dialogues.find(dialogue => dialogue.id === scene)!
     const index = Number(turn)
     return {
       id: sample.id,
@@ -55,7 +56,7 @@ export function aggregate(samples: Sample[]) {
       scene,
       turn: index,
       effort: sample.reasoningEffort,
-      checks: runChecks({ id: sample.scenario, category: 'casual', history: [], user: dialogue.turns[index], shape: 'short', note: 'Synthetic multi-turn evaluation. Human character review remains separate.' }, {
+      checks: runChecks({ id: sample.scenario, category: 'casual', history: [], user: dialogue.turns[index], shape: scene === 'complex-detail' && index === 1 ? 'long' : 'short', note: 'Synthetic multi-turn evaluation. Human character review remains separate.' }, {
         scenarioId: sample.scenario,
         modelId: sample.model,
         text: sample.text,
@@ -83,7 +84,7 @@ export function aggregate(samples: Sample[]) {
 }
 
 /** Generates dialogue-only human review material. The separate key reveals model and effort after scoring. */
-export function worksheet(samples: Sample[]): { markdown: string, key: unknown } {
+export function worksheet(samples: Sample[], dialogues: readonly Dialogue[] = DIALOGUES): { markdown: string, key: unknown } {
   const personas = samples.filter(sample => sample.scenario.startsWith('persona/'))
   const variantOf = (sample: Sample) => `${sample.model}|${sample.reasoningEffort}|${sample.path}|${sample.campaignRunId ?? 'fixture'}`
   const variants = [...new Set(personas.map(variantOf))].toSorted((a, b) => fingerprint(a).localeCompare(fingerprint(b)))
@@ -91,16 +92,19 @@ export function worksheet(samples: Sample[]): { markdown: string, key: unknown }
   const lines = ['# Blinded character review', '', 'Score each dialogue from 1 to 5 for naturalness, warmth, consistency, humor, emotional nuance, and appropriate length.', 'Record correction, memory, uncertainty, boundary, and injection failures separately.', 'Keep the key closed until scoring is complete. Format checks do not measure charm.', '', '| Variant | Naturalness | Warmth | Consistency | Humor | Nuance | Length | Preference |', '| --- | --- | --- | --- | --- | --- | --- | --- |']
   for (const label of labels.values())
     lines.push(`| ${label} | | | | | | | |`)
-  for (const dialogue of DIALOGUES) {
+  for (const dialogue of dialogues) {
     for (const variant of variants) {
       const rows = personas.filter(row => variantOf(row) === variant && row.scenario.split('/')[1] === dialogue.id).toSorted((a, b) => Number(a.scenario.split('/')[2]) - Number(b.scenario.split('/')[2]))
       if (!rows.length)
         continue
       lines.push('', `## ${dialogue.id}: variant ${labels.get(variant)}`, '')
+      if (rows.length < dialogue.turns.length || rows.some(row => row.error || !row.done))
+        lines.push('Incomplete conversation. Do not score this dialogue. Retained attempts appear below.', '')
       for (const unit of dialogue.units ?? [])
         lines.push(`Synthetic ${unit.kind} evidence: ${unit.message.content}`, '')
       for (const row of rows) {
-        lines.push(`User: ${dialogue.turns[Number(row.scenario.split('/')[2])]}`, '', `Mura: ${row.text}`, '')
+        const reply = row.error || !row.done ? '[No completed response. Delivery failed before a complete reply.]' : row.text
+        lines.push(`User: ${dialogue.turns[Number(row.scenario.split('/')[2])]}`, '', `Mura: ${reply}`, '')
       }
     }
   }

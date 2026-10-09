@@ -79,8 +79,9 @@ export class Benchmark {
   private readonly inference = `cc_inf_${randomBytes(32).toString('hex')}`
   private readonly ops = `cc_ops_${randomBytes(32).toString('hex')}`
 
-  constructor(private readonly directory: string, private readonly key: string, private readonly models: Model[], private readonly baseURL = 'https://generativelanguage.googleapis.com/v1beta/openai/') {
-    this.ledger = new SpendLedger(join(directory, 'ledger.json'))
+  /** @default budget.ceilingNano 4,500,000,000. @default budget.concurrency 2. */
+  constructor(private readonly directory: string, private readonly key: string, private readonly models: Model[], private readonly baseURL = 'https://generativelanguage.googleapis.com/v1beta/openai/', budget: { ceilingNano?: number, concurrency?: number } = {}) {
+    this.ledger = new SpendLedger(join(directory, 'ledger.json'), budget.ceilingNano, budget.concurrency)
   }
 
   /** One final usage record settles one reservation. Missing usage retains exposure and halts subsequent dispatch. No automatic live retries. */

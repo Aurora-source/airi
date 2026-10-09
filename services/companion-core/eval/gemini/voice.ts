@@ -14,7 +14,8 @@ export async function replayVoiceText(chunks: { text: string, atMs: number }[], 
   let emitted = ''
   for (const part of chunks) {
     text += part.text
-    const spoken = spokenText(text)
+    // A trailing '<' can become a control opener in the next fragment. Withhold it until the prefix is resolved.
+    const spoken = spokenText(text.endsWith('<') ? text.slice(0, -1) : text)
     const additional = spoken.slice(emitted.length)
     emitted = spoken
     if (additional)

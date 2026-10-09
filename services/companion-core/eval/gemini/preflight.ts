@@ -22,6 +22,7 @@ export function sourceDigest(): string {
     'eval/persona/scenarios.ts',
     'eval/persona/client.ts',
     'test/gemini-benchmark.test.ts',
+    'test/gemini-thinking.test.ts',
     'test/fixtures/airi-tools.json',
     'test/support/harness.ts',
     'package.json',
@@ -47,8 +48,8 @@ const receiptSchema = v.object({
   pricesSha256: v.string(),
   testsPassed: positive,
   paidCalls: v.literal(0),
-  ceilingUsd: v.literal(4.5),
-  concurrency: v.literal(2),
+  ceilingUsd: v.pipe(v.number(), v.minValue(0.000001), v.maxValue(5)),
+  concurrency: v.picklist([1, 2]),
   priceValidUntil: v.literal(PRICE_VALID_UNTIL),
 })
 
