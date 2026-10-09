@@ -17,7 +17,7 @@ import { Client } from '@proj-airi/server-sdk'
 
 import * as v from 'valibot'
 
-import { Director, GatewayReasoningPort, WatchReactionRelay } from '../director'
+import { defaultConfiguration, Director, GatewayReasoningPort, WatchReactionRelay } from '../director'
 import { ConversationLedger } from './conversation-ledger'
 import { STAGE_MODULES } from './watch'
 import { currentUserText, isToolContinuation } from './wire-text'
@@ -333,6 +333,8 @@ export class CompanionDirector {
       bound: this.active !== undefined,
       channelConnected: this.connected,
       userControls: { ...this.controls },
+      // Before the first AIRI turn, the configuration that the next Director starts with. Ops shows it as the controls.
+      pendingConfiguration: this.active || !this.options.config.director.enabled ? undefined : { ...defaultConfiguration, ...this.baseConfiguration(), ...this.controls },
       director,
       relay: this.active?.relay.status(),
       conversation: this.ledger.status(),
@@ -406,19 +408,11 @@ export class CompanionDirector {
       validatePermit: permit => this.watch?.validPermit(permit) ?? false,
       deliver: input => this.deliverWatch(input),
     })
-    const { director: config } = this.options.config
     const director = new Director({
       identity,
       profile: this.options.config.profile,
       clock: this.clock,
-      configuration: {
-        enabled: true,
-        reactionFrequency: config.reactionFrequency,
-        quietMode: config.quietMode,
-        // The offset of this computer now. A quiet period then follows local time across midnight.
-        utcOffsetMinutes: config.utcOffsetMinutes ?? -new Date(this.clock.now()).getTimezoneOffset(),
-        quietPeriods: config.quietPeriods,
-      },
+      configuration: this.baseConfiguration(),
       speech: { deliver: intent => this.deliverSpeech(intent) },
       visual: {
         request: intent => this.visual.request(intent),
@@ -444,6 +438,19 @@ export class CompanionDirector {
       this.submitSnapshot(snapshot)
     if (this.perception)
       this.screenChanged()
+  }
+
+  /** The configuration file part of a new Director. User controls apply after it, with user authority. */
+  private baseConfiguration(): Partial<DirectorConfiguration> {
+    const { director: config } = this.options.config
+    return {
+      enabled: true,
+      reactionFrequency: config.reactionFrequency,
+      quietMode: config.quietMode,
+      // The offset of this computer now. A quiet period then follows local time across midnight.
+      utcOffsetMinutes: config.utcOffsetMinutes ?? -new Date(this.clock.now()).getTimezoneOffset(),
+      quietPeriods: config.quietPeriods,
+    }
   }
 
   private unbind(): void {

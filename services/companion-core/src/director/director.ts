@@ -25,7 +25,7 @@ interface Job {
   screenSupport?: { key: string, capturedAt: number }
 }
 
-const defaultConfiguration: DirectorConfiguration = {
+export const defaultConfiguration: DirectorConfiguration = {
   enabled: true,
   proactiveSpeech: false,
   quietMode: false,

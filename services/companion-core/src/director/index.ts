@@ -1,6 +1,6 @@
 export type * from './contracts'
 export { directorLimits } from './contracts'
-export { Director } from './director'
+export { defaultConfiguration, Director } from './director'
 export type { GatewayReasoningOptions } from './gateway-reasoning'
 export { GatewayReasoningPort } from './gateway-reasoning'
 export type { WatchReactionRelayOptions } from './watch-relay'

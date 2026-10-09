@@ -168,6 +168,19 @@ describe('director controls that Ops persists', () => {
     }
   })
 
+  it('reports and applies controls before the first AIRI turn binds a Director', async () => {
+    await start({ director: { reactionFrequency: 'normal' } })
+    const before = (await ops('director/status')).body
+    expect(before.bound).toBe(false)
+    expect(before.pendingConfiguration).toMatchObject({ enabled: true, proactiveSpeech: false, quietMode: false, privateMode: false, reactionFrequency: 'normal', reasoningEnabled: false, quietPeriods: [] })
+    expect((await ops('director/configure', { quietMode: true })).status).toBe(200)
+    expect((await ops('director/status')).body.pendingConfiguration).toMatchObject({ quietMode: true, reactionFrequency: 'normal' })
+    await chat(identity('round-1'), [{ role: 'user', content: 'Hello' }])
+    const bound = (await ops('director/status')).body
+    expect(bound.pendingConfiguration).toBeUndefined()
+    expect(bound.director.configuration).toMatchObject({ quietMode: true, reactionFrequency: 'normal' })
+  })
+
   it('never reads proactive speech from configuration', async () => {
     expect(() => parseConfig({ providers: {}, aliases: {}, director: { proactiveSpeech: true } })).not.toThrow()
     await start({ director: { proactiveSpeech: true, reasoningEnabled: true } as Record<string, unknown> })
