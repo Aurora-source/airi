@@ -76,7 +76,7 @@ describe('visualPresenceHost', () => {
     expect(t.adapters).toHaveLength(0)
     t.frame()
     expect(t.adapters).toHaveLength(1)
-    expect(t.states.at(-1)).toEqual({ available: true, blocked: false })
+    expect(t.states.at(-1)).toEqual({ available: true, blocked: false, owners: [] })
   })
 
   it('starts the dedicated curious behavior for a remote request and samples it after the mixer', () => {
@@ -99,7 +99,7 @@ describe('visualPresenceHost', () => {
     const flushed = t.adapters[0].record.flushed
     t.frame(t.vrm, { lipSyncActive: true })
     expect(t.adapters[0].record.released).toBeGreaterThan(0)
-    expect(t.states.at(-1)).toEqual({ available: true, blocked: true })
+    expect(t.states.at(-1)).toEqual({ available: true, blocked: true, owners: ['lip-sync'] })
     expect(t.adapters[0].record.flushed).toBe(flushed)
     expect(t.host.diagnostics().ownedRequest).toBe(false)
 
@@ -176,7 +176,7 @@ describe('visualPresenceHost', () => {
     t.switchModel('blob:model-b')
     t.host.release()
     expect(t.adapters[0].record.disposed).toBe(1)
-    expect(t.states.at(-1)).toEqual({ available: false, blocked: false })
+    expect(t.states.at(-1)).toEqual({ available: false, blocked: false, owners: [] })
     const next = {} as VRM
     t.frame(next)
     expect(t.adapters).toHaveLength(2)

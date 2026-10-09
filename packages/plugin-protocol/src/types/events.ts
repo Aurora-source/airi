@@ -677,6 +677,8 @@ export interface OutputVisualStateEvent {
   available: boolean
   /** Speaking, ACT, explicit motion, or manual control owns the model now. */
   blocked: boolean
+  /** The owners that block it, for diagnostics. */
+  owners?: Array<'speaking' | 'lip-sync' | 'act' | 'manual'>
 }
 
 /**

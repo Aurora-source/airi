@@ -341,7 +341,7 @@ export class CompanionDirector {
     })
     client.onEvent('input:voice:activity', event => this.userVoice(event.data.active === true, String(event.data.inputId ?? '')))
     client.onEvent('output:voice:activity', event => this.companionVoice(event.data.active === true, String(event.data.outputId ?? ''), typeof event.data.sessionId === 'string' ? event.data.sessionId : undefined))
-    client.onEvent('output:visual:state', event => this.visual.state(event.data.available === true, event.data.blocked === true))
+    client.onEvent('output:visual:state', event => this.visual.state(event.data.available === true, event.data.blocked === true, Array.isArray(event.data.owners) ? event.data.owners.filter(owner => typeof owner === 'string').slice(0, 4) : []))
     client.onEvent('output:visual:result', event => this.visual.result(String(event.data.requestId ?? ''), event.data.result))
     client.onEvent('spark:emit', event => this.speech.emitted(String(event.data.id ?? ''), event.data.state))
     return client
@@ -731,6 +731,7 @@ class SparkSpeech {
 class ChannelVisual {
   private available = false
   private blocked = false
+  private owners: string[] = []
   private owned?: string
   private activityRequest?: { id: string, at: number }
   private readonly results = new Map<string, (result: string) => void>()
@@ -738,9 +739,10 @@ class ChannelVisual {
 
   constructor(private readonly send: Send, private readonly clock: DirectorClock) {}
 
-  state(available: boolean, blocked: boolean): void {
+  state(available: boolean, blocked: boolean, owners: readonly string[] = []): void {
     this.available = available
     this.blocked = blocked
+    this.owners = [...owners]
   }
 
   reset(): void {
@@ -835,7 +837,7 @@ class ChannelVisual {
   }
 
   status(): Record<string, unknown> {
-    return { available: this.available, blocked: this.blocked, owned: this.owned !== undefined, watching: this.activityRequest !== undefined, ...this.counters }
+    return { available: this.available, blocked: this.blocked, owners: [...this.owners], owned: this.owned !== undefined, watching: this.activityRequest !== undefined, ...this.counters }
   }
 
   private post(requestId: string, behavior: string, activity: VisualIntent['activity'] | undefined, intensity: VisualIntent['intensity'] | undefined, leaseMs: number): boolean {

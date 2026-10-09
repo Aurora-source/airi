@@ -53,6 +53,7 @@ export class VisualPresenceHost {
   private bound?: VRM
   private external: ExternalVisualActivity = { speaking: false, act: false, modelMotion: false, userControl: false }
   private speaking = false
+  private lipSync = false
   private manualUntil = -Infinity
   private local?: VisualActivity
   private remote?: { requestId: string, activity: VisualActivity, until: number, intensity?: IdleIntensity }
@@ -189,6 +190,7 @@ export class VisualPresenceHost {
     }
     if (this.remote && now >= this.remote.until)
       this.remote = undefined
+    this.lipSync = context.lipSyncActive
     const next: ExternalVisualActivity = { speaking: context.lipSyncActive || this.speaking, act: context.actActive, modelMotion: false, userControl: now < this.manualUntil }
     if (next.speaking !== this.external.speaking || next.act !== this.external.act || next.userControl !== this.external.userControl) {
       this.external = next
@@ -221,8 +223,17 @@ export class VisualPresenceHost {
   }
 
   private publish(): void {
-    const state: OutputVisualStateEvent = { available: !!this.adapter && !this.disposed, blocked: this.blocked() }
-    const key = `${state.available}|${state.blocked}`
+    const owners: NonNullable<OutputVisualStateEvent['owners']> = []
+    if (this.speaking)
+      owners.push('speaking')
+    if (this.lipSync)
+      owners.push('lip-sync')
+    if (this.external.act)
+      owners.push('act')
+    if (this.external.userControl)
+      owners.push('manual')
+    const state: OutputVisualStateEvent = { available: !!this.adapter && !this.disposed, blocked: this.blocked(), owners }
+    const key = `${state.available}|${state.blocked}|${owners.join(',')}`
     if (key === this.published)
       return
     this.published = key
