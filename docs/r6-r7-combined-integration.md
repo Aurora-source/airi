@@ -139,7 +139,8 @@ The status holds no identities, request ids, conversation text, captions, titles
 ```
 
 Quiet periods are daily local minutes with the given offset. A period can cross midnight. Equal ends mean the whole
-day. An invalid body returns 400. The controls stay for this Core process and apply to every later Director instance.
+day. An invalid body returns 400. The controls apply to every later Director instance. Core saves them in
+`companion-ops.sqlite` and restores them after a restart (see [companion-ops-paid-gemini.md](companion-ops-paid-gemini.md)).
 Proactive speech and reasoning are never read from the configuration file.
 
 `POST /ops/director/cancel` with `{}` cancels Director-owned speech, visual behavior, and queued intentions.

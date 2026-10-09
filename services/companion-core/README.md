@@ -126,10 +126,11 @@ pnpm -F @proj-airi/companion-core persona score-blind --out <directory> --ranks 
 
 ## Provider compatibility
 
-A provider entry can set `"compat": "gemini"`. Two things change for that provider:
+A provider entry can set `"compat": "gemini"`. These things change for that provider:
 
 - The Gemini endpoint omits `index` on streamed tool-call fragments. OpenAI clients, including AIRI's xsAI client, drop such tool calls. The adapter restores a stable `index` for each call `id`.
 - Gemini 3 rejects a tool call in the history that has no thought signature. After a failover, the history can hold calls that another model wrote. The adapter adds a placeholder signature to those calls only.
+- Streaming requests get `stream_options.include_usage`, so the paid usage ledger gets token counts. Companion Ops can select the exact Gemini model and thinking effort for this provider. See [Companion Ops and paid Gemini](../../docs/companion-ops-paid-gemini.md).
 
 Without `compat`, the gateway forwards requests and responses unchanged.
 
