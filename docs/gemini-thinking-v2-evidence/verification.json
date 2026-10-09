@@ -4,6 +4,16 @@
   "status": "INCOMPLETE_BLOCKED_BY_UNKNOWN_USAGE",
   "baseCommit": "40669ed3520bc807ece0847591224933e29000af",
   "branch": "codex/gemini-thinking-benchmark-v2",
+  "publication": {
+    "sourceCommit": "99c901382e040aae636093c6d4447fab4e5955b1",
+    "evidenceCommit": "6d52946d5dec1e75e37276ec22a1ace19838bde5",
+    "headMatchVerifiedAt": "2026-10-09T09:08:58Z",
+    "localAndRemoteHeadsMatched": true,
+    "worktreeCleanAtEvidencePublication": true,
+    "finalReviewSha": "Published branch HEAD, recorded in the completion handoff",
+    "merged": false,
+    "forcePushed": false
+  },
   "productionModified": false,
   "accounting": {
     "campaign": "gemini-thinking-v2-2026-10-09",

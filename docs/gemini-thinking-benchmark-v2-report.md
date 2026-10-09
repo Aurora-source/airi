@@ -535,6 +535,9 @@ Worktree: `D:/AI/airi-gemini-thinking`.
 
 Benchmark source commit: `99c901382e040aae636093c6d4447fab4e5955b1`.
 This commit descends directly from the exact requested base.
+Evidence publication commit: `6d52946d5dec1e75e37276ec22a1ace19838bde5`.
+Its local and remote HEAD matched on 2026-10-09 at 09:08:58 UTC.
+The final publication note follows that evidence commit. The completion handoff records the final review SHA.
 
 Source changes are confined to benchmark accounting, receipts, reporting, replay, and the new campaign entry points and tests.
 All request evidence is synthetic. No credentials, private conversations, raw thought signatures, or production secrets are included.

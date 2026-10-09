@@ -29,10 +29,15 @@ Preserve all existing ledger state. V1 remains separate at $0.340722225.
 - [ ] Dispatch Live sessions only after reliable session cost bounds and terminal accounting are established.
 
 ## Phase 4: Analysis and handoff
-**Status:** in_progress
+**Status:** review_handoff_complete_benchmark_incomplete
 - [x] Write the report, scoring worksheet, separate key, cost estimates, and proposed configuration overlay.
 - [x] Complete focused tests, typecheck, lint, and review.
-- [ ] Commit, push, and verify matching local and remote HEAD.
+- [x] Commit, push, and verify matching local and remote HEAD.
+
+Evidence publication: `6d52946d5dec1e75e37276ec22a1ace19838bde5`.
+Local and remote HEAD matched on 2026-10-09 at 09:08:58 UTC.
+The final publication note follows that verified evidence commit. The completion handoff records the final branch SHA.
+The paid mission remains incomplete. No blocked experiment or acceptance check is marked complete.
 
 ## Constraints
 Use the existing R2B Gateway and benchmark guard. Preserve all original evidence.

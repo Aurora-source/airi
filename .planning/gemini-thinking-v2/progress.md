@@ -64,3 +64,8 @@ Committed benchmark source and regression tests as `99c901382e040aae636093c6d444
 The parent is the exact requested V1 commit. Evidence and the incomplete report remain in the next review commit.
 The repository ignores result files and logs by default. Explicitly stage this campaign's reviewed results and verification logs.
 Preserve generated worksheet and raw test-log endings. Evidence whitespace checking exempts only blank lines at EOF.
+Published source and evidence on `codex/gemini-thinking-benchmark-v2` without merging or force pushing.
+On 2026-10-09 at 09:08:58 UTC, local and remote HEAD matched `6d52946d5dec1e75e37276ec22a1ace19838bde5`.
+The benchmark worktree was clean. The original benchmark was clean, and integration remained at `4186122b3116eebf7b7f5e36869fbde0f8b67146`.
+This final publication note changes documentation only. Paid dispatch and the unknown reservation remain unchanged.
+Human preference and physical voice acceptance remain pending. The paid mission remains incomplete.
